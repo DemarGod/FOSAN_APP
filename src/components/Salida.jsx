@@ -9,7 +9,7 @@ const kg = (n) => (n ? Math.round(n).toLocaleString('es-CL') + ' kg' : '0 kg')
 const num = (x) => String(x ?? '').replace(/\D/g, '').slice(0, 8)
 
 // Detalle de una salida: km estimado → real, paradas hechas y costo calculado.
-export default function Salida({ salida, par, editable, onCerrar, onCambio }) {
+export default function Salida({ salida, par, editable, verCostos = true, onCerrar, onCambio }) {
   const s = salida
   const [paradas, setParadas] = useState([])
   const [desp, setDesp] = useState([])
@@ -107,7 +107,7 @@ export default function Salida({ salida, par, editable, onCerrar, onCambio }) {
         </div>
 
         <div style={{ display: 'grid', gap: 14, alignContent: 'start' }}>
-          <div className="campo">
+          {verCostos && <div className="campo">
             <span>Costo {s.km_real || kmReal !== null ? 'real' : 'estimado'}</span>
             <div style={{ border: `2px solid ${C.borde}` }}>
               <Fila k={`Diésel · ${c.litrosDiesel.toFixed(1).replace('.', ',')} L a ${c.rend ? c.rend.toFixed(1).replace('.', ',') : '—'} km/L`} v={clp(Math.round(c.combustible))} />
@@ -115,7 +115,7 @@ export default function Salida({ salida, par, editable, onCerrar, onCambio }) {
               <Fila k="Seguro, permiso y revisión" v={clp(Math.round(c.fijos))} />
               <Fila k={`Total · ${c.km} km`} v={clp(Math.round(c.total))} fuerte />
             </div>
-          </div>
+          </div>}
           <div className="campo">
             <span>Carga</span>
             <div style={{ border: `2px solid ${C.borde}` }}>

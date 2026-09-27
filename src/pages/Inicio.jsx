@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Mapa, { Leyenda } from '../components/Mapa'
 import { Aviso } from '../components/Listado'
-import { useSesion } from '../lib/sesion'
+import { useSesion, esSecretaria } from '../lib/sesion'
 import {
-  resumenInventario, estadoActivos, serviciosMes, mapaPuntos,
+  resumenInventario, estadoActivos, serviciosMes, mapaPuntos, banosKpi,
   utilidadMensual, actividadReciente, notificaciones,
 } from '../lib/api'
 import {
@@ -71,15 +71,17 @@ function Donut({ datos, total }) {
 export default function Inicio({ onCalendario }) {
   const navegar = useNavigate()
   const { perfil } = useSesion()
+  const sec = esSecretaria(perfil)
   const [d, setD] = useState({})
   const [error, setError] = useState(null)
 
   useEffect(() => {
     Promise.all([
       resumenInventario(), estadoActivos(), serviciosMes(), mapaPuntos(),
-      utilidadMensual(), actividadReciente(6), notificaciones(),
-    ]).then(([resumen, estados, servicios, puntos, utilidad, actividad, avisos]) => {
-      setD({ resumen, estados, servicios, puntos, utilidad, actividad, avisos })
+      utilidadMensual().catch(() => []), actividadReciente(6).catch(() => []), notificaciones().catch(() => []),
+      banosKpi().catch(() => ({})),
+    ]).then(([resumen, estados, servicios, puntos, utilidad, actividad, avisos, banos]) => {
+      setD({ resumen, estados, servicios, puntos, utilidad, actividad, avisos, banos })
     }).catch(setError)
   }, [])
 
@@ -99,6 +101,14 @@ export default function Inicio({ onCalendario }) {
     { v: millones(ultimoMes.ventas), l: 'Ventas del último mes', color: C.navy, tint: '#e8edf5', d: I.money },
     { v: millones(ultimoMes.utilidad), l: 'Utilidad del último mes', color: C.verde, tint: '#e6f4ea', d: I.chart },
   ]
+
+  const kpisVista = sec
+    ? [
+      { v: d.banos?.disponibles ?? 0, l: 'Baños disponibles', color: C.verde, tint: '#e6f4ea', d: I.drop },
+      { v: d.banos?.mantencion ?? 0, l: 'En mantención', color: C.amarillo, tint: '#fef7e0', d: I.wrench },
+      kpis[3],
+    ]
+    : kpis
 
   const accesos = [
     { label: 'Ver inventario', d: I.box, to: '/inventario' },
@@ -130,7 +140,7 @@ export default function Inicio({ onCalendario }) {
       <Aviso error={error} />
 
       <div className="kpis">
-        {kpis.map((k) => (
+        {kpisVista.map((k) => (
           <div key={k.l} style={{
             background: '#fff', border: `2px solid ${C.borde}`, borderTop: `4px solid ${k.color}`,
             padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12,
@@ -150,6 +160,7 @@ export default function Inicio({ onCalendario }) {
       </div>
 
       <div className="cols2" style={{ marginTop: 20 }}>
+        {!sec && (
         <Seccion titulo="Estado de activos">
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', padding: 18 }}>
             <Donut datos={d.estados || []} total={totalActivos} />
@@ -174,6 +185,7 @@ export default function Inicio({ onCalendario }) {
             </div>
           </div>
         </Seccion>
+        )}
 
         <Seccion titulo="Servicios · resumen del mes">
           <div style={{ maxHeight: 288, overflowY: 'auto' }}>
@@ -209,6 +221,7 @@ export default function Inicio({ onCalendario }) {
       </div>
 
       <div className="cols2" style={{ marginTop: 20 }}>
+        {!sec && (
         <Seccion titulo="Actividad reciente">
           <div style={{ maxHeight: 288, overflowY: 'auto' }}>
             {(d.actividad || []).map((a) => (
@@ -243,6 +256,7 @@ export default function Inicio({ onCalendario }) {
             )}
           </div>
         </Seccion>
+        )}
 
         <Seccion titulo="Alertas">
           <div style={{ maxHeight: 288, overflowY: 'auto' }}>
@@ -285,6 +299,7 @@ export default function Inicio({ onCalendario }) {
         </Seccion>
       </div>
 
+      {!sec && (
       <div style={{ marginTop: 20 }}>
         <Seccion titulo="Accesos rápidos">
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, padding: '16px 18px' }}>
@@ -297,6 +312,7 @@ export default function Inicio({ onCalendario }) {
           </div>
         </Seccion>
       </div>
+      )}
     </div>
   )
 }

@@ -5,7 +5,7 @@ import Modal from '../components/Modal'
 import FormCliente from '../components/FormCliente'
 import { clientesResumen, eliminarCliente, procesarVencidos } from '../lib/api'
 import { exportarVista } from '../lib/excel'
-import { useSesion, puedeEditar } from '../lib/sesion'
+import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
 import { C, I, L_VIGENCIA, clp, fecha } from '../lib/ui'
 
 const BASURA = 'M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6'
@@ -18,7 +18,9 @@ const SEGMENTOS = [
 export default function Clientes() {
   const navegar = useNavigate()
   const { perfil } = useSesion()
-  const editable = puedeEditar(perfil)
+  const editable = puedeOperar(perfil)
+  const dueno = puedeEditar(perfil)
+  const finanzas = verFinanzas(perfil)
 
   const [datos, setDatos] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -59,7 +61,7 @@ export default function Clientes() {
         titulo="Clientes"
         bajada="Empresas con baños arrendados, su contrato y su facturación mensual."
         accion={{ label: 'Nuevo cliente', onClick: () => setForm(true), disabled: !editable }}
-        exportar={() => exportarVista('export_clientes', 'Clientes')}
+        exportar={finanzas ? () => exportarVista('export_clientes', 'Clientes') : undefined}
         segmentos={{ opciones: SEGMENTOS, valor: seg, onChange: setSeg }}
         kpis={[
           { v: filas.length, l: 'Clientes' },
@@ -83,7 +85,7 @@ export default function Clientes() {
           { k: 'estadoL', label: 'Estado', badge: true },
           { k: 'vigenciaL', label: 'Vigencia' },
           { k: 'banos_activos', label: 'Baños' },
-          { k: 'valorL', label: 'Valor mensual' },
+          ...(finanzas ? [{ k: 'valorL', label: 'Valor mensual' }] : []),
           { k: 'contactoL', label: 'Contacto' },
           { k: 'telefonoL', label: 'Teléfono' },
           { k: 'comunaL', label: 'Comuna' },
@@ -95,7 +97,7 @@ export default function Clientes() {
             ? { t: 'Ver en el mapa', label: 'Ubicado', d: I.pin, color: C.navy, bg: C.tinte, borde: C.borde, onClick: () => navegar('/ubicaciones') }
             : { t: 'Asignar ubicación', label: 'Ubicar', d: I.pin, color: '#b06000', bg: '#fef7e0', borde: C.amarillo, onClick: () => navegar('/ubicaciones') },
           { t: 'Editar cliente', d: I.lapiz, color: C.navy, disabled: !editable, onClick: () => setForm(d.id) },
-          { t: 'Eliminar cliente', d: BASURA, color: C.rojo, disabled: !editable, onClick: () => setBorrar(d) },
+          { t: 'Eliminar cliente', d: BASURA, color: C.rojo, disabled: !dueno, onClick: () => setBorrar(d) },
         ]}
         nota={sinGeo ? `${sinGeo} cliente(s) sin georreferencia: se pueden ubicar cargando sus coordenadas.` : undefined}
       />

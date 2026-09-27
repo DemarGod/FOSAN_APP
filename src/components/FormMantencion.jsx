@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Modal from './Modal'
 import { activosLista, crearMantencion, tiposMantencion } from '../lib/api'
 import { C, Icon, I, L_CLASE_MANT, L_ESTADO_MANT } from '../lib/ui'
+import { useSesion, esSecretaria } from '../lib/sesion'
 
 const CLASES = Object.keys(L_CLASE_MANT)
 const ESTADOS = ['programada', 'proxima', 'urgente', 'completada']
@@ -18,6 +19,8 @@ export default function FormMantencion({ activoInicial = '', onCerrar, onGuardad
     responsable_ext: '', costo: '', estado: 'programada', detalle: '',
   })
   const [activos, setActivos] = useState([])
+  const { perfil } = useSesion()
+  const sec = esSecretaria(perfil)
   const [tipos, setTipos] = useState(TIPOS)
   const [otro, setOtro] = useState(null)
   const [error, setError] = useState(null)
@@ -119,15 +122,17 @@ export default function FormMantencion({ activoInicial = '', onCerrar, onGuardad
               placeholder="M. López o taller externo" />
           </label>
 
-          <label className="campo">
-            <span>Costo (CLP)</span>
-            <input value={v.costo} onChange={set('costo')} placeholder="38000" />
-          </label>
+          {!sec && (
+            <label className="campo">
+              <span>Costo (CLP)</span>
+              <input value={v.costo} onChange={set('costo')} placeholder="38000" />
+            </label>
+          )}
 
           <label className="campo">
             <span>Estado</span>
             <select value={v.estado} onChange={set('estado')}>
-              {ESTADOS.map((e) => <option key={e} value={e}>{L_ESTADO_MANT[e]}</option>)}
+              {ESTADOS.filter((e) => !(sec && e === 'completada')).map((e) => <option key={e} value={e}>{L_ESTADO_MANT[e]}</option>)}
             </select>
           </label>
 

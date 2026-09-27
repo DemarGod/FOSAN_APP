@@ -3,7 +3,7 @@ import Listado from '../components/Listado'
 import FormMantencion from '../components/FormMantencion'
 import { mantenciones, mantencionesKpi } from '../lib/api'
 import { exportarVista } from '../lib/excel'
-import { useSesion, puedeEditar } from '../lib/sesion'
+import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
 import { I, L_CLASE_MANT, L_ESTADO_MANT, clp, fecha } from '../lib/ui'
 
 const SEGMENTOS = [
@@ -14,7 +14,8 @@ const SEGMENTOS = [
 
 export default function Mantenciones() {
   const { perfil } = useSesion()
-  const editable = puedeEditar(perfil)
+  const editable = puedeOperar(perfil)
+  const finanzas = verFinanzas(perfil)
 
   const [datos, setDatos] = useState([])
   const [kpi, setKpi] = useState({})
@@ -54,14 +55,14 @@ export default function Mantenciones() {
         titulo="Mantenciones"
         bajada="Programadas y realizadas sobre baños, camiones y equipos."
         accion={{ label: 'Nueva mantención', onClick: () => setForm(true), disabled: !editable }}
-        exportar={() => exportarVista('export_mantenciones', 'Mantenciones')}
+        exportar={finanzas ? () => exportarVista('export_mantenciones', 'Mantenciones') : undefined}
         segmentos={{ opciones: SEGMENTOS, valor: seg, onChange: setSeg }}
         kpis={[
           { v: kpi.del_mes ?? 0, l: 'Del mes' },
           { v: kpi.proximas ?? 0, l: 'Próximas' },
           { v: kpi.urgentes ?? 0, l: 'Urgentes' },
           { v: kpi.realizadas ?? 0, l: 'Realizadas' },
-          { v: clp(kpi.costo_realizado), l: 'Costo realizado' },
+          ...(finanzas ? [{ v: clp(kpi.costo_realizado), l: 'Costo realizado' }] : []),
         ]}
         cargando={cargando}
         error={error}
@@ -78,7 +79,7 @@ export default function Mantenciones() {
           { k: 'tipo', label: 'Tipo' },
           { k: 'fechaL', label: 'Fecha' },
           { k: 'responsableL', label: 'Responsable' },
-          { k: 'costoL', label: 'Costo' },
+          ...(finanzas ? [{ k: 'costoL', label: 'Costo' }] : []),
           { k: 'estadoL', label: 'Estado', badge: true },
         ]}
         datos={visibles}

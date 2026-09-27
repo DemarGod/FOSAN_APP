@@ -4,7 +4,7 @@ import FormRuta from '../components/FormRuta'
 import Salida from '../components/Salida'
 import { rutasLista, salidas, parametros, generarSalidas } from '../lib/api'
 import { costoSalida, mapaParametros, diasTexto, hoyISO, sumarDias } from '../lib/costos'
-import { useSesion, puedeEditar } from '../lib/sesion'
+import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
 import { C, I, clp, fecha } from '../lib/ui'
 
 const SEGMENTOS = [
@@ -15,7 +15,8 @@ const DIA_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 
 export default function Rutas() {
   const { perfil } = useSesion()
-  const editable = puedeEditar(perfil)
+  const editable = puedeOperar(perfil)
+  const finanzas = verFinanzas(perfil)
   const [seg, setSeg] = useState('salidas')
   const [rutas, setRutas] = useState([])
   const [lista, setLista] = useState([])
@@ -77,7 +78,7 @@ export default function Rutas() {
           kpis={[
             { v: semana.length, l: 'Salidas próximos 7 días' },
             { v: Math.round(kmSemana).toLocaleString('es-CL') + ' km', l: 'Km estimados semana' },
-            { v: clp(Math.round(costoSemana)), l: 'Costo estimado semana' },
+            ...(finanzas ? [{ v: clp(Math.round(costoSemana)), l: 'Costo estimado semana' }] : []),
             { v: filasSalidas.filter((f) => f.estadoL === 'Sin cerrar').length, l: 'Sin cerrar' },
           ]}
           cargando={cargando}
@@ -92,7 +93,7 @@ export default function Rutas() {
             { k: 'paradasL', label: 'Paradas hechas' },
             { k: 'kmL', label: 'Km' },
             { k: 'cargaL', label: 'Carga' },
-            { k: 'costoL', label: 'Costo' },
+            ...(finanzas ? [{ k: 'costoL', label: 'Costo' }] : []),
             { k: 'estadoL', label: 'Estado', badge: true },
           ]}
           datos={filasSalidas}
@@ -130,7 +131,7 @@ export default function Rutas() {
 
       {form && <FormRuta ruta={form === 'nueva' ? null : form} onCerrar={() => setForm(null)} onGuardado={() => { setForm(null); cargar() }} />}
       {salidaAbierta && (
-        <Salida key={salidaAbierta.id + salidaAbierta.estado} salida={salidaAbierta} par={par} editable={editable}
+        <Salida key={salidaAbierta.id + salidaAbierta.estado} salida={salidaAbierta} par={par} editable={editable} verCostos={finanzas}
           onCerrar={() => setAbierta(null)} onCambio={() => cargar(true)} />
       )}
     </>

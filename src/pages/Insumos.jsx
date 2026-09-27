@@ -4,7 +4,7 @@ import Modal from '../components/Modal'
 import { Campo } from '../components/FormCliente'
 import { insumosLista, guardarInsumo, ingresoInsumo } from '../lib/api'
 import { formatoPesos, numeroDe, decimalDe } from '../lib/validar'
-import { useSesion, puedeEditar } from '../lib/sesion'
+import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
 import { C, I, clp } from '../lib/ui'
 
 const cant = (n) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('es-CL', { maximumFractionDigits: 2 }))
@@ -13,6 +13,7 @@ const dec = (x) => String(x ?? '').replace(/[^0-9.,]/g, '').slice(0, 10)
 export default function Insumos() {
   const { perfil } = useSesion()
   const editable = puedeEditar(perfil)
+  const finanzas = verFinanzas(perfil)
   const [datos, setDatos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
@@ -62,8 +63,7 @@ export default function Insumos() {
           { k: 'minimoL', label: 'Mínimo' },
           { k: 'estadoL', label: 'Estado', badge: true },
           { k: 'recetaL', label: 'Usa 1 baño limpiado' },
-          { k: 'costoL', label: 'Costo unitario' },
-          { k: 'valorL', label: 'Valor en stock' },
+          ...(finanzas ? [{ k: 'costoL', label: 'Costo unitario' }, { k: 'valorL', label: 'Valor en stock' }] : []),
         ]}
         datos={filas}
         onFila={(d) => editable && setForm(d)}

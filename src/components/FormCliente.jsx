@@ -8,9 +8,12 @@ import {
   formatoPesos, numeroDe, decimalDe, fechaValida, FECHA_MIN, FECHA_MAX,
 } from '../lib/validar'
 import { C } from '../lib/ui'
+import { useSesion, verFinanzas } from '../lib/sesion'
 
 export default function FormCliente({ clienteId = null, onCerrar, onGuardado }) {
   const [actuales, setActuales] = useState([])
+  const { perfil } = useSesion()
+  const finanzas = verFinanzas(perfil)
   const [v, setV] = useState({
     nombre: '', rut: '', rubro: 'construccion', contacto_nombre: '', telefono: '',
     correo: '', direccion: '', comuna: 'Talca', lat: '', lng: '',
@@ -107,7 +110,7 @@ export default function FormCliente({ clienteId = null, onCerrar, onGuardado }) 
         lng: v.lng ? -Math.abs(decimalDe(v.lng)) : null,
         fecha_inicio_contrato: v.fecha_inicio_contrato || null,
         fecha_fin_contrato: v.fecha_fin_contrato || null,
-        valor_mensual: numeroDe(v.valor_mensual),
+        ...(finanzas ? { valor_mensual: numeroDe(v.valor_mensual) } : {}),
         dias_limpieza: dias.length ? dias : null,
       })
       const c = clienteId ? await actualizarCliente(clienteId, datos) : await crearCliente(datos)
@@ -169,9 +172,11 @@ export default function FormCliente({ clienteId = null, onCerrar, onGuardado }) 
           <Campo l="Correo" err={errores.correo}>
             <input type="email" value={v.correo} onChange={set('correo')} maxLength={120} placeholder="contacto@empresa.cl" />
           </Campo>
-          <Campo l="Valor mensual acordado (CLP)">
-            <input value={v.valor_mensual} onChange={set('valor_mensual', formatoPesos)} inputMode="numeric" placeholder="$540.000" />
-          </Campo>
+          {finanzas && (
+            <Campo l="Valor mensual acordado (CLP)">
+              <input value={v.valor_mensual} onChange={set('valor_mensual', formatoPesos)} inputMode="numeric" placeholder="$540.000" />
+            </Campo>
+          )}
         </div>
 
         <div style={{ display: 'grid', gap: 14, alignContent: 'start' }}>

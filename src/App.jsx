@@ -23,6 +23,7 @@ import Reportes from './pages/Reportes'
 import Configuracion from './pages/Configuracion'
 import Ficha from './pages/Ficha'
 import { C } from './lib/ui'
+import { puedeOperar, esSecretaria } from './lib/sesion'
 
 export default function App() {
   const [usuario, setUsuario] = useState(null)
@@ -75,10 +76,10 @@ export default function App() {
               <Route path="/despachos" element={<Despachos />} />
               <Route path="/rutas" element={<Rutas />} />
               <Route path="/clientes" element={<Clientes />} />
-              <Route path="/utilidades" element={<Utilidades />} />
+              <Route path="/utilidades" element={esSecretaria(perfil) ? <SinAcceso /> : <Utilidades />} />
               <Route path="/mantenciones" element={<Mantenciones />} />
               <Route path="/ubicaciones" element={<Ubicaciones />} />
-              <Route path="/reportes" element={<Reportes />} />
+              <Route path="/reportes" element={esSecretaria(perfil) ? <SinAcceso /> : <Reportes />} />
               <Route path="/analisis" element={<Analisis />} />
               <Route path="/configuracion" element={<Configuracion />} />
               <Route path="/activo/:token" element={<Ficha />} />
@@ -88,7 +89,11 @@ export default function App() {
           <Tabbar />
         </main>
       </div>
-      {cal && <Calendario puedeEditar={perfil?.rol === 'dueno'} onCerrar={() => { setCal(false); setCalVersion((n) => n + 1) }} />}
+      {cal && <Calendario puedeEditar={puedeOperar(perfil)} onCerrar={() => { setCal(false); setCalVersion((n) => n + 1) }} />}
     </SesionCtx.Provider>
   )
+}
+
+function SinAcceso() {
+  return <p className="text-muted">Tu usuario no tiene acceso a esta sección.</p>
 }

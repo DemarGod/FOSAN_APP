@@ -5,7 +5,7 @@ import FormActivo from '../components/FormActivo'
 import FormMantencion from '../components/FormMantencion'
 import { inventario, resumenInventario } from '../lib/api'
 import { exportarVista } from '../lib/excel'
-import { useSesion, puedeEditar } from '../lib/sesion'
+import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
 import { C, I, L_TIPO_ACTIVO, L_ESTADO_ACTIVO, clp, fecha } from '../lib/ui'
 
 const SEGMENTOS = [
@@ -20,6 +20,8 @@ export default function Inventario() {
   const [params] = useSearchParams()
   const { perfil } = useSesion()
   const editable = puedeEditar(perfil)
+  const operar = puedeOperar(perfil)
+  const finanzas = verFinanzas(perfil)
 
   const [datos, setDatos] = useState([])
   const [resumen, setResumen] = useState({})
@@ -70,7 +72,7 @@ export default function Inventario() {
         titulo="Inventario"
         bajada="Todos los activos de la empresa, con su estado y ubicación actual."
         accion={{ label: 'Agregar activo', onClick: () => setForm('activo'), disabled: !editable }}
-        exportar={() => exportarVista('export_activos', 'Activos')}
+        exportar={finanzas ? () => exportarVista('export_activos', 'Activos') : undefined}
         segmentos={{ opciones: SEGMENTOS, valor: seg, onChange: setSeg }}
         kpis={kpis}
         cargando={cargando}
@@ -90,7 +92,7 @@ export default function Inventario() {
           { k: 'estadoL', label: 'Estado', badge: true },
           { k: 'ubicacionL', label: 'Ubicación' },
           { k: 'clienteL', label: 'Cliente' },
-          { k: 'valorL', label: 'Valor arriendo' },
+          ...(finanzas ? [{ k: 'valorL', label: 'Valor arriendo' }] : []),
           { k: 'movL', label: 'Último movimiento' },
         ]}
         datos={visibles}
@@ -98,7 +100,7 @@ export default function Inventario() {
         acciones={(d) => [
           { t: 'Ver ficha', d: I.ojo, color: C.azul, onClick: () => navegar('/activo/' + d.qr_token) },
           {
-            t: 'Registrar mantención', d: I.wrench, color: C.amarillo, disabled: !editable,
+            t: 'Registrar mantención', d: I.wrench, color: C.amarillo, disabled: !operar,
             onClick: () => setForm({ tipo: 'mantencion', activo: d.id }),
           },
         ]}

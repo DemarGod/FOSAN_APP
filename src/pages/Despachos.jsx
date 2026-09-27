@@ -3,7 +3,7 @@ import Listado from '../components/Listado'
 import Modal from '../components/Modal'
 import FormDespacho from '../components/FormDespacho'
 import { despachos, estadoDespacho, procesarVencidos } from '../lib/api'
-import { useSesion, puedeEditar } from '../lib/sesion'
+import { useSesion, puedeEditar, puedeOperar } from '../lib/sesion'
 import { C, I, fecha } from '../lib/ui'
 import { hoyISO } from '../lib/costos'
 
@@ -18,7 +18,7 @@ const SEGMENTOS = [
 
 export default function Despachos() {
   const { perfil } = useSesion()
-  const editable = puedeEditar(perfil)
+  const editable = puedeOperar(perfil)
   const [datos, setDatos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)

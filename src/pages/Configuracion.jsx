@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Aviso } from '../components/Listado'
 import { perfiles, parametros, guardarParametro, modelos, guardarPesoModelo } from '../lib/api'
-import { useSesion, puedeEditar } from '../lib/sesion'
+import { useSesion, puedeEditar, esSecretaria, nombreRol } from '../lib/sesion'
 import { decimalDe } from '../lib/validar'
 import { Badge, C } from '../lib/ui'
 
 const ROLES = [
   { n: 'Dueño', d: 'Acceso total: crear, editar y eliminar en todos los módulos. Anselmo y Gonzalo.' },
+  { n: 'Secretaria', d: 'Coordina la operación: clientes, despachos, rutas, calendario y mantenciones. No ve ventas, utilidades ni costos, y no cambia parámetros ni usuarios.' },
   { n: 'Solo lectura', d: 'Consulta y descarga de reportes. No puede crear, editar ni eliminar nada.' },
 ]
 
@@ -16,6 +17,22 @@ export default function Configuracion() {
   const [error, setError] = useState(null)
 
   useEffect(() => { perfiles().then(setLista).catch(setError) }, [])
+
+  if (esSecretaria(perfil)) {
+    return (
+      <div>
+        <h2 style={{ margin: '0 0 16px' }}>Mi perfil</h2>
+        <section className="card" style={{ maxWidth: 520 }}>
+          <h6>Tu sesión</h6>
+          <div style={{ padding: '14px 18px', display: 'grid', gap: 8 }}>
+            <Dato k="Nombre" v={perfil?.nombre || '—'} />
+            <Dato k="Correo" v={usuario?.email || '—'} />
+            <Dato k="Rol" v={nombreRol(perfil?.rol)} />
+          </div>
+        </section>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -49,7 +66,7 @@ export default function Configuracion() {
                       {u.nombre}{u.id === usuario?.id ? ' (tú)' : ''}
                     </td>
                     <td>{u.correo || '—'}</td>
-                    <td>{u.rol === 'dueno' ? 'Dueño' : 'Solo lectura'}</td>
+                    <td>{nombreRol(u.rol)}</td>
                     <td><Badge>{u.activo === false ? 'Inactivo' : 'Activo'}</Badge></td>
                   </tr>
                 ))}
@@ -81,7 +98,7 @@ export default function Configuracion() {
             <div style={{ padding: '14px 18px', display: 'grid', gap: 8 }}>
               <Dato k="Nombre" v={perfil?.nombre || '—'} />
               <Dato k="Correo" v={usuario?.email || '—'} />
-              <Dato k="Rol" v={perfil?.rol === 'dueno' ? 'Dueño' : 'Solo lectura'} />
+              <Dato k="Rol" v={nombreRol(perfil?.rol)} />
             </div>
           </section>
         </div>

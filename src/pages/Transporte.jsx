@@ -5,7 +5,7 @@ import FormVehiculo from '../components/FormVehiculo'
 import FormMantencion from '../components/FormMantencion'
 import { vehiculos, parametros } from '../lib/api'
 import { TIPOS_VEHICULO, costoKmVehiculo, mapaParametros } from '../lib/costos'
-import { useSesion, puedeEditar } from '../lib/sesion'
+import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
 import { C, I, L_ESTADO_ACTIVO, clp } from '../lib/ui'
 
 const miles = (n, u) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('es-CL') + (u ? ' ' + u : ''))
@@ -14,6 +14,8 @@ export default function Transporte() {
   const navegar = useNavigate()
   const { perfil } = useSesion()
   const editable = puedeEditar(perfil)
+  const operar = puedeOperar(perfil)
+  const finanzas = verFinanzas(perfil)
 
   const [datos, setDatos] = useState([])
   const [par, setPar] = useState({})
@@ -73,7 +75,7 @@ export default function Transporte() {
           { k: 'estanqueL', label: 'Estanque' },
           { k: 'rendL', label: 'km/L vacío / cargado' },
           { k: 'kmL', label: 'Kilometraje' },
-          { k: 'costoKmL', label: 'Costo por km' },
+          ...(finanzas ? [{ k: 'costoKmL', label: 'Costo por km' }] : []),
           { k: 'estadoL', label: 'Estado', badge: true },
         ]}
         datos={filas}
@@ -81,9 +83,9 @@ export default function Transporte() {
         acciones={(d) => [
           { t: 'Editar ficha técnica', d: I.lapiz, color: C.navy, disabled: !editable, onClick: () => setForm(d) },
           { t: 'Ver historial', d: I.ojo, color: C.azul, onClick: () => d.qr_token && navegar('/activo/' + d.qr_token) },
-          { t: 'Registrar mantención', d: I.wrench, color: C.amarillo, disabled: !editable, onClick: () => setForm({ mantencion: d.id }) },
+          { t: 'Registrar mantención', d: I.wrench, color: C.amarillo, disabled: !operar, onClick: () => setForm({ mantencion: d.id }) },
         ]}
-        nota="El costo por km incluye diésel sin carga, desgaste y costos fijos. En cada ruta se ajusta según el peso."
+        nota={finanzas ? 'El costo por km incluye diésel sin carga, desgaste y costos fijos. En cada ruta se ajusta según el peso.' : undefined}
       />
 
       {form && !form.mantencion && (

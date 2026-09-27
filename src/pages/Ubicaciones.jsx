@@ -5,7 +5,7 @@ import { Campo } from '../components/FormCliente'
 import {
   mapaPuntos, clientesResumen, limpiezasCliente, ubicarClienteEnMapa, crearUbicacion,
 } from '../lib/api'
-import { useSesion, puedeEditar } from '../lib/sesion'
+import { useSesion, puedeEditar, puedeOperar } from '../lib/sesion'
 import { DIAS } from '../lib/costos'
 import { C, Icon, I, L_TIPO_UBIC } from '../lib/ui'
 
@@ -15,7 +15,7 @@ const coord = (n) => Number(n).toFixed(6)
 
 export default function Ubicaciones() {
   const { perfil } = useSesion()
-  const editable = puedeEditar(perfil)
+  const editable = puedeOperar(perfil)
   const [puntos, setPuntos] = useState([])
   const [clientes, setClientes] = useState([])
   const [limp, setLimp] = useState({})

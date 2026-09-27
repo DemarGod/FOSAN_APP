@@ -6,7 +6,7 @@ import { Aviso } from '../components/Listado'
 import {
   activoPorQr, movimientosDe, documentosDe, observacionesDe, agregarObservacion,
 } from '../lib/api'
-import { useSesion, puedeEditar } from '../lib/sesion'
+import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
 import {
   C, Icon, I, Badge, qrCeldas, clp, fecha, fechaHora,
   L_TIPO_ACTIVO, L_ESTADO_ACTIVO, L_MOVIMIENTO, L_TIPO_DOC,
@@ -22,7 +22,8 @@ export default function Ficha() {
   const { token } = useParams()
   const navegar = useNavigate()
   const { perfil } = useSesion()
-  const editable = puedeEditar(perfil)
+  const editable = puedeOperar(perfil)
+  const finanzas = verFinanzas(perfil)
 
   const [activo, setActivo] = useState(null)
   const [hist, setHist] = useState([])
@@ -90,7 +91,7 @@ export default function Ficha() {
     { k: 'Cliente actual', v: activo.clientes?.nombre || 'Sin asignar' },
     { k: 'Ubicación', v: u?.nombre || 'Sin ubicación' },
     { k: 'Fecha de compra', v: fecha(activo.fecha_compra) },
-    { k: 'Valor arriendo', v: activo.valor_arriendo ? clp(activo.valor_arriendo) + ' / mes' : '—' },
+    ...(finanzas ? [{ k: 'Valor arriendo', v: activo.valor_arriendo ? clp(activo.valor_arriendo) + ' / mes' : '—' }] : []),
   ]
 
   return (

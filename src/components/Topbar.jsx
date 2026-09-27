@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { notificaciones, marcarLeidas, avisosCalculados } from '../lib/api'
 import { C, Icon, I, fechaHora } from '../lib/ui'
+import { nombreRol } from '../lib/sesion'
 
 const NIVEL = {
   alerta: { color: C.rojo, tint: '#fce8e6', d: I.alert },
@@ -160,7 +161,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
         <div className="desk-only" style={{ lineHeight: 1.2 }}>
           <div style={{ font: '600 13px var(--font)' }}>{perfil?.nombre || 'Usuario'}</div>
           <div style={{ font: '400 11px var(--font)', color: C.gris }}>
-            {perfil?.rol === 'dueno' ? 'Dueño' : 'Solo lectura'}
+            {nombreRol(perfil?.rol)}
           </div>
         </div>
         <button onClick={() => supabase.auth.signOut()} title="Cerrar sesión" style={{
