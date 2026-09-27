@@ -14,6 +14,7 @@ import Transporte from './pages/Transporte'
 import Insumos from './pages/Insumos'
 import Despachos from './pages/Despachos'
 import Rutas from './pages/Rutas'
+import Analisis from './pages/Analisis'
 import Clientes from './pages/Clientes'
 import Utilidades from './pages/Utilidades'
 import Mantenciones from './pages/Mantenciones'
@@ -78,6 +79,7 @@ export default function App() {
               <Route path="/mantenciones" element={<Mantenciones />} />
               <Route path="/ubicaciones" element={<Ubicaciones />} />
               <Route path="/reportes" element={<Reportes />} />
+              <Route path="/analisis" element={<Analisis />} />
               <Route path="/configuracion" element={<Configuracion />} />
               <Route path="/activo/:token" element={<Ficha />} />
               <Route path="*" element={<p className="text-muted">Esta página no existe.</p>} />

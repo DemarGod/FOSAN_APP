@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Aviso } from '../components/Listado'
+import ImportarMaxxa, { Importaciones } from '../components/ImportarMaxxa'
+import { useSesion, puedeEditar } from '../lib/sesion'
 import { topClientes } from '../lib/api'
 import { exportarLibro, exportarVista, PESTANAS } from '../lib/excel'
 import { C, Icon, I, clp } from '../lib/ui'
@@ -8,6 +10,11 @@ export default function Reportes() {
   const [top, setTop] = useState([])
   const [error, setError] = useState(null)
   const [generando, setGenerando] = useState(false)
+  const [importar, setImportar] = useState(false)
+  const [aviso, setAviso] = useState(null)
+  const [version, setVersion] = useState(0)
+  const { perfil } = useSesion()
+  const editable = puedeEditar(perfil)
 
   useEffect(() => { topClientes().then(setTop).catch(setError) }, [])
 
@@ -31,11 +38,21 @@ export default function Reportes() {
             Los indicadores que hoy salen a mano desde Excel, generados desde la base.
           </p>
         </div>
-        <button className="btn btn-verde" onClick={libro} disabled={generando}>
-          <Icon d={I.descarga} size={16} />
-          <span>{generando ? 'Generando…' : 'Descargar libro completo'}</span>
-        </button>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {editable && (
+            <button className="btn" onClick={() => setImportar(true)}>
+              <Icon d="M12 21V9M7.5 13.5 12 9l4.5 4.5M4 4h16" size={16} />
+              <span>Importar reporte Maxxa</span>
+            </button>
+          )}
+          <button className="btn btn-verde" onClick={libro} disabled={generando}>
+            <Icon d={I.descarga} size={16} />
+            <span>{generando ? 'Generando…' : 'Descargar libro completo'}</span>
+          </button>
+        </div>
       </div>
+      {aviso && <div style={{ marginTop: 16, padding: '10px 14px', background: '#e6f4ea', border: `2px solid ${C.verde}`, font: '600 13px var(--font)', color: '#1e6b34' }}>{aviso} Ya se ven en Análisis.</div>}
+      {importar && <ImportarMaxxa onCerrar={() => setImportar(false)} onImportado={(m) => { setImportar(false); setAviso(m); setVersion((n) => n + 1); topClientes().then(setTop).catch(() => {}) }} />}
 
       <div style={{ marginTop: 22 }}><Aviso error={error} /></div>
 
@@ -105,6 +122,7 @@ export default function Reportes() {
           ))}
         </div>
       </section>
+      <Importaciones version={version} editable={editable} />
     </div>
   )
 }
