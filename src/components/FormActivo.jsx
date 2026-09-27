@@ -3,11 +3,12 @@ import Modal from './Modal'
 import { supabase } from '../lib/supabase'
 import { modelos, ubicaciones, clientesLista, crearUbicacion } from '../lib/api'
 import { C, Icon, I, L_TIPO_ACTIVO, L_ESTADO_ACTIVO } from '../lib/ui'
+import { limpiarCodigo, codigoValido } from '../lib/validar'
 
 const TIPOS = Object.keys(L_TIPO_ACTIVO)
 const ESTADOS = ['disponible', 'en_arriendo', 'en_servicio', 'mantencion', 'fuera_de_servicio']
 
-export default function FormActivo({ onCerrar, onGuardado }) {
+export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
   const [v, setV] = useState({
     codigo: '', tipo: 'bano_quimico', modelo_id: '', detalle: '', serie: '',
     estado: 'disponible', ubicacion_id: '', cliente_id: '',
@@ -24,7 +25,18 @@ export default function FormActivo({ onCerrar, onGuardado }) {
     Promise.all([modelos(), ubicaciones(), clientesLista()])
       .then(([m, u, c]) => setCat({ modelos: m, ubicaciones: u, clientes: c }))
       .catch(setError)
-  }, [])
+    if (activoId) {
+      supabase.from('activos').select('*').eq('id', activoId).single().then(({ data, error }) => {
+        if (error) return setError(error)
+        const t = (x) => (x === null || x === undefined ? '' : String(x))
+        setV((p) => ({
+          ...p, codigo: t(data.codigo), tipo: data.tipo, modelo_id: t(data.modelo_id), detalle: t(data.detalle),
+          serie: t(data.serie), estado: data.estado, ubicacion_id: t(data.ubicacion_id), cliente_id: t(data.cliente_id),
+          fecha_compra: t(data.fecha_compra), valor_arriendo: t(data.valor_arriendo), notas: t(data.notas),
+        }))
+      })
+    }
+  }, [activoId])
 
   const set = (k) => (e) => setV((p) => ({ ...p, [k]: e.target.value }))
   const esVehiculo = v.tipo === 'camion' || v.tipo === 'camioneta'
@@ -44,7 +56,7 @@ export default function FormActivo({ onCerrar, onGuardado }) {
 
   const guardar = async () => {
     if (!v.codigo.trim()) { setError({ message: 'El código de la unidad es obligatorio.' }); return }
-    if (!/^[A-Za-z0-9-]{2,15}$/.test(v.codigo.trim())) { setError({ message: 'El código solo puede tener letras, números y guion (ej. BQ-063).' }); return }
+    if (!codigoValido(v.codigo)) { setError({ message: 'Código inválido: entre 2 y 10 letras o números, más guiones si quieres (ej. BQ-063).' }); return }
     if (esBano && !v.modelo_id) { setError({ message: 'Elige el modelo del baño.' }); return }
     setGuardando(true)
     setError(null)
@@ -62,8 +74,14 @@ export default function FormActivo({ onCerrar, onGuardado }) {
         valor_arriendo: v.valor_arriendo ? Number(String(v.valor_arriendo).replace(/\D/g, '')) : null,
         notas: v.notas || null,
       }
+      if (activoId) {
+        const { error: e0 } = await supabase.from('activos').update(fila).eq('id', activoId)
+        if (e0) throw e0.code === '23505' ? new Error('Ya existe otra unidad con ese código.') : e0
+        onGuardado()
+        return
+      }
       const { data, error: e1 } = await supabase.from('activos').insert(fila).select('id').single()
-      if (e1) throw e1
+      if (e1) throw e1.code === '23505' ? new Error('Ya existe una unidad con ese código.') : e1
 
       if (esVehiculo && v.patente.trim()) {
         const { error: e2 } = await supabase.from('vehiculos').insert({
@@ -83,11 +101,11 @@ export default function FormActivo({ onCerrar, onGuardado }) {
   }
 
   return (
-    <Modal titulo="Agregar activo" onCerrar={onCerrar} pie={
+    <Modal titulo={activoId ? `Editar ${v.codigo || 'unidad'}` : 'Agregar activo'} onCerrar={onCerrar} pie={
       <>
         <button className="btn" onClick={onCerrar}>Cancelar</button>
         <button className="btn btn-verde" onClick={guardar} disabled={guardando}>
-          {guardando ? 'Guardando…' : 'Guardar unidad'}
+          {guardando ? 'Guardando…' : activoId ? 'Guardar cambios' : 'Guardar unidad'}
         </button>
       </>
     }>
@@ -95,7 +113,8 @@ export default function FormActivo({ onCerrar, onGuardado }) {
         <div style={{ display: 'grid', gap: 14, alignContent: 'start' }}>
           <label className="campo">
             <span>Código de la unidad</span>
-            <input value={v.codigo} onChange={set('codigo')} placeholder="BQ-063" />
+            <input value={v.codigo} onChange={(e) => setV((p) => ({ ...p, codigo: limpiarCodigo(e.target.value) }))} placeholder="BQ-063" />
+            <em style={{ font: '400 11px var(--font)', color: C.gris, fontStyle: 'normal' }}>Máximo 10 letras o números; el guion no cuenta.</em>
           </label>
 
           <label className="campo">

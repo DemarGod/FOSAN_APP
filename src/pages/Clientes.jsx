@@ -89,16 +89,18 @@ export default function Clientes() {
           { k: 'comunaL', label: 'Comuna' },
         ]}
         datos={visibles}
+        onFila={(d) => editable && setForm(d.id)}
         acciones={(d) => [
           d.georreferenciado
             ? { t: 'Ver en el mapa', label: 'Ubicado', d: I.pin, color: C.navy, bg: C.tinte, borde: C.borde, onClick: () => navegar('/ubicaciones') }
             : { t: 'Asignar ubicación', label: 'Ubicar', d: I.pin, color: '#b06000', bg: '#fef7e0', borde: C.amarillo, onClick: () => navegar('/ubicaciones') },
+          { t: 'Editar cliente', d: I.lapiz, color: C.navy, disabled: !editable, onClick: () => setForm(d.id) },
           { t: 'Eliminar cliente', d: BASURA, color: C.rojo, disabled: !editable, onClick: () => setBorrar(d) },
         ]}
         nota={sinGeo ? `${sinGeo} cliente(s) sin georreferencia: se pueden ubicar cargando sus coordenadas.` : undefined}
       />
 
-      {form && <FormCliente onCerrar={() => setForm(false)} onGuardado={() => { setForm(false); cargar() }} />}
+      {form && <FormCliente clienteId={form === true ? null : form} onCerrar={() => setForm(false)} onGuardado={() => { setForm(false); cargar() }} />}
       {borrar && (
         <ConfirmarBorrado cliente={borrar} onCerrar={() => setBorrar(null)}
           onDespachos={() => navegar('/despachos')}

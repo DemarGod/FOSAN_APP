@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Modal from './Modal'
 import CodigosBanos from './CodigosBanos'
-import { crearCliente, rubros as cargarRubros, crearRubro, crearDespacho, rutasLista, agregarParadaRuta } from '../lib/api'
+import { crearCliente, rubros as cargarRubros, crearRubro, crearDespacho, rutasLista, agregarParadaRuta, clientePorId, actualizarCliente, banosDeCliente } from '../lib/api'
 import { DIAS, diasTexto } from '../lib/costos'
 import {
   formatoRut, rutValido, formatoTel, telValido, correoValido,
@@ -9,7 +9,8 @@ import {
 } from '../lib/validar'
 import { C } from '../lib/ui'
 
-export default function FormCliente({ onCerrar, onGuardado }) {
+export default function FormCliente({ clienteId = null, onCerrar, onGuardado }) {
+  const [actuales, setActuales] = useState([])
   const [v, setV] = useState({
     nombre: '', rut: '', rubro: 'construccion', contacto_nombre: '', telefono: '',
     correo: '', direccion: '', comuna: 'Talca', lat: '', lng: '',
@@ -30,6 +31,21 @@ export default function FormCliente({ onCerrar, onGuardado }) {
   useEffect(() => {
     cargarRubros().then(setListaRubros).catch(setError)
     rutasLista().then(setRutas).catch(() => setRutas([]))
+    if (clienteId) {
+      banosDeCliente(clienteId).then(setActuales).catch(() => {})
+      clientePorId(clienteId).then((c) => {
+        if (!c) return
+        const t = (x) => (x === null || x === undefined ? '' : String(x))
+        setV((p) => ({
+          ...p, nombre: t(c.nombre), rut: formatoRut(c.rut), rubro: c.rubro || 'construccion', contacto_nombre: t(c.contacto_nombre),
+          telefono: t(c.telefono), correo: t(c.correo), direccion: t(c.direccion), comuna: t(c.comuna),
+          lat: t(c.lat), lng: t(c.lng), fecha_inicio_contrato: t(c.fecha_inicio_contrato), fecha_fin_contrato: t(c.fecha_fin_contrato),
+          valor_mensual: c.valor_mensual ? formatoPesos(c.valor_mensual) : '',
+        }))
+        const d = c.dias_limpieza || []
+        setDias(d); setLimpiezas(d.length)
+      }).catch(setError)
+    }
   }, [])
 
   const set = (k, fmt) => (e) => {
@@ -78,7 +94,7 @@ export default function FormCliente({ onCerrar, onGuardado }) {
     setGuardando(true)
     setError(null)
     try {
-      const c = await crearCliente({
+      const datos = ({
         nombre: v.nombre.trim() || 'Sin nombre',
         rut: v.rut || null,
         rubro: v.rubro,
@@ -94,6 +110,7 @@ export default function FormCliente({ onCerrar, onGuardado }) {
         valor_mensual: numeroDe(v.valor_mensual),
         dias_limpieza: dias.length ? dias : null,
       })
+      const c = clienteId ? await actualizarCliente(clienteId, datos) : await crearCliente(datos)
       if (elegidos.length) {
         await crearDespacho({
           tipo: 'entrega', cliente_id: c.id, direccion: v.direccion.trim() || null, origen: 'nuevo_cliente',
@@ -109,11 +126,11 @@ export default function FormCliente({ onCerrar, onGuardado }) {
   }
 
   return (
-    <Modal titulo="Nuevo cliente" ancho={900} onCerrar={onCerrar} pie={
+    <Modal titulo={clienteId ? `Editar ${v.nombre || 'cliente'}` : 'Nuevo cliente'} ancho={900} onCerrar={onCerrar} pie={
       <>
         <button className="btn" onClick={onCerrar}>Cancelar</button>
         <button className="btn btn-verde" onClick={guardar} disabled={guardando}>
-          {guardando ? 'Guardando…' : 'Guardar cliente'}
+          {guardando ? 'Guardando…' : clienteId ? 'Guardar cambios' : 'Guardar cliente'}
         </button>
       </>
     }>
@@ -203,7 +220,17 @@ export default function FormCliente({ onCerrar, onGuardado }) {
         <div style={{ font: '700 12px var(--font)', color: '#1a3c72', marginBottom: 14 }}>Baños arrendados y limpiezas</div>
         <div className="cols2" style={{ gap: 18 }}>
           <div style={{ display: 'grid', gap: 14, alignContent: 'start', minWidth: 0 }}>
-            <Campo l="Cantidad de baños a arrendar">
+            {clienteId && (
+              <div className="campo">
+                <span>Baños instalados ({actuales.length})</span>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {actuales.length === 0 && <span style={{ font: '400 12px var(--font)', color: C.gris }}>Ninguno.</span>}
+                  {actuales.map((b) => <span key={b.id} style={{ padding: '4px 10px', background: C.tinte, border: `2px solid ${C.borde}`, font: '600 12px var(--font)', color: C.navy }}>{b.codigo}</span>)}
+                </div>
+                <em style={{ font: '400 11px var(--font)', color: C.gris, fontStyle: 'normal' }}>Para agregar más baños ingrésalos abajo; para retirarlos usa Despachos → Retiro.</em>
+              </div>
+            )}
+            <Campo l={clienteId ? 'Baños adicionales a entregar' : 'Cantidad de baños a arrendar'}>
               <input value={cantidad} inputMode="numeric" placeholder="0"
                 onChange={(e) => { const n = e.target.value.replace(/\D/g, '').slice(0, 3); setCantidad(n); setElegidos((p) => p.slice(0, Number(n || 0))) }} />
             </Campo>

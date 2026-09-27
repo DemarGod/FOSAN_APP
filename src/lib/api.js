@@ -71,6 +71,13 @@ export const agregarObservacion = async (activoId, texto) => {
   if (error) throw error
 }
 
+export const eliminarActivos = async (ids) => {
+  const { data, error } = await supabase.rpc('eliminar_activos', { p_ids: ids })
+  if (error) throw error
+  return data
+}
+export const tiposMantencion = () => rows(supabase.from('mantenciones').select('tipo').limit(500))
+  .then((r) => [...new Set(r.map((x) => x.tipo).filter(Boolean))])
 export const crearActivo = async (datos) => {
   const { error } = await supabase.from('activos').insert(datos)
   if (error) throw error
@@ -103,6 +110,14 @@ export const crearCliente = async (datos) => {
   const { data, error } = await supabase.from('clientes').insert(datos).select('id').single()
   if (error) throw error
   return data
+}
+export const clientePorId = (id) => one(supabase.from('clientes').select('*').eq('id', id))
+export const actualizarCliente = async (id, datos) => {
+  const { error } = await supabase.from('clientes').update(datos).eq('id', id)
+  if (error) throw error
+  await supabase.from('ubicaciones').update({ nombre: datos.nombre, direccion: datos.direccion, lat: datos.lat, lng: datos.lng })
+    .eq('cliente_id', id).eq('tipo', 'cliente')
+  return { id }
 }
 export const eliminarCliente = async (id) => {
   const { error } = await supabase.rpc('eliminar_cliente', { p_id: id })
