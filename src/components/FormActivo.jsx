@@ -3,10 +3,10 @@ import Modal from './Modal'
 import { supabase } from '../lib/supabase'
 import { modelos, ubicaciones, clientesLista, crearUbicacion } from '../lib/api'
 import { C, Icon, I, L_TIPO_ACTIVO, L_ESTADO_ACTIVO } from '../lib/ui'
-import { limpiarCodigo, codigoValido } from '../lib/validar'
+import { limpiarCodigo, codigoValido, formatoPesos, numeroDe } from '../lib/validar'
 
 const TIPOS = Object.keys(L_TIPO_ACTIVO)
-const ESTADOS = ['disponible', 'en_arriendo', 'en_servicio', 'mantencion', 'fuera_de_servicio']
+const ESTADOS = ['disponible', 'en_arriendo', 'mantencion', 'fuera_de_servicio']
 
 export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
   const [v, setV] = useState({
@@ -32,7 +32,7 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
         setV((p) => ({
           ...p, codigo: t(data.codigo), tipo: data.tipo, modelo_id: t(data.modelo_id), detalle: t(data.detalle),
           serie: t(data.serie), estado: data.estado, ubicacion_id: t(data.ubicacion_id), cliente_id: t(data.cliente_id),
-          fecha_compra: t(data.fecha_compra), valor_arriendo: t(data.valor_arriendo), notas: t(data.notas),
+          fecha_compra: t(data.fecha_compra), valor_arriendo: data.valor_arriendo ? formatoPesos(data.valor_arriendo) : '', notas: t(data.notas),
         }))
       })
     }
@@ -71,7 +71,7 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
         ubicacion_id: v.ubicacion_id || null,
         cliente_id: v.cliente_id || null,
         fecha_compra: v.fecha_compra || null,
-        valor_arriendo: v.valor_arriendo ? Number(String(v.valor_arriendo).replace(/\D/g, '')) : null,
+        valor_arriendo: numeroDe(v.valor_arriendo),
         notas: v.notas || null,
       }
       if (activoId) {
@@ -212,7 +212,7 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
 
           <label className="campo">
             <span>Valor de arriendo mensual (CLP)</span>
-            <input value={v.valor_arriendo} onChange={set('valor_arriendo')} placeholder="45000" />
+            <input value={v.valor_arriendo} onChange={set('valor_arriendo', formatoPesos)} inputMode="numeric" placeholder="$45.000" />
           </label>
 
           <label className="campo">
