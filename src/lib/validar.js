@@ -54,3 +54,20 @@ export const decimalDe = (s) => {
 export const FECHA_MIN = '2000-01-01'
 export const FECHA_MAX = '2100-12-31'
 export const fechaValida = (s) => !s || (/^\d{4}-\d{2}-\d{2}$/.test(s) && s >= FECHA_MIN && s <= FECHA_MAX)
+
+// Código de unidad: letras y números (máximo 10) más guiones, que no cuentan. Ej. BQ-063
+export function limpiarCodigo(s) {
+  const t = String(s || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').replace(/-{2,}/g, '-').replace(/^-/, '')
+  let n = 0, out = ''
+  for (const ch of t) {
+    if (ch === '-') { out += ch; continue }
+    if (n >= 10) continue
+    out += ch; n++
+  }
+  return out
+}
+export const codigoValido = (s) => {
+  const t = String(s || '')
+  const n = t.replace(/-/g, '').length
+  return /^[A-Z0-9]+(-[A-Z0-9]+)*$/.test(t) && n >= 2 && n <= 10
+}

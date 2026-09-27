@@ -61,7 +61,7 @@ const PAGINA = 25
 export default function Listado({
   titulo, bajada, accion, exportar, segmentos, kpis = [], cols = [], datos = [],
   filtros = [], buscar = [], onFila, acciones, cargando, error, nota, unidad = 'registros',
-  busquedaInicial = '',
+  busquedaInicial = '', seleccion, barraSeleccion,
 }) {
   const [f, setF] = useState({})
   const [q, setQ] = useState(busquedaInicial)
@@ -90,6 +90,14 @@ export default function Listado({
   const paginas = Math.max(1, Math.ceil(visibles.length / PAGINA))
   const pagina = Math.min(pag, paginas - 1)
   const trozo = visibles.slice(pagina * PAGINA, pagina * PAGINA + PAGINA)
+  const extra = (acciones ? 1 : 0) + (seleccion ? 1 : 0)
+  const elegidos = new Set(seleccion?.ids || [])
+  const todosVisibles = visibles.length > 0 && visibles.every((d) => elegidos.has(d.id))
+  const alternarTodos = () => seleccion.onChange(todosVisibles
+    ? (seleccion.ids || []).filter((id) => !visibles.some((d) => d.id === id))
+    : [...new Set([...(seleccion.ids || []), ...visibles.map((d) => d.id)])])
+  const alternar = (id) => seleccion.onChange(elegidos.has(id) ? seleccion.ids.filter((x) => x !== id) : [...seleccion.ids, id])
+  const caja = { width: 18, height: 18, accentColor: C.navy, cursor: 'pointer' }
 
   return (
     <div>
@@ -167,26 +175,33 @@ export default function Listado({
         </div>
       </div>
 
+      {barraSeleccion}
       <div className="scroller" style={{ border: `2px solid ${C.borde}`, background: '#fff' }}>
         <table style={{ minWidth: 640 }}>
           <thead>
             <tr>
+              {seleccion && <th style={{ width: 44 }}><input type="checkbox" aria-label="Seleccionar todos" checked={todosVisibles} onChange={alternarTodos} style={caja} /></th>}
               {cols.map((c) => <th key={c.k}>{c.label}</th>)}
               {acciones && <th>Acciones</th>}
             </tr>
           </thead>
           <tbody>
             {cargando && (
-              <tr><td colSpan={cols.length + (acciones ? 1 : 0)} style={{ color: C.gris }}>Cargando…</td></tr>
+              <tr><td colSpan={cols.length + extra} style={{ color: C.gris }}>Cargando…</td></tr>
             )}
             {!cargando && trozo.length === 0 && (
-              <tr><td colSpan={cols.length + (acciones ? 1 : 0)} style={{ color: C.gris }}>
+              <tr><td colSpan={cols.length + extra} style={{ color: C.gris }}>
                 No hay {unidad} que coincidan con este filtro.
               </td></tr>
             )}
             {trozo.map((d, i) => (
               <tr key={d.id || i} onClick={() => onFila && onFila(d)}
-                style={{ cursor: onFila ? 'pointer' : 'default' }}>
+                style={{ cursor: onFila ? 'pointer' : 'default', background: elegidos.has(d.id) ? C.tinte : undefined }}>
+                {seleccion && (
+                  <td onClick={(e) => e.stopPropagation()} style={{ width: 44 }}>
+                    <input type="checkbox" aria-label={'Seleccionar ' + (d[cols[0]?.k] ?? '')} checked={elegidos.has(d.id)} onChange={() => alternar(d.id)} style={caja} />
+                  </td>
+                )}
                 {cols.map((c, ci) => (
                   <td key={c.k} style={{ whiteSpace: 'nowrap', fontWeight: ci === 0 ? 600 : 400 }}>
                     {c.badge

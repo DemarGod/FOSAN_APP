@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { banosEstado } from '../lib/api'
 import { C, Icon, I } from '../lib/ui'
+import { limpiarCodigo } from '../lib/validar'
 
 const ESTADO = {
   en_arriendo: 'ya está en arriendo', en_servicio: 'está en servicio', mantencion: 'está en mantención',
@@ -37,7 +38,7 @@ export default function CodigosBanos({ cantidad = 0, elegidos = [], onChange }) 
   return (
     <div style={{ display: 'grid', gap: 8, minWidth: 0 }}>
       <div style={{ display: 'flex', gap: 8 }}>
-        <input list="banos-libres" value={texto} onChange={(e) => { setTexto(e.target.value.replace(/[^A-Za-z0-9-]/g, '').slice(0, 15)); setAlerta(null) }}
+        <input list="banos-libres" value={texto} onChange={(e) => { setTexto(limpiarCodigo(e.target.value)); setAlerta(null) }}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); agregar() } }}
           placeholder={lleno ? 'Cantidad completa' : 'Código del baño (ej. BQ-037)'} disabled={cantidad < 1}
           style={{ flex: 1, minWidth: 0, border: `2px solid ${alerta ? C.rojo : C.borde}`, background: '#fff', font: '400 13px var(--font)', padding: '10px 12px', minHeight: 44, outline: 'none', textTransform: 'uppercase' }} />

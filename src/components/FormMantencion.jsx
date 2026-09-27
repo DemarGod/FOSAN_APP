@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Modal from './Modal'
-import { activosLista, crearMantencion } from '../lib/api'
+import { activosLista, crearMantencion, tiposMantencion } from '../lib/api'
 import { C, Icon, I, L_CLASE_MANT, L_ESTADO_MANT } from '../lib/ui'
 
 const CLASES = Object.keys(L_CLASE_MANT)
@@ -8,7 +8,7 @@ const ESTADOS = ['programada', 'proxima', 'urgente', 'completada']
 const TIPOS = [
   'Mantención preventiva', 'Mantención correctiva', 'Reparación de puerta',
   'Cambio de estanque', 'Cambio de aceite', 'Revisión técnica',
-  'Revisión de bomba', 'Cambio de neumáticos', 'Otro',
+  'Revisión de bomba', 'Cambio de neumáticos',
 ]
 
 export default function FormMantencion({ activoInicial = '', onCerrar, onGuardado }) {
@@ -18,15 +18,29 @@ export default function FormMantencion({ activoInicial = '', onCerrar, onGuardad
     responsable_ext: '', costo: '', estado: 'programada', detalle: '',
   })
   const [activos, setActivos] = useState([])
+  const [tipos, setTipos] = useState(TIPOS)
+  const [otro, setOtro] = useState(null)
   const [error, setError] = useState(null)
   const [guardando, setGuardando] = useState(false)
 
-  useEffect(() => { activosLista().then(setActivos).catch(setError) }, [])
+  useEffect(() => {
+    activosLista().then(setActivos).catch(setError)
+    tiposMantencion().then((extra) => setTipos([...TIPOS, ...extra.filter((t) => !TIPOS.includes(t)).sort()])).catch(() => {})
+  }, [])
+  const agregarTipo = () => {
+    const t = (otro || '').trim()
+    if (!t) return
+    const nombre = t.charAt(0).toUpperCase() + t.slice(1)
+    setTipos((p) => (p.includes(nombre) ? p : [...p, nombre]))
+    setV((p) => ({ ...p, tipo: nombre }))
+    setOtro(null)
+  }
 
   const set = (k) => (e) => setV((p) => ({ ...p, [k]: e.target.value }))
 
   const guardar = async () => {
     if (!v.activo_id) { setError({ message: 'Elige el activo al que corresponde la mantención.' }); return }
+    if (otro !== null) { setError({ message: 'Termina de agregar el tipo "Otro" o cancélalo.' }); return }
     setGuardando(true)
     setError(null)
     try {
@@ -73,10 +87,24 @@ export default function FormMantencion({ activoInicial = '', onCerrar, onGuardad
 
           <label className="campo">
             <span>Tipo de mantención</span>
-            <select value={v.tipo} onChange={set('tipo')}>
-              {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
+            <select value={otro !== null ? '__otro' : v.tipo} onChange={(e) => {
+              if (e.target.value === '__otro') { setOtro(''); return }
+              setOtro(null); set('tipo')(e)
+            }}>
+              {tipos.map((t) => <option key={t} value={t}>{t}</option>)}
+              <option value="__otro">Otro… (detallar)</option>
             </select>
           </label>
+          {otro !== null && (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input autoFocus value={otro} onChange={(e) => setOtro(e.target.value.slice(0, 60))}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); agregarTipo() } }}
+                placeholder="¿Qué mantención es? Ej. Cambio de bisagras"
+                style={{ flex: 1, minWidth: 0, border: `2px solid ${C.azul}`, background: '#fff', font: '400 13px var(--font)', padding: '10px 12px', minHeight: 44, outline: 'none' }} />
+              <button type="button" className="btn btn-verde" onClick={agregarTipo} style={{ padding: '0 14px' }}>Agregar</button>
+              <button type="button" className="btn" onClick={() => setOtro(null)} style={{ padding: '0 12px' }}>✕</button>
+            </div>
+          )}
 
           <label className="campo">
             <span>Fecha programada</span>

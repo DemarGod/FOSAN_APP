@@ -3,7 +3,7 @@ import Modal from './Modal'
 import { Campo } from './FormCliente'
 import { guardarVehiculo } from '../lib/api'
 import { TIPOS_VEHICULO } from '../lib/costos'
-import { formatoPesos, numeroDe, decimalDe } from '../lib/validar'
+import { formatoPesos, numeroDe, decimalDe, limpiarCodigo, codigoValido } from '../lib/validar'
 import { C } from '../lib/ui'
 
 const ANIO_MAX = new Date().getFullYear() + 1
@@ -30,7 +30,7 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
   const limpiafosas = v.tipo_vehiculo === 'camion_limpiafosas'
 
   const guardar = async () => {
-    if (!v.codigo.trim()) { setError('El código es obligatorio (ej. CAM-05).'); return }
+    if (!codigoValido(v.codigo)) { setError('Código inválido: entre 2 y 10 letras o números, más guiones (ej. CAM-05).'); return }
     const anio = numeroDe(v.anio)
     if (anio && (anio < 1980 || anio > ANIO_MAX)) { setError(`Año entre 1980 y ${ANIO_MAX}.`); return }
     const rv = decimalDe(v.rend_vacio), rc = decimalDe(v.rend_cargado)
@@ -72,7 +72,7 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
         <div style={{ display: 'grid', gap: 14, alignContent: 'start' }}>
           <Titulo>Vehículo</Titulo>
           <div style={par}>
-            <Campo l="Código"><input value={v.codigo} onChange={set('codigo')} maxLength={12} placeholder="CAM-05" /></Campo>
+            <Campo l="Código"><input value={v.codigo} onChange={set('codigo', limpiarCodigo)} placeholder="CAM-05" /></Campo>
             <Campo l="Patente (opcional)"><input value={v.patente} onChange={set('patente')} maxLength={8} placeholder="ABCD12" /></Campo>
           </div>
           <Campo l="Tipo">
