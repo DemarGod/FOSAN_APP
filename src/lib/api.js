@@ -87,6 +87,24 @@ export const crearActivo = async (datos) => {
 export const modelos = () => rows(supabase.from('modelos_bano').select('*').order('nombre'))
 export const ubicaciones = () => rows(supabase.from('ubicaciones').select('id, nombre, tipo, lat, lng').eq('activa', true).order('nombre'))
 export const clientesLista = () => rows(supabase.from('clientes').select('id, nombre, direccion').order('nombre'))
+// Clientes para armar rutas: con días de limpieza, comuna y baños (arrendados + propios)
+export const clientesParaRuta = async () => {
+  const [c, a] = await Promise.all([
+    rows(supabase.from('clientes').select('*').order('nombre')),
+    rows(supabase.from('activos').select('cliente_id').eq('estado', 'en_arriendo').not('cliente_id', 'is', null)),
+  ])
+  const n = {}
+  a.forEach((x) => { n[x.cliente_id] = (n[x.cliente_id] || 0) + 1 })
+  return c.map((x) => ({ ...x, banos_arriendo: n[x.id] || 0, banos_propios: x.banos_propios || 0 }))
+}
+export const buscarGlobal = async (q) => {
+  const t = q.replace(/[%,()]/g, ' ').trim()
+  const [activos, clientes] = await Promise.all([
+    rows(supabase.from('activos').select('id, codigo, tipo, estado, qr_token, clientes(nombre)').neq('estado', 'baja').ilike('codigo', `%${t}%`).order('codigo').limit(6)),
+    rows(supabase.from('clientes').select('id, nombre, direccion, comuna').or(`nombre.ilike.%${t}%,direccion.ilike.%${t}%,comuna.ilike.%${t}%`).order('nombre').limit(6)),
+  ])
+  return { activos, clientes }
+}
 export const activosLista = () => rows(supabase.from('activos').select('id, codigo, tipo').neq('estado', 'baja').order('codigo'))
 
 export const crearUbicacion = async (nombre, tipo = 'faena', extra = {}) => {

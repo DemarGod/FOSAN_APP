@@ -8,7 +8,6 @@ import Topbar from './components/Topbar'
 import Tabbar from './components/Tabbar'
 import Calendario from './components/Calendario'
 import Inicio from './pages/Inicio'
-import Inventario from './pages/Inventario'
 import Banos from './pages/Banos'
 import Transporte from './pages/Transporte'
 import Insumos from './pages/Insumos'
@@ -68,7 +67,7 @@ export default function App() {
           <div className="pad">
             <Routes>
               <Route path="/" element={<Inicio onCalendario={() => setCal(true)} />} />
-              <Route path="/inventario" element={<Inventario />} />
+              <Route path="/inventario" element={<Navigate to="/banos" replace />} />
               <Route path="/banos" element={<Banos />} />
               <Route path="/camiones" element={<Navigate to="/transporte" replace />} />
               <Route path="/transporte" element={<Transporte />} />

@@ -17,7 +17,7 @@ export default function FormCliente({ clienteId = null, onCerrar, onGuardado }) 
   const [v, setV] = useState({
     nombre: '', rut: '', rubro: 'construccion', contacto_nombre: '', telefono: '',
     correo: '', direccion: '', comuna: 'Talca', lat: '', lng: '',
-    fecha_inicio_contrato: '', fecha_fin_contrato: '', valor_mensual: '', fecha_entrega: '',
+    fecha_inicio_contrato: '', fecha_fin_contrato: '', valor_mensual: '', fecha_entrega: '', banos_propios: '',
   })
   const [listaRubros, setListaRubros] = useState([])
   const [nuevoRubro, setNuevoRubro] = useState(null)
@@ -44,6 +44,7 @@ export default function FormCliente({ clienteId = null, onCerrar, onGuardado }) 
           telefono: t(c.telefono), correo: t(c.correo), direccion: t(c.direccion), comuna: t(c.comuna),
           lat: t(c.lat), lng: t(c.lng), fecha_inicio_contrato: t(c.fecha_inicio_contrato), fecha_fin_contrato: t(c.fecha_fin_contrato),
           valor_mensual: c.valor_mensual ? formatoPesos(c.valor_mensual) : '',
+          banos_propios: c.banos_propios ? String(c.banos_propios) : '',
         }))
         const d = c.dias_limpieza || []
         setDias(d); setLimpiezas(d.length)
@@ -112,6 +113,7 @@ export default function FormCliente({ clienteId = null, onCerrar, onGuardado }) 
         fecha_fin_contrato: v.fecha_fin_contrato || null,
         ...(finanzas ? { valor_mensual: numeroDe(v.valor_mensual) } : {}),
         dias_limpieza: dias.length ? dias : null,
+        banos_propios: numeroDe(v.banos_propios) || 0,
       })
       const c = clienteId ? await actualizarCliente(clienteId, datos) : await crearCliente(datos)
       if (elegidos.length) {
@@ -222,7 +224,7 @@ export default function FormCliente({ clienteId = null, onCerrar, onGuardado }) 
       </div>
 
       <div style={{ borderTop: `2px solid ${C.borde}`, padding: 18 }}>
-        <div style={{ font: '700 12px var(--font)', color: '#1a3c72', marginBottom: 14 }}>Baños arrendados y limpiezas</div>
+        <div style={{ font: '700 12px var(--font)', color: '#1a3c72', marginBottom: 14 }}>Baños arrendados, baños propios y limpiezas</div>
         <div className="cols2" style={{ gap: 18 }}>
           <div style={{ display: 'grid', gap: 14, alignContent: 'start', minWidth: 0 }}>
             {clienteId && (
@@ -251,6 +253,10 @@ export default function FormCliente({ clienteId = null, onCerrar, onGuardado }) 
             )}
           </div>
           <div style={{ display: 'grid', gap: 14, alignContent: 'start', minWidth: 0 }}>
+            <Campo l="Baños propios del cliente (solo limpieza)">
+              <input value={v.banos_propios} onChange={set('banos_propios', (x) => x.replace(/\D/g, '').slice(0, 3))} inputMode="numeric" placeholder="0" />
+              <em style={{ font: '400 11px var(--font)', color: C.gris, fontStyle: 'normal' }}>Baños que son del cliente y FOSAN solo limpia. No salen del inventario.</em>
+            </Campo>
             <div className="campo">
               <span>Limpiezas por semana</span>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, minmax(0,1fr))', gap: 2, background: C.borde, border: `2px solid ${C.borde}` }}>
@@ -292,7 +298,7 @@ export default function FormCliente({ clienteId = null, onCerrar, onGuardado }) 
             <div style={{ padding: '11px 13px', background: C.suave, border: `2px solid ${C.borde}`, font: '400 12px/1.45 var(--font)', color: '#3c4551' }}>
               {limpiezas
                 ? `En el Mapa, el cliente se pinta de azul ${limpiezas >= 2 ? 'oscuro' : 'claro'} los días ${diasTexto(dias)}.${rutaId ? ' Queda como parada de limpieza en la ruta elegida.' : ''}`
-                : 'Sin limpiezas, el cliente aparece en verde en el Mapa mientras tenga baños en arriendo.'}
+                : Number(v.banos_propios || 0) > 0 ? 'Indica cuántas limpiezas por semana necesitan sus baños propios.' : 'Sin limpiezas, el cliente aparece en verde en el Mapa mientras tenga baños en arriendo.'}
             </div>
           </div>
         </div>

@@ -120,14 +120,18 @@ export default function Salida({ salida, par, editable, verCostos = true, onCerr
             <span>Carga</span>
             <div style={{ border: `2px solid ${C.borde}` }}>
               <Fila k={`Baños transportados (${s.banos_transportados})`} v={kg(c.pesoBanos)} />
-              <Fila k={`Residuo de ${s.banos_limpieza} limpieza(s)${c.litrosResiduo != null ? ` · ${Math.round(c.litrosResiduo)} L` : ''}`} v={c.pesoResiduo == null ? '—' : kg(c.pesoResiduo)} />
+              {s.banos_limpieza > 0 && <Fila k={`Agua limpia · estanque ${c.estanqueAgua} L (se usan ${Math.round(c.aguaLimpia)} L)`} v={kg(c.pesoAgua)} />}
+              <Fila k={`Residuo de ${s.banos_limpieza} baño(s)${c.litrosResiduo != null ? ` · ${Math.round(c.litrosResiduo)} L` : ''}`} v={c.pesoResiduo == null ? '—' : kg(c.pesoResiduo)} />
               <Fila k={`Total${s.capacidad_kg ? ` · ${Math.round(c.factor * 100)}% de la capacidad` : ''}`} v={kg(c.pesoTotal)} fuerte />
             </div>
           </div>
           {(c.excedeCarga || c.excedeEstanque || c.excedeBanos) && (
             <Alerta color={C.rojo} tint="#fce8e6">
-              {[c.excedeCarga && 'supera la carga máxima', c.excedeEstanque && 'supera el estanque de residuos', c.excedeBanos && 'lleva más baños de los que caben'].filter(Boolean).join(', ')}.
+              {[c.excedeCarga && 'supera la carga máxima', c.excedeEstanque && `supera el estanque de aguas grises (${c.estanqueGrises} L)`, c.excedeBanos && 'lleva más baños de los que caben'].filter(Boolean).join(', ')}.
             </Alerta>
+          )}
+          {c.recargasAgua > 0 && (
+            <Alerta color={C.amarillo} tint="#fef7e0">Se necesitan {Math.round(c.aguaLimpia)} L de agua limpia: hay que recargar el estanque de {c.estanqueAgua} L {c.recargasAgua} vez/veces.</Alerta>
           )}
           {c.faltan.length > 0 && (
             <Alerta color={C.amarillo} tint="#fef7e0">Para un costo más exacto falta: {c.faltan.join(', ')}.</Alerta>

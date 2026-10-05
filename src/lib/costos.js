@@ -27,11 +27,17 @@ export function costoSalida(s, par = {}) {
   if (!km) faltan.push('kilómetros')
   const banosLimp = n(s.banos_limpieza)
   const litrosResiduo = banosLimp && par.litros_limpieza != null ? banosLimp * par.litros_limpieza : null
-  const pesoResiduo = litrosResiduo != null && par.densidad_residuo != null ? litrosResiduo * par.densidad_residuo : null
+  const pesoResiduo = litrosResiduo != null ? litrosResiduo * (par.densidad_residuo ?? 1) : null
+  // Agua limpia: se sale con el estanque lleno (1 L ≈ 1 kg) y se gastan 8–15 L por baño
+  const estanqueAgua = par.estanque_agua ?? 200
+  const aguaLimpia = banosLimp * (par.agua_bano ?? 12)
+  const pesoAgua = banosLimp ? estanqueAgua : 0
+  const recargasAgua = aguaLimpia > estanqueAgua ? Math.ceil(aguaLimpia / estanqueAgua) - 1 : 0
+  const estanqueGrises = n(s.capacidad_litros) || (par.estanque_grises ?? 800)
   if (banosLimp && pesoResiduo == null) faltan.push('residuo por baño (Configuración)')
   if (n(s.banos_sin_peso)) faltan.push(`peso de ${s.banos_sin_peso} baño(s) (Configuración)`)
   const pesoBanos = n(s.peso_banos)
-  const pesoTotal = pesoBanos + (pesoResiduo || 0)
+  const pesoTotal = pesoBanos + (pesoResiduo || 0) + pesoAgua
   const cap = n(s.capacidad_kg)
   if (!s.vehiculo_id) faltan.push('vehículo')
   else if (!cap) faltan.push('capacidad de carga del vehículo')
@@ -47,10 +53,10 @@ export function costoSalida(s, par = {}) {
   const desgaste = km * k.desgaste
   const fijos = km * k.fijos
   return {
-    km, pesoBanos, pesoResiduo, pesoTotal, litrosResiduo, factor, rend, litrosDiesel,
+    km, pesoBanos, pesoResiduo, pesoAgua, aguaLimpia, recargasAgua, estanqueAgua, estanqueGrises, pesoTotal, litrosResiduo, factor, rend, litrosDiesel,
     combustible, desgaste, fijos, total: combustible + desgaste + fijos, faltan,
     excedeCarga: cap > 0 && pesoTotal > cap,
-    excedeEstanque: n(s.capacidad_litros) > 0 && litrosResiduo > n(s.capacidad_litros),
+    excedeEstanque: litrosResiduo > estanqueGrises,
     excedeBanos: n(s.capacidad_banos) > 0 && n(s.banos_transportados) > n(s.capacidad_banos),
   }
 }

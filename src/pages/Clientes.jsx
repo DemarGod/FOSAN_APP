@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import Listado from '../components/Listado'
 import Modal from '../components/Modal'
 import FormCliente from '../components/FormCliente'
@@ -17,6 +17,8 @@ const SEGMENTOS = [
 
 export default function Clientes() {
   const navegar = useNavigate()
+  const [params] = useSearchParams()
+  const qInicial = params.get('q') || ''
   const { perfil } = useSesion()
   const editable = puedeOperar(perfil)
   const dueno = puedeEditar(perfil)
@@ -58,6 +60,8 @@ export default function Clientes() {
   return (
     <>
       <Listado
+        key={qInicial}
+        busquedaInicial={qInicial}
         titulo="Clientes"
         bajada="Empresas con baños arrendados, su contrato y su facturación mensual."
         accion={{ label: 'Nuevo cliente', onClick: () => setForm(true), disabled: !editable }}
