@@ -4,7 +4,7 @@ import Modal from '../components/Modal'
 import FormDespacho from '../components/FormDespacho'
 import { despachos, estadoDespacho, procesarVencidos } from '../lib/api'
 import { useSesion, puedeEditar, puedeOperar } from '../lib/sesion'
-import { C, I, fecha, L_ESTADO_DESPACHO, estadoDespacho } from '../lib/ui'
+import { C, I, fecha, L_ESTADO_DESPACHO, etiquetaDespacho } from '../lib/ui'
 import { hoyISO } from '../lib/costos'
 
 const L_TIPO = { entrega: 'Entrega', retiro: 'Retiro', cambio: 'Cambio' }
@@ -36,7 +36,7 @@ export default function Despachos() {
   const filas = useMemo(() => datos.map((d) => ({
     ...d,
     tipoL: L_TIPO[d.tipo],
-    estadoL: estadoDespacho(d, hoy),
+    estadoL: etiquetaDespacho(d, hoy),
     fechaL: fecha(d.fecha_programada) + (d.estado === 'programado' && d.fecha_programada < hoy ? ' · atrasado' : ''),
     origenL: L_ORIGEN[d.origen] || d.origen,
     vehiculoL: d.vehiculo || 'Sin asignar',

@@ -61,7 +61,7 @@ export const L_ESTADO_ACTIVO = {
   mantencion: 'En mantención', fuera_de_servicio: 'Fuera de servicio', baja: 'Baja',
 }
 // Despachos: Planificado → Asignado → En ejecución → Finalizado; o Cancelado
-export const estadoDespacho = (d, hoy = new Date().toISOString().slice(0, 10)) => {
+export const etiquetaDespacho = (d, hoy = new Date().toISOString().slice(0, 10)) => {
   if (d.estado === 'hecho') return 'Finalizado'
   if (d.estado === 'cancelado') return 'Cancelado'
   const dia = d.fecha_salida || d.fecha_programada
