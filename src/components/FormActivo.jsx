@@ -6,7 +6,7 @@ import { C, Icon, I, L_TIPO_ACTIVO, L_ESTADO_ACTIVO } from '../lib/ui'
 import { limpiarCodigo, codigoValido, formatoPesos, numeroDe } from '../lib/validar'
 
 const TIPOS = Object.keys(L_TIPO_ACTIVO)
-const ESTADOS = ['disponible', 'en_arriendo', 'mantencion', 'fuera_de_servicio']
+const ESTADOS = ['disponible', 'en_arriendo', 'en_servicio', 'mantencion', 'fuera_de_servicio']
 
 export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
   const [v, setV] = useState({
@@ -38,7 +38,7 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
     }
   }, [activoId])
 
-  const set = (k) => (e) => setV((p) => ({ ...p, [k]: e.target.value }))
+  const set = (k, f) => (e) => setV((p) => ({ ...p, [k]: f ? f(e.target.value) : e.target.value }))
   const esVehiculo = v.tipo === 'camion' || v.tipo === 'camioneta'
   const esBano = v.tipo === 'bano_quimico'
 

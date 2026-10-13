@@ -14,14 +14,11 @@ function GraficoUtilidad({ datos }) {
   const max = Math.max(1, ...datos.flatMap((d) => [Number(d.ventas || 0), Number(d.costos || 0)]))
   const ancho = datos.length * grupoAncho + (datos.length + 1) * gapGrupo
   const svgAlto = alto + margenSup + margenInf
-
   return (
     <div style={{ overflowX: 'auto' }}>
-      <svg width={ancho} height={svgAlto} viewBox={`0 0 ${ancho} ${svgAlto}`} style={{ display: 'block', margin: '0 auto' }}>
+      <svg width={ancho} height={svgAlto} viewBox={`0 0 ${ancho} ${svgAlto}`} style={{ display: 'block' }}>
         {[0, 0.25, 0.5, 0.75, 1].map((f) => (
-          <line key={f} x1={0} x2={ancho}
-            y1={margenSup + alto * (1 - f)} y2={margenSup + alto * (1 - f)}
-            stroke={C.fila} strokeWidth={1} />
+          <line key={f} x1={0} x2={ancho} y1={margenSup + alto * (1 - f)} y2={margenSup + alto * (1 - f)} stroke={C.fila} strokeWidth={1} />
         ))}
         {datos.map((d, i) => {
           const x = gapGrupo + i * (grupoAncho + gapGrupo)
@@ -29,14 +26,9 @@ function GraficoUtilidad({ datos }) {
           const hC = (Number(d.costos || 0) / max) * alto
           return (
             <g key={d.mes}>
-              <rect x={x} y={margenSup + alto - hV} width={anchoBarra} height={hV} rx={3} fill={C.navy}>
-                <title>Ventas: {clp(d.ventas)}</title>
-              </rect>
-              <rect x={x + anchoBarra + gapBarras} y={margenSup + alto - hC} width={anchoBarra} height={hC} rx={3} fill={C.amarillo}>
-                <title>Costos: {clp(d.costos)}</title>
-              </rect>
-              <text x={x + grupoAncho / 2} y={margenSup + alto + 18} textAnchor="middle"
-                fontFamily="Archivo" fontSize="11" fill={C.gris}>
+              <rect x={x} y={margenSup + alto - hV} width={anchoBarra} height={hV} fill={C.navy}><title>Ventas: {clp(d.ventas)}</title></rect>
+              <rect x={x + anchoBarra + gapBarras} y={margenSup + alto - hC} width={anchoBarra} height={hC} fill={C.amarillo}><title>Costos: {clp(d.costos)}</title></rect>
+              <text x={x + grupoAncho / 2} y={margenSup + alto + 18} textAnchor="middle" fontFamily="Archivo" fontSize="11" fill={C.gris}>
                 {mesLargo(d.mes).split(' ')[0].slice(0, 3)}
               </text>
             </g>
@@ -44,7 +36,7 @@ function GraficoUtilidad({ datos }) {
         })}
         <line x1={0} x2={ancho} y1={margenSup + alto} y2={margenSup + alto} stroke={C.borde} strokeWidth={2} />
       </svg>
-      <div style={{ display: 'flex', gap: 18, justifyContent: 'center', marginTop: 8 }}>
+      <div style={{ display: 'flex', gap: 18, marginTop: 8 }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, font: '400 12px var(--font)', color: C.gris }}>
           <span style={{ width: 10, height: 10, background: C.navy, display: 'inline-block' }} /> Ventas
         </span>
@@ -75,7 +67,6 @@ export default function Reportes() {
   const max = Math.max(1, ...top.map((t) => Number(t.ingresos || 0)))
   const ultimoMes = fin[fin.length - 1] || {}
   const seisMeses = fin.slice(-6)
-
   const kpis = [
     { v: clp(ultimoMes.ventas), l: `Ventas · ${mesLargo(ultimoMes.mes)}`, color: C.navy, tint: '#e8edf5', d: I.money },
     { v: clp(ultimoMes.costos), l: 'Costos del mes', color: C.amarillo, tint: '#fef7e0', d: I.wrench },
@@ -121,14 +112,8 @@ export default function Reportes() {
 
       <div className="kpis" style={{ marginTop: 4 }}>
         {kpis.map((k) => (
-          <div key={k.l} style={{
-            background: '#fff', border: `2px solid ${C.borde}`, borderTop: `4px solid ${k.color}`,
-            padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12,
-          }}>
-            <span style={{
-              width: 38, height: 38, flex: 'none', background: k.tint, color: k.color,
-              display: 'grid', placeItems: 'center',
-            }}>
+          <div key={k.l} style={{ background: '#fff', border: `2px solid ${C.borde}`, borderTop: `4px solid ${k.color}`, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ width: 38, height: 38, flex: 'none', background: k.tint, color: k.color, display: 'grid', placeItems: 'center' }}>
               <Icon d={k.d} size={20} />
             </span>
             <div style={{ minWidth: 0, flex: 1 }}>
@@ -195,9 +180,7 @@ export default function Reportes() {
           <h6 style={{ margin: 0, color: '#1a3c72' }}>Evolución de utilidad</h6>
           <span style={{ font: '400 12px var(--font)', color: C.gris }}>Últimos {seisMeses.length} mes(es)</span>
         </div>
-        <div style={{ padding: '18px 18px 8px' }}>
-          <GraficoUtilidad datos={seisMeses} />
-        </div>
+        <div style={{ padding: '18px 18px 8px' }}><GraficoUtilidad datos={seisMeses} /></div>
         <div className="scroller">
           <table style={{ minWidth: 520 }}>
             <thead><tr><th>Mes</th><th>Ventas</th><th>Costos</th><th>Utilidad</th><th>Margen</th></tr></thead>

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { notificaciones, marcarLeidas, avisosCalculados } from '../lib/api'
+import { notificaciones, marcarLeidas, avisosCalculados, buscarGlobal } from '../lib/api'
+import { NAV } from './Sidebar'
 import { C, Icon, I, fechaHora } from '../lib/ui'
 import { nombreRol } from '../lib/sesion'
 
@@ -14,13 +15,49 @@ const NIVEL = {
 const CLAVE = 'fosan_avisos_leidos'
 const leidosLocal = () => { try { return new Set(JSON.parse(localStorage.getItem(CLAVE) || '[]')) } catch { return new Set() } }
 const orden = { alerta: 0, aviso: 1, info: 2 }
+const sinTilde = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+// Palabras que la gente escribe y la página donde está eso
+const SINONIMOS = {
+  '/banos': 'bano banos quimico inventario arriendo arriendos activo activos unidad codigo bodega',
+  '/clientes': 'cliente clientes empresa arriendo contrato contratos rut',
+  '/transporte': 'camion camiones camioneta vehiculo vehiculos flota patente transporte inventario',
+  '/despachos': 'despacho despachos entrega entregas retiro retiros cambio',
+  '/rutas': 'ruta rutas salida salidas limpieza limpiezas recorrido km',
+  '/insumos': 'insumo insumos stock quimico papel',
+  '/mantenciones': 'mantencion mantenciones taller reparacion',
+  '/ubicaciones': 'mapa ubicacion ubicaciones faena direccion',
+  '/utilidades': 'utilidad utilidades ventas venta margen',
+  '/reportes': 'reporte reportes excel maxxa informe',
+  '/analisis': 'analisis costos rentabilidad',
+  '/configuracion': 'configuracion parametros diesel usuarios',
+}
 
 export default function Topbar({ perfil, onCalendario, version = 0 }) {
   const navegar = useNavigate()
   const [abierto, setAbierto] = useState(false)
   const [avisos, setAvisos] = useState([])
   const [busqueda, setBusqueda] = useState('')
+  const [res, setRes] = useState(null)
   const caja = useRef(null)
+  const cajaBusca = useRef(null)
+
+  useEffect(() => {
+    const q = busqueda.trim()
+    if (q.length < 2) { setRes(null); return }
+    const t = sinTilde(q)
+    const paginas = NAV.filter((n) => n.to && n.to !== '/' && (sinTilde(n.label).includes(t) || (SINONIMOS[n.to] || '').split(' ').some((w) => w.startsWith(t))))
+    setRes((r) => ({ paginas, activos: r?.activos || [], clientes: r?.clientes || [] }))
+    const id = setTimeout(() => buscarGlobal(q).then((x) => setRes({ paginas, ...x })).catch(() => {}), 250)
+    return () => clearTimeout(id)
+  }, [busqueda])
+
+  useEffect(() => {
+    const fuera = (e) => { if (cajaBusca.current && !cajaBusca.current.contains(e.target)) setRes(null) }
+    document.addEventListener('mousedown', fuera)
+    return () => document.removeEventListener('mousedown', fuera)
+  }, [])
+
+  const ir = (a) => { navegar(a); setBusqueda(''); setRes(null) }
 
   const cargar = () => Promise.all([notificaciones().catch(() => []), avisosCalculados().catch(() => [])])
     .then(([db, calc]) => {
@@ -54,9 +91,13 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
 
   const buscar = (e) => {
     e.preventDefault()
-    const q = busqueda.trim()
-    if (q) navegar('/inventario?q=' + encodeURIComponent(q))
+    if (!res) return
+    const primero = res.activos[0] ? '/activo/' + res.activos[0].qr_token
+      : res.clientes[0] ? '/clientes?q=' + encodeURIComponent(res.clientes[0].nombre)
+      : res.paginas[0]?.to
+    if (primero) ir(primero)
   }
+  const hayRes = res && (res.paginas.length || res.activos.length || res.clientes.length)
 
   const iniciales = (perfil?.nombre || 'FOSAN').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
 
@@ -70,15 +111,31 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
         FOSAN
       </div>
 
-      <form onSubmit={buscar} className="desk-only" style={{
-        flex: 1, maxWidth: 420, display: 'flex', alignItems: 'center', gap: 8,
-        border: `1px solid ${C.borde}`, padding: '7px 10px', background: '#fff',
-      }}>
-        <Icon d={I.busca} size={15} color={C.gris} />
-        <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Buscar activos, clientes o direcciones"
-          style={{ border: 0, outline: 'none', background: 'transparent', font: '400 13px var(--font)', width: '100%' }} />
-      </form>
+      <div ref={cajaBusca} className="desk-only" style={{ flex: 1, maxWidth: 420, position: 'relative' }}>
+        <form onSubmit={buscar} style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          border: `1px solid ${C.borde}`, padding: '7px 10px', background: '#fff',
+        }}>
+          <Icon d={I.busca} size={15} color={C.gris} />
+          <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar baños, clientes o secciones"
+            style={{ border: 0, outline: 'none', background: 'transparent', font: '400 13px var(--font)', width: '100%' }} />
+        </form>
+        {res && (
+          <div style={{
+            position: 'absolute', top: 40, left: 0, right: 0, background: '#fff', zIndex: 1100,
+            border: `2px solid ${C.borde}`, boxShadow: '0 10px 30px rgba(31,58,99,.18)', maxHeight: 420, overflowY: 'auto',
+          }}>
+            {!hayRes && <div style={{ padding: 14, font: '400 13px var(--font)', color: C.gris }}>Sin resultados para "{busqueda.trim()}".</div>}
+            {res.paginas.length > 0 && <Grupo t="Secciones" />}
+            {res.paginas.map((p) => <Resultado key={p.to} d={p.d} t={p.label} onClick={() => ir(p.to)} />)}
+            {res.activos.length > 0 && <Grupo t="Baños y vehículos" />}
+            {res.activos.map((a) => <Resultado key={a.id} d={a.tipo === 'bano_quimico' ? I.drop : I.truck} t={a.codigo} sub={a.clientes?.nombre || a.estado?.replace(/_/g, ' ')} onClick={() => ir('/activo/' + a.qr_token)} />)}
+            {res.clientes.length > 0 && <Grupo t="Clientes" />}
+            {res.clientes.map((c) => <Resultado key={c.id} d={I.users} t={c.nombre} sub={[c.direccion, c.comuna].filter(Boolean).join(', ')} onClick={() => ir('/clientes?q=' + encodeURIComponent(c.nombre))} />)}
+          </div>
+        )}
+      </div>
 
       <div style={{ flex: 1 }} />
 
@@ -174,3 +231,19 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
     </header>
   )
 }
+
+const Grupo = ({ t }) => (
+  <div style={{ padding: '8px 12px 4px', font: '700 10px var(--font)', textTransform: 'uppercase', letterSpacing: '.08em', color: C.gris, borderTop: `1px solid ${C.fila}` }}>{t}</div>
+)
+const Resultado = ({ d, t, sub, onClick }) => (
+  <button type="button" onClick={onClick} style={{
+    width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', border: 0,
+    background: '#fff', cursor: 'pointer', textAlign: 'left', minHeight: 44,
+  }}>
+    <Icon d={d} size={16} color={C.navy} />
+    <span style={{ minWidth: 0, flex: 1 }}>
+      <span style={{ display: 'block', font: '600 13px var(--font)', color: '#201e1d' }}>{t}</span>
+      {sub && <span style={{ display: 'block', font: '400 11px var(--font)', color: C.gris, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</span>}
+    </span>
+  </button>
+)
