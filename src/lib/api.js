@@ -241,6 +241,13 @@ export const accesosAutorizados = () => rows(supabase.from('accesos_autorizados'
 export const autorizarCorreo = (a) => rows(supabase.from('accesos_autorizados').upsert({ ...a, correo: a.correo.trim().toLowerCase() }).select())
 export const quitarAutorizacion = (correo) => rows(supabase.from('accesos_autorizados').delete().eq('correo', correo).select())
 
+// ── Historial de cambios (solo dueños) ───────────────────────────────────
+export const historial = (desde) => {
+  let q = supabase.from('auditoria').select('*').order('fecha', { ascending: false }).limit(1000)
+  if (desde) q = q.gte('fecha', desde)
+  return rows(q)
+}
+
 // ── Logística: baños disponibles para despachar ──────────────────────────
 export const banosDisponibles = async () => {
   const [lista, ocupados] = await Promise.all([

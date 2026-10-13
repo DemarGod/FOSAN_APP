@@ -3,6 +3,7 @@ import { C, Icon, I } from '../lib/ui'
 import { useSesion, puedeVer } from '../lib/sesion'
 
 const DESPACHO = 'M3 7h11v9H3zM14 10h4l3 3v3h-7zM7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM6 4h5M8.5 1.5 11 4 8.5 6.5'
+const HISTORIAL = 'M12 21a9 9 0 1 0-9-9M3 4v5h5M12 7v5l3 2'
 const RUTA = 'M5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM19 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM7 17h6a3 3 0 0 0 0-6h-2a3 3 0 0 1 0-6h6'
 
 export const NAV = [
@@ -21,6 +22,7 @@ export const NAV = [
   { to: '/utilidades', label: 'Utilidades y ventas', d: I.money, s: 'utilidades' },
   { to: '/reportes', label: 'Reportes', d: I.chart, s: 'reportes' },
   { to: '/analisis', label: 'Análisis', d: 'M3 3v18h18M7 15l4-4 3 3 5-6', s: 'analisis' },
+  { to: '/historial', label: 'Historial de cambios', d: HISTORIAL, s: 'historial' },
   { to: '/configuracion', label: 'Configuración', d: I.gear },
 ]
 
