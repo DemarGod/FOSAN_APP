@@ -16,7 +16,14 @@ export const puedeOperar = (perfil, sec) => {
   return !!(p?.ver && p?.editar)
 }
 export const verFinanzas = (perfil) => esDueno(perfil) || !!perfil?.permisos?.finanzas?.ver
-export const nombreRol = (rol) => ({ dueno: 'Dueño', secretaria: 'Secretaria', lectura: 'Solo lectura' }[rol] || 'Solo lectura')
+export const ROLES = [
+  { v: 'dueno', l: 'Dueño', d: 'Acceso total' },
+  { v: 'administrador', l: 'Administrador operacional', d: 'Gestión diaria' },
+  { v: 'secretaria', l: 'Secretaria', d: 'Información administrativa' },
+  { v: 'operador', l: 'Operador', d: 'Solo tareas asignadas' },
+  { v: 'lectura', l: 'Solo lectura', d: 'Consulta' },
+]
+export const nombreRol = (rol) => ROLES.find((r) => r.v === rol)?.l || 'Solo lectura'
 
 export const SECCIONES = [
   { s: 'inicio', l: 'Inicio' },

@@ -55,10 +55,20 @@ export const L_TIPO_ACTIVO = {
   bano_quimico: 'Baño químico', camion: 'Camión', camioneta: 'Camioneta',
   generador: 'Generador', lavamanos: 'Lavamanos', accesorio: 'Accesorio',
 }
+// Estados normalizados: se usan iguales en toda la app
 export const L_ESTADO_ACTIVO = {
-  disponible: 'Disponible', en_arriendo: 'En arriendo', en_servicio: 'En servicio',
-  mantencion: 'Mantención', fuera_de_servicio: 'Fuera de servicio', baja: 'Baja',
+  disponible: 'Disponible', en_arriendo: 'Arrendado', en_limpieza: 'En limpieza', en_servicio: 'En servicio',
+  mantencion: 'En mantención', fuera_de_servicio: 'Fuera de servicio', baja: 'Baja',
 }
+// Despachos: Planificado → Asignado → En ejecución → Finalizado; o Cancelado
+export const estadoDespacho = (d, hoy = new Date().toISOString().slice(0, 10)) => {
+  if (d.estado === 'hecho') return 'Finalizado'
+  if (d.estado === 'cancelado') return 'Cancelado'
+  const dia = d.fecha_salida || d.fecha_programada
+  if ((d.vehiculo_id || d.salida_id) && dia === hoy) return 'En ejecución'
+  return d.vehiculo_id || d.salida_id ? 'Asignado' : 'Planificado'
+}
+export const L_ESTADO_DESPACHO = { programado: 'Planificado', hecho: 'Finalizado', cancelado: 'Cancelado' }
 export const L_ESTADO_MANT = {
   programada: 'Programada', proxima: 'Próxima', urgente: 'Urgente',
   completada: 'Completada', anulada: 'Anulada',

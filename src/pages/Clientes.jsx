@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
+import { cargarMes, calcular, mesActual } from '../lib/analisis'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import Listado from '../components/Listado'
 import Modal from '../components/Modal'
 import FormCliente from '../components/FormCliente'
-import { clientesResumen, eliminarCliente, procesarVencidos } from '../lib/api'
+import { clientesResumen, eliminarCliente, procesarVencidos, clientesOperacion } from '../lib/api'
 import { exportarVista } from '../lib/excel'
 import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
 import { C, I, L_VIGENCIA, clp, fecha } from '../lib/ui'
@@ -30,11 +31,15 @@ export default function Clientes() {
   const [form, setForm] = useState(false)
   const [seg, setSeg] = useState('vigentes')
   const [borrar, setBorrar] = useState(null)
+  const [oper, setOper] = useState({})
+  const [rent, setRent] = useState({})
 
   const cargar = () => {
     setCargando(true)
     procesarVencidos()
       .then(clientesResumen).then(setDatos).catch(setError).finally(() => setCargando(false))
+    clientesOperacion().then(setOper).catch(() => {})
+    if (finanzas) cargarMes(mesActual()).then(calcular).then((d) => setRent(Object.fromEntries(d.clientes.map((x) => [x.id, x])))).catch(() => {})
   }
   useEffect(cargar, [])
 
@@ -50,7 +55,13 @@ export default function Clientes() {
     contactoL: c.contacto_nombre || '—',
     telefonoL: c.telefono || '—',
     comunaL: c.comuna || '—',
-  })), [datos])
+    ultimaL: oper[c.id]?.ultima ? fecha(oper[c.id].ultima) : '—',
+    proximaL: oper[c.id]?.proxima ? fecha(oper[c.id].proxima) : '—',
+    frecuenciaL: oper[c.id]?.dias?.length ? `${oper[c.id].dias.length} por semana` : '—',
+    serviciosN: oper[c.id]?.servicios ?? 0,
+    cumplimientoL: oper[c.id]?.despachos ? Math.round((oper[c.id].aTiempo / oper[c.id].despachos) * 100) + '%' : '—',
+    costoL: rent[c.id] ? clp(Math.round(rent[c.id].costo)) : '—',
+  })), [datos, oper, rent])
 
   const visibles = seg === 'todos' ? filas
     : seg === 'vencidos' ? filas.filter((f) => f.vigencia === 'vencido')
@@ -89,7 +100,15 @@ export default function Clientes() {
           { k: 'estadoL', label: 'Estado', badge: true },
           { k: 'vigenciaL', label: 'Vigencia' },
           { k: 'banos_activos', label: 'Baños' },
-          ...(finanzas ? [{ k: 'valorL', label: 'Valor mensual' }] : []),
+          { k: 'frecuenciaL', label: 'Limpiezas' },
+          { k: 'ultimaL', label: 'Última visita' },
+          { k: 'proximaL', label: 'Próximo servicio' },
+          { k: 'serviciosN', label: 'Servicios del mes' },
+          { k: 'cumplimientoL', label: 'Cumplimiento' },
+          ...(finanzas ? [
+            { k: 'valorL', label: 'Valor mensual' },
+            { k: 'costoL', label: 'Costos del mes' },
+          ] : []),
           { k: 'contactoL', label: 'Contacto' },
           { k: 'telefonoL', label: 'Teléfono' },
           { k: 'comunaL', label: 'Comuna' },
@@ -103,7 +122,10 @@ export default function Clientes() {
           { t: 'Editar cliente', d: I.lapiz, color: C.navy, disabled: !editable, onClick: () => setForm(d.id) },
           { t: 'Eliminar cliente', d: BASURA, color: C.rojo, disabled: !dueno, onClick: () => setBorrar(d) },
         ]}
-        nota={sinGeo ? `${sinGeo} cliente(s) sin georreferencia: se pueden ubicar cargando sus coordenadas.` : undefined}
+        nota={[
+          'Cumplimiento = despachos finalizados en o antes de la fecha programada.',
+          sinGeo && `${sinGeo} cliente(s) sin georreferencia: se pueden ubicar cargando sus coordenadas.`,
+        ].filter(Boolean).join(' ') || undefined}
       />
 
       {form && <FormCliente clienteId={form === true ? null : form} onCerrar={() => setForm(false)} onGuardado={() => { setForm(false); cargar() }} />}
@@ -158,3 +180,4 @@ function ConfirmarBorrado({ cliente, onCerrar, onBorrado, onDespachos }) {
     </Modal>
   )
 }
+

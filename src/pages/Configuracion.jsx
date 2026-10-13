@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Aviso } from '../components/Listado'
 import { perfiles, todosPermisos, guardarPermiso, guardarPerfil, accesosAutorizados, autorizarCorreo, quitarAutorizacion } from '../lib/api'
-import { useSesion, esDueno, nombreRol, SECCIONES } from '../lib/sesion'
+import { useSesion, esDueno, nombreRol, SECCIONES, ROLES } from '../lib/sesion'
 import { Badge, C } from '../lib/ui'
 
-const ROLES_EDITABLES = [{ v: 'secretaria', l: 'Secretaria' }, { v: 'lectura', l: 'Solo lectura' }]
-const TODOS_ROLES = [{ v: 'dueno', l: 'Dueño' }, ...ROLES_EDITABLES]
+const ROLES_EDITABLES = ROLES.filter((r) => r.v !== 'dueno')
+const TODOS_ROLES = ROLES
 
 export default function Configuracion() {
   const { usuario, perfil } = useSesion()
@@ -197,12 +197,12 @@ function Permisos() {
         Marca qué puede ver y editar cada rol. Editar incluye crear y modificar; eliminar queda solo para los dueños.
       </div>
       <div className="scroller" style={{ padding: '12px 18px 16px' }}>
-        <table style={{ minWidth: 620, width: '100%', borderCollapse: 'collapse', border: `2px solid ${C.borde}` }}>
+        <table style={{ minWidth: 1100, width: '100%', borderCollapse: 'collapse', border: `2px solid ${C.borde}` }}>
           <thead>
             <tr>
               <th style={th} rowSpan={2}>Sección</th>
               <th style={{ ...th, textAlign: 'center' }}>Dueño</th>
-              {ROLES_EDITABLES.map((r) => <th key={r.v} style={{ ...th, textAlign: 'center', borderLeft: `2px solid ${C.borde}` }} colSpan={2}>{r.l}</th>)}
+              {ROLES_EDITABLES.map((r) => <th key={r.v} title={r.d} style={{ ...th, textAlign: 'center', borderLeft: `2px solid ${C.borde}` }} colSpan={2}>{r.l}<span style={{ display: 'block', font: '400 10px var(--font)', textTransform: 'none', letterSpacing: 0, color: C.gris }}>{r.d}</span></th>)}
             </tr>
             <tr>
               <th style={{ ...th, textAlign: 'center' }}>Todo</th>

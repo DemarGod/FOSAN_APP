@@ -4,15 +4,15 @@ import Modal from '../components/Modal'
 import FormDespacho from '../components/FormDespacho'
 import { despachos, estadoDespacho, procesarVencidos } from '../lib/api'
 import { useSesion, puedeEditar, puedeOperar } from '../lib/sesion'
-import { C, I, fecha } from '../lib/ui'
+import { C, I, fecha, L_ESTADO_DESPACHO, estadoDespacho } from '../lib/ui'
 import { hoyISO } from '../lib/costos'
 
 const L_TIPO = { entrega: 'Entrega', retiro: 'Retiro', cambio: 'Cambio' }
-const L_ESTADO = { programado: 'Programado', hecho: 'Hecho', cancelado: 'Cancelado' }
+const L_ESTADO = L_ESTADO_DESPACHO
 const L_ORIGEN = { manual: 'Manual', vencimiento: 'Contrato vencido', nuevo_cliente: 'Cliente nuevo' }
 const SEGMENTOS = [
-  { v: 'programado', l: 'Programados', d: I.cal },
-  { v: 'hecho', l: 'Hechos', d: I.check },
+  { v: 'programado', l: 'Por ejecutar', d: I.cal },
+  { v: 'hecho', l: 'Finalizados', d: I.check },
   { v: 'todos', l: 'Todos', d: I.clip },
 ]
 
@@ -36,8 +36,8 @@ export default function Despachos() {
   const filas = useMemo(() => datos.map((d) => ({
     ...d,
     tipoL: L_TIPO[d.tipo],
-    estadoL: d.estado === 'programado' && d.fecha_programada < hoy ? 'Atrasado' : L_ESTADO[d.estado],
-    fechaL: fecha(d.fecha_programada),
+    estadoL: estadoDespacho(d, hoy),
+    fechaL: fecha(d.fecha_programada) + (d.estado === 'programado' && d.fecha_programada < hoy ? ' · atrasado' : ''),
     origenL: L_ORIGEN[d.origen] || d.origen,
     vehiculoL: d.vehiculo || 'Sin asignar',
     rutaL: d.ruta ? `${d.ruta}` : 'Viaje aparte',
@@ -82,7 +82,7 @@ export default function Despachos() {
         ]}
         datos={visibles}
         acciones={(d) => d.estado === 'programado' ? [
-          { t: 'Marcar como hecho', label: 'Hecho', d: I.check, color: '#fff', bg: C.verde, borde: C.verde, disabled: !editable, onClick: () => setConfirmar({ d, estado: 'hecho' }) },
+          { t: 'Marcar como finalizado', label: 'Finalizar', d: I.check, color: '#fff', bg: C.verde, borde: C.verde, disabled: !editable, onClick: () => setConfirmar({ d, estado: 'hecho' }) },
           { t: 'Cancelar despacho', d: 'M6 6l12 12M18 6 6 18', color: C.rojo, disabled: !editable, onClick: () => setConfirmar({ d, estado: 'cancelado' }) },
         ] : []}
       />

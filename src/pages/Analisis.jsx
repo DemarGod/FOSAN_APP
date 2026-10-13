@@ -5,7 +5,7 @@ import ParametrosCosto from '../components/ParametrosCosto'
 import { supabase } from '../lib/supabase'
 import { cargarMes, calcular, tendencia, mesActual } from '../lib/analisis'
 import { useSesion, puedeEditar, puedeVer, esDueno } from '../lib/sesion'
-import { C, clp, fecha, mesLargo } from '../lib/ui'
+import { C, clp, fecha, mesLargo, L_ESTADO_ACTIVO } from '../lib/ui'
 
 const VISTAS = [
   { v: 'clientes', l: 'Margen por cliente' },
@@ -18,7 +18,7 @@ const VISTAS = [
 const pct = (x) => (x === null || x === undefined || isNaN(x) ? '—' : Math.round(x * 100) + '%')
 const $ = (x) => clp(Math.round(x || 0))
 const num = (x, d = 0) => (x === null || x === undefined ? '—' : Number(x).toLocaleString('es-CL', { maximumFractionDigits: d }))
-const L_ESTADO = { en_arriendo: 'En arriendo', disponible: 'Disponible', mantencion: 'Mantención', fuera_de_servicio: 'Fuera de servicio', en_servicio: 'En servicio' }
+const L_ESTADO = L_ESTADO_ACTIVO
 
 export default function Analisis() {
   const { perfil } = useSesion()

@@ -184,40 +184,71 @@ export const borrarEvento = async (id) => {
   if (error) throw error
 }
 
-// ── Tablero de Inicio: activos, servicio y vehículos detenidos ──────────────
+// ── Clientes: última visita y próximo servicio (rutas + despachos) ─────────
+export const clientesOperacion = async () => {
+  const hoy = new Date().toISOString().slice(0, 10)
+  const seguro = (p) => p.catch(() => [])
+  const [par, des, cli] = await Promise.all([
+    seguro(rows(supabase.from('salida_paradas').select('cliente_id, salidas!inner(fecha, estado)').in('salidas.estado', ['cerrada', 'planificada']))),
+    seguro(rows(supabase.from('despachos').select('cliente_id, estado, fecha_programada, fecha_realizada').in('estado', ['hecho', 'programado']))),
+    seguro(rows(supabase.from('clientes').select('id, dias_limpieza'))),
+  ])
+  const m = {}
+  cli.forEach((c) => { m[c.id] = { ultima: null, proxima: null, dias: c.dias_limpieza || [] } })
+  const ini = hoy.slice(0, 8) + '01'
+  const reg = (id, f, hecho) => {
+    if (!id || !f) return
+    const x = (m[id] ||= { ultima: null, proxima: null, dias: [] })
+    x.servicios ??= 0; x.despachos ??= 0; x.aTiempo ??= 0
+    if (hecho && f >= ini) x.servicios++
+    if (hecho) { if (!x.ultima || f > x.ultima) x.ultima = f }
+    else if (f >= hoy && (!x.proxima || f < x.proxima)) x.proxima = f
+  }
+  par.forEach((p) => reg(p.cliente_id, p.salidas?.fecha, p.salidas?.estado === 'cerrada'))
+  des.forEach((d) => {
+    const f = d.estado === 'hecho' ? (d.fecha_realizada || '').slice(0, 10) : d.fecha_programada
+    reg(d.cliente_id, f, d.estado === 'hecho')
+    if (d.estado === 'hecho' && f >= ini && m[d.cliente_id]) { m[d.cliente_id].despachos++; if (f <= d.fecha_programada) m[d.cliente_id].aTiempo++ }
+  })
+  return m
+}
+
+// ── Tablero de Inicio: operación diaria, activos y transporte ───────────────
 export const tableroInicio = async () => {
   const hoy = new Date().toISOString().slice(0, 10)
-  const ini = hoy.slice(0, 8) + '01'
   const en7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10)
   const seguro = (p) => p.catch(() => [])
-  const [act, hechos, pend, sal, salPend] = await Promise.all([
+  const [act, des, salHoy, man] = await Promise.all([
     rows(supabase.from('activos').select('id, codigo, tipo, estado').neq('estado', 'baja')),
-    seguro(rows(supabase.from('despachos').select('id, fecha_programada, fecha_realizada').eq('estado', 'hecho').gte('fecha_realizada', ini))),
-    seguro(rows(supabase.from('despachos').select('id, fecha_programada').eq('estado', 'programado').lte('fecha_programada', en7))),
-    seguro(rows(supabase.from('salidas').select('id, salida_paradas(id)').eq('estado', 'cerrada').gte('fecha', ini).lte('fecha', hoy))),
-    seguro(rows(supabase.from('salidas').select('id, salida_paradas(id)').eq('estado', 'planificada').gte('fecha', hoy).lte('fecha', en7))),
+    seguro(rows(supabase.from('despachos').select('id, tipo, fecha_programada, vehiculo_id').eq('estado', 'programado'))),
+    seguro(rows(supabase.from('salidas').select('id, vehiculo_id, salida_paradas(id)').eq('estado', 'planificada').eq('fecha', hoy))),
+    seguro(rows(supabase.from('mantenciones').select('id, fecha_programada, activos!inner(tipo)').in('estado', ['programada', 'proxima', 'urgente']))),
   ])
   const banos = act.filter((x) => x.tipo === 'bano_quimico')
-  const cuenta = (e) => banos.filter((x) => e.includes(x.estado)).length
-  const vehiculosDetenidos = act.filter((x) => x.tipo !== 'bano_quimico' && ['mantencion', 'fuera_de_servicio'].includes(x.estado))
-  const paradas = (l) => l.reduce((t, x) => t + (x.salida_paradas?.length || 0), 0)
-  const aTiempo = hechos.filter((d) => d.fecha_realizada && d.fecha_realizada.slice(0, 10) <= d.fecha_programada).length
+  const flota = act.filter((x) => ['camion', 'camioneta'].includes(x.tipo))
+  const n = (l, e) => l.filter((x) => e.includes(x.estado)).length
+  const enRuta = new Set([...salHoy.map((s) => s.vehiculo_id), ...des.filter((d) => d.fecha_programada === hoy).map((d) => d.vehiculo_id)].filter(Boolean))
+  const manVeh = man.filter((m) => ['camion', 'camioneta'].includes(m.activos?.tipo))
   return {
+    operacion: {
+      hoy: des.filter((d) => d.fecha_programada === hoy).length + salHoy.reduce((t, s) => t + (s.salida_paradas?.length || 0), 0),
+      atrasados: des.filter((d) => d.fecha_programada < hoy).length,
+      retiros: des.filter((d) => d.tipo === 'retiro').length,
+      mantenciones: man.filter((m) => m.fecha_programada <= en7).length,
+    },
     banos: {
-      total: banos.length,
-      disponibles: cuenta(['disponible']),
-      arrendados: cuenta(['en_arriendo', 'en_servicio']),
-      mantencion: cuenta(['mantencion']),
-      fuera: cuenta(['fuera_de_servicio']),
+      total: banos.length, disponibles: n(banos, ['disponible']), arrendados: n(banos, ['en_arriendo']),
+      limpieza: n(banos, ['en_limpieza']), fuera: n(banos, ['mantencion', 'fuera_de_servicio']),
     },
-    servicio: {
-      realizados: hechos.length + paradas(sal),
-      pendientes: pend.length + paradas(salPend),
-      atrasados: pend.filter((d) => d.fecha_programada < hoy).length,
-      cumplimiento: hechos.length ? aTiempo / hechos.length : null,
-      despachosHechos: hechos.length,
+    transporte: {
+      total: flota.length,
+      operando: flota.filter((v) => enRuta.has(v.id) || v.estado === 'en_servicio').length,
+      disponibles: flota.filter((v) => !enRuta.has(v.id) && ['disponible', 'en_servicio'].includes(v.estado) && v.estado !== 'en_servicio').length,
+      taller: n(flota, ['mantencion', 'fuera_de_servicio']),
+      mantPendientes: manVeh.length,
     },
-    vehiculosDetenidos,
+    banosFuera: banos.filter((b) => b.estado === 'fuera_de_servicio'),
+    vehiculosDetenidos: flota.filter((v) => ['mantencion', 'fuera_de_servicio'].includes(v.estado)),
   }
 }
 

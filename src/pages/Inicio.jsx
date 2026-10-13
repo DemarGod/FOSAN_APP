@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Mapa, { Leyenda } from '../components/Mapa'
 import { Aviso } from '../components/Listado'
-import { useSesion, verFinanzas } from '../lib/sesion'
+import { useSesion } from '../lib/sesion'
 import { tableroInicio, avisosCalculados, mapaPuntos } from '../lib/api'
-import { cargarMes, calcular, mesActual } from '../lib/analisis'
-import { C, Icon, I, millones, mesLargo } from '../lib/ui'
+import { mesActual } from '../lib/analisis'
+import { C, Icon, I, mesLargo } from '../lib/ui'
 
 const NIVEL = {
   alerta: { color: C.rojo, tint: '#fce8e6', d: I.alert },
@@ -13,7 +13,6 @@ const NIVEL = {
   info: { color: C.azul, tint: C.tinte, d: I.info },
 }
 const ORDEN = { alerta: 0, aviso: 1, info: 2 }
-const pct = (x) => (x == null ? '—' : Math.round(x * 100) + '%')
 
 function Seccion({ titulo, extra, children }) {
   return (
@@ -60,9 +59,7 @@ function Grupo({ titulo, nota, items, onClick }) {
 export default function Inicio({ onCalendario }) {
   const navegar = useNavigate()
   const { perfil } = useSesion()
-  const finanzas = verFinanzas(perfil)
   const [t, setT] = useState(null)
-  const [fin, setFin] = useState(null)
   const [avisos, setAvisos] = useState([])
   const [puntos, setPuntos] = useState([])
   const [error, setError] = useState(null)
@@ -71,27 +68,20 @@ export default function Inicio({ onCalendario }) {
     tableroInicio().then(setT).catch(setError)
     avisosCalculados().then(setAvisos).catch(() => {})
     mapaPuntos().then(setPuntos).catch(() => {})
-    if (finanzas) cargarMes(mesActual()).then(calcular).then(setFin).catch(() => setFin({ error: true }))
-  }, [finanzas])
+  }, [])
 
+  const op = t?.operacion || {}
   const b = t?.banos || {}
-  const sv = t?.servicio || {}
-  const uso = b.total ? b.arrendados / b.total : null
-  const r = fin?.resumen
-  const utilidad = r ? r.ingreso - r.costo : null
-  const margen = r?.ingreso ? utilidad / r.ingreso : null
+  const tr = t?.transporte || {}
 
-  // Alertas: las calculadas + vehículos detenidos + clientes con margen bajo
+  // Alertas: calculadas + baños dañados + vehículos detenidos
   const alertas = [
     ...avisos,
+    ...(t?.banosFuera || []).map((x) => ({ id: 'bf-' + x.id, origen: 'Baños químicos', a: '/banos', nivel: 'aviso', texto: `Baño ${x.codigo} fuera de servicio` })),
     ...(t?.vehiculosDetenidos || []).map((v) => ({
       id: 'veh-' + v.id, origen: 'Transporte', a: '/transporte', nivel: v.estado === 'fuera_de_servicio' ? 'alerta' : 'aviso',
       texto: `${v.codigo} ${v.estado === 'fuera_de_servicio' ? 'fuera de servicio' : 'en mantención'}`,
     })),
-    ...(finanzas && fin?.clientes ? fin.clientes.filter((c) => c.pct !== null && c.pct < 0.2).map((c) => ({
-      id: 'mrg-' + c.id, origen: 'Análisis', a: '/analisis', nivel: c.pct < 0 ? 'alerta' : 'aviso',
-      texto: `${c.nombre}: margen ${pct(c.pct)} este mes`,
-    })) : []),
   ].sort((x, y) => ORDEN[x.nivel] - ORDEN[y.nivel])
 
   const v = (x) => (t ? x : '…')
@@ -112,27 +102,24 @@ export default function Inicio({ onCalendario }) {
       <Aviso error={error} />
 
       <div style={{ display: 'grid', gap: 20 }}>
-        <Grupo titulo="Baños químicos" nota="Utilización = arrendados ÷ total" onClick={navegar} items={[
+        <Grupo titulo="Operación diaria" onClick={navegar} items={[
+          { v: v(op.hoy), l: 'Servicios programados hoy', s: 'Despachos y limpiezas en ruta', a: '/rutas', color: C.azul },
+          { v: v(op.atrasados), l: 'Servicios atrasados', a: '/despachos', color: C.rojo, vColor: op.atrasados ? C.rojo : undefined },
+          { v: v(op.retiros), l: 'Retiros pendientes', a: '/despachos', color: C.amarillo },
+          { v: v(op.mantenciones), l: 'Mantenciones próximas', s: 'Próximos 7 días', a: '/mantenciones', color: C.navy },
+        ]} />
+
+        <Grupo titulo="Baños químicos" onClick={navegar} items={[
           { v: v(b.total), l: 'Total', a: '/banos', color: C.navy },
           { v: v(b.disponibles), l: 'Disponibles', a: '/banos', color: C.azul },
           { v: v(b.arrendados), l: 'Arrendados', a: '/banos', color: C.verde },
-          { v: v(b.mantencion + b.fuera), l: 'Fuera de servicio', s: t ? `${b.mantencion} en mantención · ${b.fuera} dañados` : null, a: '/mantenciones', color: C.rojo },
-          { v: v(pct(uso)), l: 'Utilización de baños', color: C.verde, vColor: uso != null && uso < 0.6 ? C.rojo : undefined },
+          { v: v(b.fuera), l: 'Fuera de servicio', s: 'En mantención o dañados', a: '/mantenciones', color: C.rojo },
         ]} />
 
-        {finanzas && (
-          <Grupo titulo="Finanzas del mes" nota={fin?.error ? 'No se pudo calcular' : 'Ventas de Maxxa o valor de contrato'} onClick={navegar} items={[
-            { v: r ? millones(r.ingreso) : '…', l: 'Ventas', a: '/utilidades', color: C.navy },
-            { v: r ? millones(r.costo) : '…', l: 'Costos operacionales', s: 'Rutas, insumos, mantenciones y despachos', a: '/analisis', color: C.amarillo },
-            { v: r ? millones(utilidad) : '…', l: 'Utilidad', a: '/utilidades', color: C.verde, vColor: utilidad < 0 ? C.rojo : undefined },
-            { v: r ? pct(margen) : '…', l: 'Margen operacional', a: '/analisis', color: C.verde, vColor: margen != null && margen < 0.2 ? C.rojo : undefined },
-          ]} />
-        )}
-
-        <Grupo titulo="Servicio" nota="Despachos, retiros y limpiezas en ruta" onClick={navegar} items={[
-          { v: v(sv.realizados), l: 'Servicios realizados', s: 'Este mes', a: '/rutas', color: C.verde },
-          { v: v(sv.pendientes), l: 'Servicios pendientes', s: t ? (sv.atrasados ? `Próximos 7 días · ${sv.atrasados} atrasado(s)` : 'Próximos 7 días') : null, a: '/despachos', color: sv.atrasados ? C.rojo : C.azul },
-          { v: v(pct(sv.cumplimiento)), l: 'Entregas a tiempo', s: t ? `De ${sv.despachosHechos} despacho(s) hechos este mes` : null, a: '/despachos', color: C.navy, vColor: sv.cumplimiento != null && sv.cumplimiento < 0.9 ? C.rojo : undefined },
+        <Grupo titulo="Transporte" onClick={navegar} items={[
+          { v: v(tr.disponibles), l: 'Vehículos disponibles', a: '/transporte', color: C.azul },
+          { v: v(tr.operando), l: 'Vehículos en operación', s: 'Con ruta o despacho hoy', a: '/rutas', color: C.verde },
+          { v: v(tr.mantPendientes), l: 'Mantenciones pendientes', s: t && tr.taller ? `${tr.taller} vehículo(s) en taller` : null, a: '/mantenciones', color: C.amarillo },
         ]} />
 
         <div className="cols2" style={{ gap: 20 }}>
