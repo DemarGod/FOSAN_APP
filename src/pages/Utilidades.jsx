@@ -39,7 +39,7 @@ export default function Utilidades() {
           <h2 style={{ margin: '0 0 4px' }}>Utilidades y ventas</h2>
           <p className="text-muted" style={{ margin: 0 }}>
             Ventas, costos y margen por mes y por servicio. El costo de transporte se registra aparte
-            porque el ERP no lo separa.
+            porque Maxxa no lo separa.
           </p>
         </div>
         <button className="btn" onClick={() => exportarVista('export_ingresos_costos', 'Ingresos y costos')}>

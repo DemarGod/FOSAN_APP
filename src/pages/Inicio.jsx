@@ -1,31 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Mapa, { Leyenda } from '../components/Mapa'
 import { Aviso } from '../components/Listado'
-import { useSesion, esSecretaria, verFinanzas } from '../lib/sesion'
-import {
-  resumenInventario, estadoActivos, serviciosMes, mapaPuntos, banosKpi,
-  utilidadMensual, actividadReciente, notificaciones,
-} from '../lib/api'
-import {
-  C, Icon, I, millones, fechaHora, L_TIPO_SERVICIO, L_ESTADO_ACTIVO, L_MOVIMIENTO,
-} from '../lib/ui'
+import { useSesion, verFinanzas } from '../lib/sesion'
+import { tableroInicio, avisosCalculados, mapaPuntos } from '../lib/api'
+import { cargarMes, calcular, mesActual } from '../lib/analisis'
+import { C, Icon, I, millones, mesLargo } from '../lib/ui'
 
-const COLOR_ESTADO = {
-  en_arriendo: C.verde, en_servicio: C.verde, disponible: C.azul,
-  mantencion: C.amarillo, fuera_de_servicio: C.rojo,
-}
-const COLOR_SERVICIO = {
-  arriendo_bano: C.verde, limpieza_bano: C.azul, limpieza_fosa: C.navy,
-}
-const ICONO_SERVICIO = {
-  arriendo_bano: I.drop, limpieza_bano: I.clip, limpieza_fosa: I.truck,
-}
 const NIVEL = {
   alerta: { color: C.rojo, tint: '#fce8e6', d: I.alert },
   aviso: { color: C.amarillo, tint: '#fef7e0', d: I.wrench },
   info: { color: C.azul, tint: C.tinte, d: I.info },
 }
+const ORDEN = { alerta: 0, aviso: 1, info: 2 }
+const pct = (x) => (x == null ? '—' : Math.round(x * 100) + '%')
 
 function Seccion({ titulo, extra, children }) {
   return (
@@ -42,94 +30,78 @@ function Seccion({ titulo, extra, children }) {
   )
 }
 
-function Donut({ datos, total }) {
-  const r = 86
-  const circ = 2 * Math.PI * r
-  let offset = 0
+// Un grupo de indicadores: título + celdas iguales separadas por reglas
+function Grupo({ titulo, nota, items, onClick }) {
   return (
-    <svg viewBox="0 0 240 240" style={{ width: 'clamp(120px, 38%, 160px)', height: 'auto', flex: 'none' }}>
-      <circle cx="120" cy="120" r={r} fill="none" stroke={C.fila} strokeWidth="34" />
-      {datos.map((d) => {
-        const largo = (Number(d.porcentaje) / 100) * circ
-        const el = (
-          <circle key={d.estado} cx="120" cy="120" r={r} fill="none"
-            stroke={COLOR_ESTADO[d.estado] || C.gris} strokeWidth="34"
-            strokeDasharray={`${largo} ${circ}`} strokeDashoffset={-offset}
-            transform="rotate(-90 120 120)" />
-        )
-        offset += largo
-        return el
-      })}
-      <text x="120" y="116" textAnchor="middle" fontFamily="Archivo" fontSize="46" fontWeight="800" fill={C.tinta}>
-        {total}
-      </text>
-      <text x="120" y="140" textAnchor="middle" fontFamily="Archivo" fontSize="15" fill={C.gris}>Activos</text>
-    </svg>
+    <section style={{ background: '#fff', border: `2px solid ${C.borde}` }}>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap',
+        padding: '12px 18px', borderBottom: `2px solid ${C.borde}`, background: C.tinte,
+      }}>
+        <h6 style={{ margin: 0, color: '#1a3c72' }}>{titulo}</h6>
+        {nota && <span style={{ font: '400 12px var(--font)', color: C.gris }}>{nota}</span>}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 2, background: C.borde }}>
+        {items.map((k) => (
+          <button key={k.l} type="button" onClick={k.a ? () => onClick(k.a) : undefined} style={{
+            background: '#fff', border: 0, textAlign: 'left', padding: '16px 18px', cursor: k.a ? 'pointer' : 'default',
+            borderTop: `4px solid ${k.color || 'transparent'}`, minHeight: 92,
+          }}>
+            <div style={{ font: '800 28px/1 var(--font)', letterSpacing: '-.03em', color: k.vColor || C.tinta }}>{k.v}</div>
+            <div style={{ font: '600 12px/1.3 var(--font)', color: '#3c4551', marginTop: 8 }}>{k.l}</div>
+            {k.s && <div style={{ font: '400 11px/1.3 var(--font)', color: C.gris, marginTop: 3 }}>{k.s}</div>}
+          </button>
+        ))}
+      </div>
+    </section>
   )
 }
 
 export default function Inicio({ onCalendario }) {
   const navegar = useNavigate()
   const { perfil } = useSesion()
-  const sec = !verFinanzas(perfil)
-  const [d, setD] = useState({})
+  const finanzas = verFinanzas(perfil)
+  const [t, setT] = useState(null)
+  const [fin, setFin] = useState(null)
+  const [avisos, setAvisos] = useState([])
+  const [puntos, setPuntos] = useState([])
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    Promise.all([
-      resumenInventario(), estadoActivos(), serviciosMes(), mapaPuntos(),
-      utilidadMensual().catch(() => []), actividadReciente(6).catch(() => []), notificaciones().catch(() => []),
-      banosKpi().catch(() => ({})),
-    ]).then(([resumen, estados, servicios, puntos, utilidad, actividad, avisos, banos]) => {
-      setD({ resumen, estados, servicios, puntos, utilidad, actividad, avisos, banos })
-    }).catch(setError)
-  }, [])
+    tableroInicio().then(setT).catch(setError)
+    avisosCalculados().then(setAvisos).catch(() => {})
+    mapaPuntos().then(setPuntos).catch(() => {})
+    if (finanzas) cargarMes(mesActual()).then(calcular).then(setFin).catch(() => setFin({ error: true }))
+  }, [finanzas])
 
-  const ultimoMes = useMemo(() => {
-    const u = d.utilidad || []
-    return u[u.length - 1] || {}
-  }, [d.utilidad])
+  const b = t?.banos || {}
+  const sv = t?.servicio || {}
+  const uso = b.total ? b.arrendados / b.total : null
+  const r = fin?.resumen
+  const utilidad = r ? r.ingreso - r.costo : null
+  const margen = r?.ingreso ? utilidad / r.ingreso : null
 
-  const r = d.resumen || {}
-  const totalActivos = r.total_activos ?? 0
+  // Alertas: las calculadas + vehículos detenidos + clientes con margen bajo
+  const alertas = [
+    ...avisos,
+    ...(t?.vehiculosDetenidos || []).map((v) => ({
+      id: 'veh-' + v.id, origen: 'Transporte', a: '/transporte', nivel: v.estado === 'fuera_de_servicio' ? 'alerta' : 'aviso',
+      texto: `${v.codigo} ${v.estado === 'fuera_de_servicio' ? 'fuera de servicio' : 'en mantención'}`,
+    })),
+    ...(finanzas && fin?.clientes ? fin.clientes.filter((c) => c.pct !== null && c.pct < 0.2).map((c) => ({
+      id: 'mrg-' + c.id, origen: 'Análisis', a: '/analisis', nivel: c.pct < 0 ? 'alerta' : 'aviso',
+      texto: `${c.nombre}: margen ${pct(c.pct)} este mes`,
+    })) : []),
+  ].sort((x, y) => ORDEN[x.nivel] - ORDEN[y.nivel])
 
-  const kpis = [
-    { v: totalActivos, l: 'Activos totales', color: C.azul, tint: C.tinte, d: I.box },
-    { v: r.total_disponibles ?? 0, l: 'Disponibles', color: C.verde, tint: '#e6f4ea', d: I.drop },
-    { v: r.total_mantencion ?? 0, l: 'En mantención', color: C.amarillo, tint: '#fef7e0', d: I.wrench },
-    { v: (d.servicios || []).reduce((s, x) => s + Number(x.cantidad), 0), l: 'Servicios del mes', color: C.azul, tint: C.tinte, d: I.clip },
-    { v: millones(ultimoMes.ventas), l: 'Ventas del último mes', color: C.navy, tint: '#e8edf5', d: I.money },
-    { v: millones(ultimoMes.utilidad), l: 'Utilidad del último mes', color: C.verde, tint: '#e6f4ea', d: I.chart },
-  ]
-
-  const kpisVista = sec
-    ? [
-      { v: d.banos?.disponibles ?? 0, l: 'Baños disponibles', color: C.verde, tint: '#e6f4ea', d: I.drop },
-      { v: d.banos?.mantencion ?? 0, l: 'En mantención', color: C.amarillo, tint: '#fef7e0', d: I.wrench },
-      kpis[3],
-    ]
-    : kpis
-
-  const accesos = [
-    { label: 'Ver inventario', d: I.box, to: '/inventario' },
-    { label: 'Registrar activo', d: I.plus, to: '/inventario' },
-    { label: 'Ver baños', d: I.drop, to: '/banos' },
-    { label: 'Transporte', d: I.truck, to: '/transporte' },
-    { label: 'Utilidades', d: I.money, to: '/utilidades' },
-    { label: 'Reportes', d: I.chart, to: '/reportes' },
-  ]
+  const v = (x) => (t ? x : '…')
 
   return (
     <div>
-      <div style={{
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
-        gap: 16, flexWrap: 'wrap', marginBottom: 20,
-      }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 20 }}>
         <div>
-          <h2 style={{ margin: '0 0 4px' }}>
-            ¡Hola{perfil?.nombre ? ', ' + perfil.nombre.split(' ')[0] : ''}!
-          </h2>
-          <p className="text-muted" style={{ margin: 0 }}>Resumen de la operación de FOSAN.</p>
+          <h2 style={{ margin: '0 0 4px' }}>¡Hola{perfil?.nombre ? ', ' + perfil.nombre.split(' ')[0] : ''}!</h2>
+          <p className="text-muted" style={{ margin: 0 }}>Estado de la operación de FOSAN · {mesLargo(mesActual())}.</p>
         </div>
         <button className="btn" onClick={onCalendario}>
           <Icon d={I.cal} size={16} color={C.azul} />
@@ -139,180 +111,65 @@ export default function Inicio({ onCalendario }) {
 
       <Aviso error={error} />
 
-      <div className="kpis">
-        {kpisVista.map((k) => (
-          <div key={k.l} style={{
-            background: '#fff', border: `2px solid ${C.borde}`, borderTop: `4px solid ${k.color}`,
-            padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12,
-          }}>
-            <span style={{
-              width: 38, height: 38, flex: 'none', background: k.tint, color: k.color,
-              display: 'grid', placeItems: 'center',
-            }}>
-              <Icon d={k.d} size={20} />
-            </span>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ font: '800 26px/1 var(--font)', letterSpacing: '-.03em' }}>{k.v}</div>
-              <div style={{ font: '400 12px/1.3 var(--font)', color: C.gris, marginTop: 5 }}>{k.l}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <div style={{ display: 'grid', gap: 20 }}>
+        <Grupo titulo="Baños químicos" nota="Utilización = arrendados ÷ total" onClick={navegar} items={[
+          { v: v(b.total), l: 'Total', a: '/banos', color: C.navy },
+          { v: v(b.disponibles), l: 'Disponibles', a: '/banos', color: C.azul },
+          { v: v(b.arrendados), l: 'Arrendados', a: '/banos', color: C.verde },
+          { v: v(b.mantencion + b.fuera), l: 'Fuera de servicio', s: t ? `${b.mantencion} en mantención · ${b.fuera} dañados` : null, a: '/mantenciones', color: C.rojo },
+          { v: v(pct(uso)), l: 'Utilización de baños', color: C.verde, vColor: uso != null && uso < 0.6 ? C.rojo : undefined },
+        ]} />
 
-      <div className="cols2" style={{ marginTop: 20 }}>
-        {!sec && (
-        <Seccion titulo="Estado de activos">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', padding: 18 }}>
-            <Donut datos={d.estados || []} total={totalActivos} />
-            <div style={{ flex: 1, minWidth: 130, display: 'grid', gap: 11, justifyItems: 'start' }}>
-              {(d.estados || []).map((e) => (
-                <div key={e.estado} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                  <span style={{
-                    width: 14, height: 14, flex: 'none', borderRadius: '50%',
-                    background: COLOR_ESTADO[e.estado] || C.gris,
-                  }} />
-                  <span style={{ font: '800 17px var(--font)', letterSpacing: '-.02em', minWidth: 42 }}>
-                    {e.porcentaje}%
-                  </span>
-                  <span style={{ font: '400 13px var(--font)', color: '#3c4551' }}>
-                    {L_ESTADO_ACTIVO[e.estado] || e.estado}
-                  </span>
-                </div>
-              ))}
-              {(d.estados || []).length === 0 && (
-                <span className="text-muted">Sin activos registrados todavía.</span>
-              )}
-            </div>
-          </div>
-        </Seccion>
+        {finanzas && (
+          <Grupo titulo="Finanzas del mes" nota={fin?.error ? 'No se pudo calcular' : 'Ventas de Maxxa o valor de contrato'} onClick={navegar} items={[
+            { v: r ? millones(r.ingreso) : '…', l: 'Ventas', a: '/utilidades', color: C.navy },
+            { v: r ? millones(r.costo) : '…', l: 'Costos operacionales', s: 'Rutas, insumos, mantenciones y despachos', a: '/analisis', color: C.amarillo },
+            { v: r ? millones(utilidad) : '…', l: 'Utilidad', a: '/utilidades', color: C.verde, vColor: utilidad < 0 ? C.rojo : undefined },
+            { v: r ? pct(margen) : '…', l: 'Margen operacional', a: '/analisis', color: C.verde, vColor: margen != null && margen < 0.2 ? C.rojo : undefined },
+          ]} />
         )}
 
-        <Seccion titulo="Servicios · resumen del mes">
-          <div style={{ maxHeight: 288, overflowY: 'auto' }}>
-            {(d.servicios || []).map((s) => (
-              <div key={s.tipo} style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px',
-                borderBottom: `1px solid ${C.fila}`,
-              }}>
-                <span style={{
-                  width: 34, height: 34, flex: 'none', display: 'grid', placeItems: 'center',
-                  background: '#eef3fb', color: COLOR_SERVICIO[s.tipo] || C.navy,
-                }}>
-                  <Icon d={ICONO_SERVICIO[s.tipo] || I.clip} size={18} />
-                </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ font: '600 13px/1.35 var(--font)' }}>{L_TIPO_SERVICIO[s.tipo] || s.tipo}</div>
-                  <div style={{ font: '400 11px var(--font)', color: C.gris }}>Realizados este mes</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{
-                    font: '800 20px/1 var(--font)', letterSpacing: '-.02em',
-                    color: COLOR_SERVICIO[s.tipo] || C.navy,
-                  }}>{s.cantidad}</div>
-                  <div style={{ font: '400 11px var(--font)', color: C.gris }}>servicios</div>
-                </div>
-              </div>
-            ))}
-            {(d.servicios || []).length === 0 && (
-              <div style={{ padding: 18 }} className="text-muted">Sin servicios registrados este mes.</div>
-            )}
-          </div>
-        </Seccion>
-      </div>
+        <Grupo titulo="Servicio" nota="Despachos, retiros y limpiezas en ruta" onClick={navegar} items={[
+          { v: v(sv.realizados), l: 'Servicios realizados', s: 'Este mes', a: '/rutas', color: C.verde },
+          { v: v(sv.pendientes), l: 'Servicios pendientes', s: t ? (sv.atrasados ? `Próximos 7 días · ${sv.atrasados} atrasado(s)` : 'Próximos 7 días') : null, a: '/despachos', color: sv.atrasados ? C.rojo : C.azul },
+          { v: v(pct(sv.cumplimiento)), l: 'Entregas a tiempo', s: t ? `De ${sv.despachosHechos} despacho(s) hechos este mes` : null, a: '/despachos', color: C.navy, vColor: sv.cumplimiento != null && sv.cumplimiento < 0.9 ? C.rojo : undefined },
+        ]} />
 
-      <div className="cols2" style={{ marginTop: 20 }}>
-        {!sec && (
-        <Seccion titulo="Actividad reciente">
-          <div style={{ maxHeight: 288, overflowY: 'auto' }}>
-            {(d.actividad || []).map((a) => (
-              <div key={a.id} style={{
-                display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 18px',
-                borderBottom: `1px solid ${C.fila}`,
-              }}>
-                <span style={{
-                  width: 30, height: 30, flex: 'none', background: '#eef3fb', color: C.azul,
-                  display: 'grid', placeItems: 'center',
-                }}>
-                  <Icon d={I.box} size={16} />
-                </span>
-                <div style={{ font: '700 12px var(--font)', color: C.navy, minWidth: 62, paddingTop: 3 }}>
-                  {a.activos?.codigo || '—'}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ font: '600 13px/1.35 var(--font)' }}>{L_MOVIMIENTO[a.tipo] || a.tipo}</div>
-                  {a.detalle && (
-                    <div style={{ font: '400 12px/1.45 var(--font)', color: '#3c4551', marginTop: 2 }}>
-                      {a.detalle}
-                    </div>
-                  )}
-                  <div style={{ font: '400 11px var(--font)', color: C.gris, marginTop: 2 }}>
-                    {fechaHora(a.fecha)}{a.clientes?.nombre ? ' · ' + a.clientes.nombre : ''}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {(d.actividad || []).length === 0 && (
-              <div style={{ padding: 18 }} className="text-muted">Todavía no hay movimientos registrados.</div>
-            )}
-          </div>
-        </Seccion>
-        )}
-
-        <Seccion titulo="Alertas">
-          <div style={{ maxHeight: 288, overflowY: 'auto' }}>
-            {(d.avisos || []).slice(0, 8).map((a) => {
-              const n = NIVEL[a.nivel] || NIVEL.info
-              return (
-                <div key={a.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 12, padding: '13px 18px',
-                  borderBottom: `1px solid ${C.fila}`,
-                }}>
-                  <span style={{
-                    width: 30, height: 30, flex: 'none', background: n.tint, color: n.color,
-                    display: 'grid', placeItems: 'center',
+        <div className="cols2" style={{ gap: 20 }}>
+          <Seccion titulo="Alertas" extra={<span style={{ font: '400 12px var(--font)', color: C.gris }}>{alertas.length}</span>}>
+            <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+              {alertas.map((a) => {
+                const n = NIVEL[a.nivel] || NIVEL.info
+                return (
+                  <button key={a.id} type="button" onClick={a.a ? () => navegar(a.a) : undefined} style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 18px', textAlign: 'left',
+                    border: 0, borderBottom: `1px solid ${C.fila}`, background: '#fff', cursor: a.a ? 'pointer' : 'default',
                   }}>
-                    <Icon d={n.d} size={16} />
-                  </span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ font: '600 13px/1.35 var(--font)' }}>{a.texto}</div>
-                    <div style={{ font: '400 11px var(--font)', color: C.gris }}>{fechaHora(a.creado_en)}</div>
-                  </div>
-                </div>
-              )
-            })}
-            {(d.avisos || []).length === 0 && (
-              <div style={{ padding: 18 }} className="text-muted">Sin alertas pendientes.</div>
-            )}
-          </div>
-        </Seccion>
-      </div>
+                    <span style={{ width: 30, height: 30, flex: 'none', background: n.tint, color: n.color, display: 'grid', placeItems: 'center' }}>
+                      <Icon d={n.d} size={16} />
+                    </span>
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ display: 'block', font: '600 13px/1.35 var(--font)', color: C.tinta }}>{a.texto}</span>
+                      <span style={{ display: 'block', font: '400 11px var(--font)', color: C.gris }}>{a.origen}</span>
+                    </span>
+                  </button>
+                )
+              })}
+              {alertas.length === 0 && <div style={{ padding: 18 }} className="text-muted">Sin alertas pendientes.</div>}
+            </div>
+          </Seccion>
 
-      <div style={{ marginTop: 20 }}>
-        <Seccion titulo="Ubicación de activos" extra={
-          <button className="btn btn-azul" onClick={() => navegar('/ubicaciones')}
-            style={{ minHeight: 36, padding: '8px 14px', font: '600 12px var(--font)' }}>
-            Ver mapa completo →
-          </button>
-        }>
-          <Mapa puntos={d.puntos || []} alto={320} />
-          <Leyenda />
-        </Seccion>
+          <Seccion titulo="Ubicación de baños" extra={
+            <button className="btn btn-azul" onClick={() => navegar('/ubicaciones')}
+              style={{ minHeight: 36, padding: '8px 14px', font: '600 12px var(--font)' }}>
+              Ver mapa completo →
+            </button>
+          }>
+            <Mapa puntos={puntos} alto={300} />
+            <Leyenda />
+          </Seccion>
+        </div>
       </div>
-
-      {!sec && (
-      <div style={{ marginTop: 20 }}>
-        <Seccion titulo="Accesos rápidos">
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, padding: '16px 18px' }}>
-            {accesos.map((a) => (
-              <button key={a.label} className="btn" onClick={() => navegar(a.to)}>
-                <Icon d={a.d} size={17} color={C.azul} />
-                <span>{a.label}</span>
-              </button>
-            ))}
-          </div>
-        </Seccion>
-      </div>
-      )}
     </div>
   )
 }

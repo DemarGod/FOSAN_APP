@@ -184,6 +184,43 @@ export const borrarEvento = async (id) => {
   if (error) throw error
 }
 
+// ── Tablero de Inicio: activos, servicio y vehículos detenidos ──────────────
+export const tableroInicio = async () => {
+  const hoy = new Date().toISOString().slice(0, 10)
+  const ini = hoy.slice(0, 8) + '01'
+  const en7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10)
+  const seguro = (p) => p.catch(() => [])
+  const [act, hechos, pend, sal, salPend] = await Promise.all([
+    rows(supabase.from('activos').select('id, codigo, tipo, estado').neq('estado', 'baja')),
+    seguro(rows(supabase.from('despachos').select('id, fecha_programada, fecha_realizada').eq('estado', 'hecho').gte('fecha_realizada', ini))),
+    seguro(rows(supabase.from('despachos').select('id, fecha_programada').eq('estado', 'programado').lte('fecha_programada', en7))),
+    seguro(rows(supabase.from('salidas').select('id, salida_paradas(id)').eq('estado', 'cerrada').gte('fecha', ini).lte('fecha', hoy))),
+    seguro(rows(supabase.from('salidas').select('id, salida_paradas(id)').eq('estado', 'planificada').gte('fecha', hoy).lte('fecha', en7))),
+  ])
+  const banos = act.filter((x) => x.tipo === 'bano_quimico')
+  const cuenta = (e) => banos.filter((x) => e.includes(x.estado)).length
+  const vehiculosDetenidos = act.filter((x) => x.tipo !== 'bano_quimico' && ['mantencion', 'fuera_de_servicio'].includes(x.estado))
+  const paradas = (l) => l.reduce((t, x) => t + (x.salida_paradas?.length || 0), 0)
+  const aTiempo = hechos.filter((d) => d.fecha_realizada && d.fecha_realizada.slice(0, 10) <= d.fecha_programada).length
+  return {
+    banos: {
+      total: banos.length,
+      disponibles: cuenta(['disponible']),
+      arrendados: cuenta(['en_arriendo', 'en_servicio']),
+      mantencion: cuenta(['mantencion']),
+      fuera: cuenta(['fuera_de_servicio']),
+    },
+    servicio: {
+      realizados: hechos.length + paradas(sal),
+      pendientes: pend.length + paradas(salPend),
+      atrasados: pend.filter((d) => d.fecha_programada < hoy).length,
+      cumplimiento: hechos.length ? aTiempo / hechos.length : null,
+      despachosHechos: hechos.length,
+    },
+    vehiculosDetenidos,
+  }
+}
+
 // ── Avisos calculados (calendario, contratos, mantenciones, insumos, despachos) ──
 export const avisosCalculados = async () => {
   const hoy = new Date(); hoy.setHours(12, 0, 0, 0)

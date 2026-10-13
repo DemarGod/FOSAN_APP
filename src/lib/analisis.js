@@ -92,7 +92,7 @@ export function calcular(d) {
     }
   })
 
-  // ── Ingresos por cliente: ventas del ERP o, si no hay, valor del contrato ─
+  // ── Ingresos por cliente: ventas de Maxxa o, si no hay, valor del contrato ─
   const ventasCli = {}
   d.ventas.forEach((v) => { if (v.cliente_id) (ventasCli[v.cliente_id] ||= []).push(v) })
   const vigenteEnMes = (c) => (!c.fecha_inicio_contrato || c.fecha_inicio_contrato <= d.fin) && (!c.fecha_fin_contrato || c.fecha_fin_contrato >= d.ini)
