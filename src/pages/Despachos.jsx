@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Listado from '../components/Listado'
 import Modal from '../components/Modal'
 import FormDespacho from '../components/FormDespacho'
-import { despachos, estadoDespacho, procesarVencidos } from '../lib/api'
+import { despachos, estadoDespacho as actualizarEstadoDespacho, procesarVencidos } from '../lib/api'
 import { useSesion, puedeEditar, puedeOperar } from '../lib/sesion'
 import { C, I, fecha, L_ESTADO_DESPACHO, estadoDespacho } from '../lib/ui'
 import { hoyISO } from '../lib/costos'
@@ -47,7 +47,7 @@ export default function Despachos() {
   const prog = filas.filter((f) => f.estado === 'programado')
 
   const cambiar = async () => {
-    try { await estadoDespacho(confirmar.d.id, confirmar.estado); setConfirmar(null); cargar() }
+    try { await actualizarEstadoDespacho(confirmar.d.id, confirmar.estado); setConfirmar(null); cargar() }
     catch (e) { setConfirmar((c) => ({ ...c, error: String(e.message || e) })) }
   }
 
