@@ -13,7 +13,7 @@ export default function Banos() {
   const navegar = useNavigate()
   const { perfil } = useSesion()
   const editable = puedeEditar(perfil)
-  const operar = puedeOperar(perfil)
+  const operar = puedeOperar(perfil, 'banos')
   const finanzas = verFinanzas(perfil)
 
   const [datos, setDatos] = useState([])

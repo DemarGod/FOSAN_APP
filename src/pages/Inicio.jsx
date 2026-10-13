@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Mapa, { Leyenda } from '../components/Mapa'
 import { Aviso } from '../components/Listado'
-import { useSesion, esSecretaria } from '../lib/sesion'
+import { useSesion, esSecretaria, verFinanzas } from '../lib/sesion'
 import {
   resumenInventario, estadoActivos, serviciosMes, mapaPuntos, banosKpi,
   utilidadMensual, actividadReciente, notificaciones,
@@ -71,7 +71,7 @@ function Donut({ datos, total }) {
 export default function Inicio({ onCalendario }) {
   const navegar = useNavigate()
   const { perfil } = useSesion()
-  const sec = esSecretaria(perfil)
+  const sec = !verFinanzas(perfil)
   const [d, setD] = useState({})
   const [error, setError] = useState(null)
 

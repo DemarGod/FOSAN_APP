@@ -18,7 +18,7 @@ const SEGMENTOS = [
 
 export default function Despachos() {
   const { perfil } = useSesion()
-  const editable = puedeOperar(perfil)
+  const editable = puedeOperar(perfil, 'despachos')
   const [datos, setDatos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)

@@ -15,7 +15,7 @@ const DIA_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 
 export default function Rutas() {
   const { perfil } = useSesion()
-  const editable = puedeOperar(perfil)
+  const editable = puedeOperar(perfil, 'rutas')
   const finanzas = verFinanzas(perfil)
   const [seg, setSeg] = useState('salidas')
   const [rutas, setRutas] = useState([])

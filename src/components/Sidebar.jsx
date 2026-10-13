@@ -1,26 +1,26 @@
 import { NavLink } from 'react-router-dom'
 import { C, Icon, I } from '../lib/ui'
-import { useSesion, puedeEditar, esSecretaria } from '../lib/sesion'
+import { useSesion, puedeVer } from '../lib/sesion'
 
 const DESPACHO = 'M3 7h11v9H3zM14 10h4l3 3v3h-7zM7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM6 4h5M8.5 1.5 11 4 8.5 6.5'
 const RUTA = 'M5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM19 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM7 17h6a3 3 0 0 0 0-6h-2a3 3 0 0 1 0-6h6'
 
 export const NAV = [
-  { to: '/', label: 'Inicio', d: I.home, fin: true },
-  { to: '/clientes', label: 'Clientes', d: I.users },
+  { to: '/', label: 'Inicio', d: I.home, fin: true, s: 'inicio' },
+  { to: '/clientes', label: 'Clientes', d: I.users, s: 'clientes' },
   { grupo: 'Logística' },
-  { to: '/banos', label: 'Baños químicos', d: I.drop },
-  { to: '/transporte', label: 'Transporte', d: I.truck },
-  { to: '/insumos', label: 'Insumos', d: I.box },
-  { to: '/despachos', label: 'Despachos y retiros', d: DESPACHO },
-  { to: '/rutas', label: 'Rutas', d: RUTA },
+  { to: '/banos', label: 'Baños químicos', d: I.drop, s: 'banos' },
+  { to: '/transporte', label: 'Transporte', d: I.truck, s: 'transporte' },
+  { to: '/insumos', label: 'Insumos', d: I.box, s: 'insumos' },
+  { to: '/despachos', label: 'Despachos y retiros', d: DESPACHO, s: 'despachos' },
+  { to: '/rutas', label: 'Rutas', d: RUTA, s: 'rutas' },
   { grupo: 'Gestión' },
-  { to: '/mantenciones', label: 'Mantenciones', d: I.wrench },
-  { to: '/ubicaciones', label: 'Mapa', d: I.pin },
-  { calendario: true, label: 'Calendario', d: I.cal },
-  { to: '/utilidades', label: 'Utilidades y ventas', d: I.money, sinSecretaria: true },
-  { to: '/reportes', label: 'Reportes', d: I.chart, sinSecretaria: true },
-  { to: '/analisis', label: 'Análisis', d: 'M3 3v18h18M7 15l4-4 3 3 5-6', soloDueno: true },
+  { to: '/mantenciones', label: 'Mantenciones', d: I.wrench, s: 'mantenciones' },
+  { to: '/ubicaciones', label: 'Mapa', d: I.pin, s: 'ubicaciones' },
+  { calendario: true, label: 'Calendario', d: I.cal, s: 'calendario' },
+  { to: '/utilidades', label: 'Utilidades y ventas', d: I.money, s: 'utilidades' },
+  { to: '/reportes', label: 'Reportes', d: I.chart, s: 'reportes' },
+  { to: '/analisis', label: 'Análisis', d: 'M3 3v18h18M7 15l4-4 3 3 5-6', s: 'analisis' },
   { to: '/configuracion', label: 'Configuración', d: I.gear },
 ]
 
@@ -35,8 +35,6 @@ const item = (activo) => ({
 
 export default function Sidebar({ onCalendario }) {
   const { perfil } = useSesion()
-  const dueno = puedeEditar(perfil)
-  const sec = esSecretaria(perfil)
   return (
     <aside className="sidebar" style={{
       background: '#fff', color: C.navy, borderRight: `2px solid ${C.borde}`,
@@ -50,7 +48,7 @@ export default function Sidebar({ onCalendario }) {
       </div>
 
       <nav style={{ flex: 1, overflowY: 'auto', padding: '10px 0' }}>
-        {NAV.filter((n) => (!n.soloDueno || dueno) && !(n.sinSecretaria && sec)).map((n, i) => {
+        {NAV.filter((n) => !n.s || puedeVer(perfil, n.s)).map((n, i) => {
           if (n.grupo) {
             return (
               <div key={n.grupo} style={{

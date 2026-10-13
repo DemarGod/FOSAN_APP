@@ -15,7 +15,7 @@ const coord = (n) => Number(n).toFixed(6)
 
 export default function Ubicaciones() {
   const { perfil } = useSesion()
-  const editable = puedeOperar(perfil)
+  const editable = puedeOperar(perfil, 'ubicaciones')
   const [puntos, setPuntos] = useState([])
   const [clientes, setClientes] = useState([])
   const [limp, setLimp] = useState({})

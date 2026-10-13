@@ -20,7 +20,7 @@ export default function Clientes() {
   const [params] = useSearchParams()
   const qInicial = params.get('q') || ''
   const { perfil } = useSesion()
-  const editable = puedeOperar(perfil)
+  const editable = puedeOperar(perfil, 'clientes')
   const dueno = puedeEditar(perfil)
   const finanzas = verFinanzas(perfil)
 

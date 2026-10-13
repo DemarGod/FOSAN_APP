@@ -229,6 +229,17 @@ export const avisosCalculados = async () => {
 
 // ── Configuración ─────────────────────────────────────────────────────────
 export const perfiles = () => rows(supabase.from('perfiles').select('*').order('nombre'))
+export const todosPermisos = () => rows(supabase.from('permisos_rol').select('*'))
+export const guardarPermiso = (rol, seccion, ver, editar) => rows(
+  supabase.from('permisos_rol').upsert({ rol, seccion, ver, editar }, { onConflict: 'rol,seccion' }).select()
+)
+export const guardarPerfil = async (u, cambios) => {
+  await rows(supabase.from('perfiles').update(cambios).eq('id', u.id).select())
+  if (cambios.rol && u.correo) await supabase.from('accesos_autorizados').update({ rol: cambios.rol }).eq('correo', u.correo.toLowerCase())
+}
+export const accesosAutorizados = () => rows(supabase.from('accesos_autorizados').select('*').order('nombre'))
+export const autorizarCorreo = (a) => rows(supabase.from('accesos_autorizados').upsert({ ...a, correo: a.correo.trim().toLowerCase() }).select())
+export const quitarAutorizacion = (correo) => rows(supabase.from('accesos_autorizados').delete().eq('correo', correo).select())
 
 // ── Logística: baños disponibles para despachar ──────────────────────────
 export const banosDisponibles = async () => {

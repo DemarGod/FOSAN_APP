@@ -3,7 +3,7 @@ import { Kpis, Aviso, Cargando } from '../components/Listado'
 import Modal from '../components/Modal'
 import { supabase } from '../lib/supabase'
 import { cargarMes, calcular, tendencia, mesActual } from '../lib/analisis'
-import { useSesion, puedeEditar } from '../lib/sesion'
+import { useSesion, puedeEditar, puedeVer } from '../lib/sesion'
 import { C, clp, fecha, mesLargo } from '../lib/ui'
 
 const VISTAS = [
@@ -36,7 +36,7 @@ export default function Analisis() {
       .then(([d, t]) => { setDatos(d); setTend(t) }).catch(setError).finally(() => setCargando(false))
   }, [mes])
 
-  if (!puedeEditar(perfil)) return <p className="text-muted">Análisis está disponible solo para los dueños.</p>
+  if (!puedeVer(perfil, 'analisis')) return <p className="text-muted">Tu usuario no tiene acceso a Análisis.</p>
   const r = datos?.resumen
 
   return (

@@ -14,7 +14,7 @@ export default function Transporte() {
   const navegar = useNavigate()
   const { perfil } = useSesion()
   const editable = puedeEditar(perfil)
-  const operar = puedeOperar(perfil)
+  const operar = puedeOperar(perfil, 'transporte')
   const finanzas = verFinanzas(perfil)
 
   const [datos, setDatos] = useState([])

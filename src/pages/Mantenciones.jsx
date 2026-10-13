@@ -14,7 +14,7 @@ const SEGMENTOS = [
 
 export default function Mantenciones() {
   const { perfil } = useSesion()
-  const editable = puedeOperar(perfil)
+  const editable = puedeOperar(perfil, 'mantenciones')
   const finanzas = verFinanzas(perfil)
 
   const [datos, setDatos] = useState([])

@@ -22,7 +22,7 @@ export default function Ficha() {
   const { token } = useParams()
   const navegar = useNavigate()
   const { perfil } = useSesion()
-  const editable = puedeOperar(perfil)
+  const editable = puedeOperar(perfil, 'banos')
   const finanzas = verFinanzas(perfil)
 
   const [activo, setActivo] = useState(null)

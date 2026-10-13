@@ -12,7 +12,7 @@ const dec = (x) => String(x ?? '').replace(/[^0-9.,]/g, '').slice(0, 10)
 
 export default function Insumos() {
   const { perfil } = useSesion()
-  const editable = puedeEditar(perfil)
+  const editable = puedeOperar(perfil, 'insumos')
   const finanzas = verFinanzas(perfil)
   const [datos, setDatos] = useState([])
   const [cargando, setCargando] = useState(true)

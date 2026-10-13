@@ -22,7 +22,7 @@ import Reportes from './pages/Reportes'
 import Configuracion from './pages/Configuracion'
 import Ficha from './pages/Ficha'
 import { C } from './lib/ui'
-import { puedeOperar, esSecretaria } from './lib/sesion'
+import { puedeOperar, puedeVer } from './lib/sesion'
 
 export default function App() {
   const [usuario, setUsuario] = useState(null)
@@ -45,7 +45,11 @@ export default function App() {
   useEffect(() => {
     if (!usuario) { setPerfil(null); return }
     supabase.from('perfiles').select('*').eq('id', usuario.id).maybeSingle()
-      .then(({ data }) => setPerfil(data || { nombre: usuario.email, rol: 'lectura' }))
+      .then(async ({ data }) => {
+        const p = data || { nombre: usuario.email, rol: 'lectura' }
+        const { data: per } = await supabase.from('permisos_rol').select('*').eq('rol', p.rol)
+        setPerfil({ ...p, permisos: Object.fromEntries((per || []).map((x) => [x.seccion, x])) })
+      })
   }, [usuario])
 
   if (cargando) {
@@ -57,6 +61,9 @@ export default function App() {
   }
 
   if (!usuario) return <Login />
+  if (!perfil) {
+    return <div style={{ display: 'grid', placeItems: 'center', minHeight: '100vh', color: C.gris }}>Cargando…</div>
+  }
 
   return (
     <SesionCtx.Provider value={{ usuario, perfil }}>
@@ -66,20 +73,20 @@ export default function App() {
           <Topbar perfil={perfil} onCalendario={() => setCal(true)} version={calVersion} />
           <div className="pad">
             <Routes>
-              <Route path="/" element={<Inicio onCalendario={() => setCal(true)} />} />
+              <Route path="/" element={puedeVer(perfil, 'inicio') ? <Inicio onCalendario={() => setCal(true)} /> : <SinAcceso />} />
               <Route path="/inventario" element={<Navigate to="/banos" replace />} />
-              <Route path="/banos" element={<Banos />} />
+              <Route path="/banos" element={puedeVer(perfil, 'banos') ? <Banos /> : <SinAcceso />} />
               <Route path="/camiones" element={<Navigate to="/transporte" replace />} />
-              <Route path="/transporte" element={<Transporte />} />
-              <Route path="/insumos" element={<Insumos />} />
-              <Route path="/despachos" element={<Despachos />} />
-              <Route path="/rutas" element={<Rutas />} />
-              <Route path="/clientes" element={<Clientes />} />
-              <Route path="/utilidades" element={esSecretaria(perfil) ? <SinAcceso /> : <Utilidades />} />
-              <Route path="/mantenciones" element={<Mantenciones />} />
-              <Route path="/ubicaciones" element={<Ubicaciones />} />
-              <Route path="/reportes" element={esSecretaria(perfil) ? <SinAcceso /> : <Reportes />} />
-              <Route path="/analisis" element={<Analisis />} />
+              <Route path="/transporte" element={puedeVer(perfil, 'transporte') ? <Transporte /> : <SinAcceso />} />
+              <Route path="/insumos" element={puedeVer(perfil, 'insumos') ? <Insumos /> : <SinAcceso />} />
+              <Route path="/despachos" element={puedeVer(perfil, 'despachos') ? <Despachos /> : <SinAcceso />} />
+              <Route path="/rutas" element={puedeVer(perfil, 'rutas') ? <Rutas /> : <SinAcceso />} />
+              <Route path="/clientes" element={puedeVer(perfil, 'clientes') ? <Clientes /> : <SinAcceso />} />
+              <Route path="/utilidades" element={puedeVer(perfil, 'utilidades') ? <Utilidades /> : <SinAcceso />} />
+              <Route path="/mantenciones" element={puedeVer(perfil, 'mantenciones') ? <Mantenciones /> : <SinAcceso />} />
+              <Route path="/ubicaciones" element={puedeVer(perfil, 'ubicaciones') ? <Ubicaciones /> : <SinAcceso />} />
+              <Route path="/reportes" element={puedeVer(perfil, 'reportes') ? <Reportes /> : <SinAcceso />} />
+              <Route path="/analisis" element={puedeVer(perfil, 'analisis') ? <Analisis /> : <SinAcceso />} />
               <Route path="/configuracion" element={<Configuracion />} />
               <Route path="/activo/:token" element={<Ficha />} />
               <Route path="*" element={<p className="text-muted">Esta página no existe.</p>} />
@@ -88,7 +95,7 @@ export default function App() {
           <Tabbar />
         </main>
       </div>
-      {cal && <Calendario puedeEditar={puedeOperar(perfil)} onCerrar={() => { setCal(false); setCalVersion((n) => n + 1) }} />}
+      {cal && <Calendario puedeEditar={puedeOperar(perfil, 'calendario')} onCerrar={() => { setCal(false); setCalVersion((n) => n + 1) }} />}
     </SesionCtx.Provider>
   )
 }
