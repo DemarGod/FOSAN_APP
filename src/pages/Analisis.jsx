@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Kpis, Aviso, Cargando } from '../components/Listado'
 import Modal from '../components/Modal'
+import ParametrosCosto from '../components/ParametrosCosto'
 import { supabase } from '../lib/supabase'
 import { cargarMes, calcular, tendencia, mesActual } from '../lib/analisis'
-import { useSesion, puedeEditar, puedeVer } from '../lib/sesion'
+import { useSesion, puedeEditar, puedeVer, esDueno } from '../lib/sesion'
 import { C, clp, fecha, mesLargo } from '../lib/ui'
 
 const VISTAS = [
@@ -28,13 +29,15 @@ export default function Analisis() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
   const [detalle, setDetalle] = useState(null)
+  const [params, setParams] = useState(false)
+  const [recarga, setRecarga] = useState(0)
 
   useEffect(() => { supabase.rpc('foto_ocupacion').then(() => {}, () => {}) }, [])
   useEffect(() => {
     setCargando(true); setError(null)
     Promise.all([cargarMes(mes).then(calcular), tendencia(mes)])
       .then(([d, t]) => { setDatos(d); setTend(t) }).catch(setError).finally(() => setCargando(false))
-  }, [mes])
+  }, [mes, recarga])
 
   if (!puedeVer(perfil, 'analisis')) return <p className="text-muted">Tu usuario no tiene acceso a Análisis.</p>
   const r = datos?.resumen
@@ -69,13 +72,15 @@ export default function Analisis() {
         <>
           <Calidad r={r} />
           {vista === 'clientes' && <Clientes d={datos} r={r} onDetalle={setDetalle} />}
-          {vista === 'rutas' && <Rutas d={datos} onDetalle={setDetalle} />}
+          {vista === 'rutas' && <Rutas d={datos} onDetalle={setDetalle} onParametros={() => setParams(true)} />}
           {vista === 'ocupacion' && <Ocupacion o={datos.ocupacion} />}
           {vista === 'banos' && <Banos d={datos} />}
           {vista === 'insumos' && <Insumos d={datos} />}
           {vista === 'tendencia' && <Tendencia t={tend} onDetalle={setDetalle} />}
         </>
       )}
+
+      {params && <ParametrosCosto editable={esDueno(perfil)} onCerrar={() => { setParams(false); setRecarga((n) => n + 1) }} />}
 
       {detalle && (
         <Modal titulo={detalle.titulo} ancho={760} onCerrar={() => setDetalle(null)}>
@@ -157,10 +162,16 @@ function Clientes({ d, r, onDetalle }) {
   )
 }
 
-function Rutas({ d, onDetalle }) {
+function Rutas({ d, onDetalle, onParametros }) {
   const t = d.rutas.reduce((a, x) => ({ costo: a.costo + x.costo, visitas: a.visitas + x.visitas, km: a.km + x.km }), { costo: 0, visitas: 0, km: 0 })
   return (
     <>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+        <button className="btn" onClick={onParametros} style={{ minHeight: 40, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" /></svg>
+          <span>Parámetros de costo</span>
+        </button>
+      </div>
       <Kpis items={[
         { v: $(t.costo), l: 'Costo de rutas del mes' },
         { v: num(t.km) + ' km', l: 'Kilómetros' },
