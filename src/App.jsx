@@ -22,8 +22,9 @@ import Ubicaciones from './pages/Ubicaciones'
 import Reportes from './pages/Reportes'
 import Configuracion from './pages/Configuracion'
 import Ficha from './pages/Ficha'
+import Historial from './pages/Historial'
 import { C } from './lib/ui'
-import { puedeOperar, esSecretaria } from './lib/sesion'
+import { puedeOperar, puedeEditar, esSecretaria } from './lib/sesion'
 
 export default function App() {
   const [usuario, setUsuario] = useState(null)
@@ -82,6 +83,7 @@ export default function App() {
               <Route path="/reportes" element={esSecretaria(perfil) ? <SinAcceso /> : <Reportes />} />
               <Route path="/analisis" element={<Analisis />} />
               <Route path="/configuracion" element={<Configuracion />} />
+              <Route path="/historial" element={puedeEditar(perfil) ? <Historial /> : <SinAcceso />} />
               <Route path="/activo/:token" element={<Ficha />} />
               <Route path="*" element={<p className="text-muted">Esta página no existe.</p>} />
             </Routes>

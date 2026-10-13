@@ -212,6 +212,13 @@ export const avisosCalculados = async () => {
 // ── Configuración ─────────────────────────────────────────────────────────
 export const perfiles = () => rows(supabase.from('perfiles').select('*').order('nombre'))
 
+// ── Historial de cambios (solo dueños) ───────────────────────────────────
+export const historial = (desde) => {
+  let q = supabase.from('auditoria').select('*').order('fecha', { ascending: false }).limit(1000)
+  if (desde) q = q.gte('fecha', desde)
+  return rows(q)
+}
+
 // ── Logística: baños disponibles para despachar ──────────────────────────
 export const banosDisponibles = async () => {
   const [lista, ocupados] = await Promise.all([
