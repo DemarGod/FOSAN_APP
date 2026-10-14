@@ -20,8 +20,8 @@ export const colorPunto = (p) => {
 }
 
 export const LEYENDA = [
-  { l: 'Arriendo', c: COLORES.arriendo },
-  { l: 'Mantención', c: COLORES.mantencion },
+  { l: 'Arrendados', c: COLORES.arriendo },
+  { l: 'En mantención', c: COLORES.mantencion },
   { l: 'Limpieza · 1 por semana', c: COLORES.limpieza1 },
   { l: 'Limpieza · 2 o más', c: COLORES.limpieza2 },
   { l: 'Bodega', c: COLORES.bodega },

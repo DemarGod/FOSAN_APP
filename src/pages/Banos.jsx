@@ -7,7 +7,7 @@ import Modal from '../components/Modal'
 import { inventario, banosKpi, eliminarActivos } from '../lib/api'
 import { exportarVista } from '../lib/excel'
 import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
-import { C, I, L_ESTADO_ACTIVO, clp, fecha } from '../lib/ui'
+import { C, I, L_ESTADO_ACTIVO, L_MOVIMIENTO, clp, fecha } from '../lib/ui'
 
 export default function Banos() {
   const navegar = useNavigate()
@@ -40,7 +40,8 @@ export default function Banos() {
     clienteL: a.cliente || '—',
     ubicacionL: a.ubicacion || 'Sin ubicación',
     valorL: clp(a.valor_arriendo),
-    movL: fecha(a.ultimo_movimiento),
+    colorL: a.color || '—',
+    movL: a.ultimo_movimiento ? `${L_MOVIMIENTO[a.ultimo_movimiento_tipo] || a.ultimo_movimiento_tipo || 'Movimiento'} · ${fecha(a.ultimo_movimiento)}` : '—',
   })), [datos])
 
   return (
@@ -52,9 +53,9 @@ export default function Banos() {
         exportar={finanzas ? () => exportarVista('export_activos', 'Activos') : undefined}
         kpis={[
           { v: kpi.total ?? 0, l: 'Total' },
-          { v: kpi.en_arriendo ?? 0, l: 'En arriendo' },
           { v: kpi.disponibles ?? 0, l: 'Disponibles' },
-          { v: kpi.mantencion ?? 0, l: 'Mantención' },
+          { v: kpi.en_arriendo ?? 0, l: 'Arrendados' },
+          { v: kpi.mantencion ?? 0, l: 'En mantención' },
           { v: kpi.fuera_servicio ?? 0, l: 'Fuera de servicio' },
         ]}
         cargando={cargando}
@@ -63,13 +64,15 @@ export default function Banos() {
         filtros={[
           { k: 'estadoL', label: 'Estado' },
           { k: 'modeloL', label: 'Modelo' },
+          { k: 'colorL', label: 'Color' },
           { k: 'ubicacionL', label: 'Ubicación' },
           { k: 'clienteL', label: 'Cliente' },
         ]}
-        buscar={['codigo', 'modeloL', 'clienteL', 'ubicacionL']}
+        buscar={['codigo', 'modeloL', 'colorL', 'clienteL', 'ubicacionL']}
         cols={[
           { k: 'codigo', label: 'ID' },
           { k: 'modeloL', label: 'Modelo' },
+          { k: 'colorL', label: 'Color' },
           { k: 'estadoL', label: 'Estado', badge: true },
           { k: 'clienteL', label: 'Cliente' },
           { k: 'ubicacionL', label: 'Ubicación' },
@@ -95,7 +98,7 @@ export default function Banos() {
             onClick: () => setForm({ tipo: 'mantencion', activo: d.id }),
           },
           {
-            t: d.estado === 'en_arriendo' ? 'En arriendo: primero registra su retiro' : 'Eliminar baño',
+            t: d.estado === 'en_arriendo' ? 'Arrendado: primero registra su retiro' : 'Eliminar baño',
             d: 'M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6', color: C.rojo,
             disabled: !editable || d.estado === 'en_arriendo', onClick: () => setBorrar([d]),
           },
@@ -140,7 +143,7 @@ function ConfirmarBorrado({ banos, onCerrar, onBorrado }) {
           ))}
         </div>
         {arrendados.length > 0
-          ? <p style={{ margin: 0, color: '#7c1405' }}>{arrendados.length} de estos baños están en arriendo ({arrendados.map((b) => b.codigo).join(', ')}). Quítalos de la selección o registra primero su retiro.</p>
+          ? <p style={{ margin: 0, color: '#7c1405' }}>{arrendados.length} de estos baños están arrendados ({arrendados.map((b) => b.codigo).join(', ')}). Quítalos de la selección o registra primero su retiro.</p>
           : <p style={{ margin: 0 }}>Se borran junto con su historial, documentos y mantenciones. Esta acción no se puede deshacer.</p>}
         {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `2px solid ${C.rojo}`, color: '#7c1405' }}>{error}</div>}
       </div>

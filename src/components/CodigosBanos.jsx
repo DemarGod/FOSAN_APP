@@ -4,7 +4,7 @@ import { C, Icon, I } from '../lib/ui'
 import { limpiarCodigo } from '../lib/validar'
 
 const ESTADO = {
-  en_arriendo: 'ya está en arriendo', en_servicio: 'está en servicio', mantencion: 'está en mantención',
+  en_arriendo: 'ya está arrendado', en_servicio: 'ya está arrendado', mantencion: 'está en mantención',
   fuera_de_servicio: 'está fuera de servicio',
 }
 

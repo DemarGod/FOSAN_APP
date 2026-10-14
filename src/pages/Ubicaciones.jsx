@@ -69,7 +69,7 @@ export default function Ubicaciones() {
       </p>
 
       <Kpis items={[
-        { v: suma('en_arriendo'), l: 'Baños en arriendo' },
+        { v: suma('en_arriendo'), l: 'Baños arrendados' },
         { v: puntos.filter((p) => limpiaHoy(p)).length, l: `Limpiezas el ${DIAS.find((d) => d.v === dia)?.l}` },
         { v: suma('en_mantencion'), l: 'En mantención' },
         { v: sinGeo.length, l: 'Clientes sin ubicar' },

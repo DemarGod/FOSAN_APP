@@ -163,7 +163,8 @@ function Clientes({ d, r, onDetalle }) {
 }
 
 function Rutas({ d, onDetalle, onParametros }) {
-  const t = d.rutas.reduce((a, x) => ({ costo: a.costo + x.costo, visitas: a.visitas + x.visitas, km: a.km + x.km }), { costo: 0, visitas: 0, km: 0 })
+  const t = d.rutas.reduce((a, x) => ({ costo: a.costo + x.costo, visitas: a.visitas + x.visitas, km: a.km + x.km, banos: a.banos + x.banos, litros: a.litros + x.litros, insumos: a.insumos + x.insumos }), { costo: 0, visitas: 0, km: 0, banos: 0, litros: 0, insumos: 0 })
+  const dec = (v) => (v == null ? '—' : v.toFixed(1).replace('.', ','))
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
@@ -178,8 +179,14 @@ function Rutas({ d, onDetalle, onParametros }) {
         { v: t.visitas, l: 'Visitas' },
         { v: $(t.visitas ? t.costo / t.visitas : 0), l: 'Costo promedio por visita' },
       ]} />
+      <Kpis items={[
+        { v: t.km ? $(t.costo / t.km) + '/km' : '—', l: 'Costo por km' },
+        { v: t.banos ? $((t.costo + t.insumos) / t.banos) : '—', l: `Costo por baño atendido · ${num(t.banos)} baños` },
+        { v: t.km ? dec((t.litros / t.km) * 100) + ' L' : '—', l: 'Consumo cada 100 km' },
+        { v: d.kmDisponibles ? pct(t.km / d.kmDisponibles) : '—', l: `Utilización de camiones · ${d.vehiculosMes} vehículo(s)` },
+      ]} />
       <Tabla onFila={(x) => onDetalle({ titulo: x.ruta, resumen: `${x.salidas} salida(s), ${num(x.km)} km, ${x.visitas} visita(s). Costo ${$(x.costo)}.`, registros: x.registros })}
-        filas={d.rutas} min={860} cols={[
+        filas={d.rutas} min={1100} cols={[
           { k: 'ruta', l: 'Ruta', f: (x) => <>{x.ruta}<Est on={x.estimado} /></> },
           { k: 'salidas', l: 'Salidas', der: true },
           { k: 'km', l: 'Km', der: true, f: (x) => num(x.km) },
@@ -187,10 +194,13 @@ function Rutas({ d, onDetalle, onParametros }) {
           { k: 'costo', l: 'Costo', der: true, f: (x) => $(x.costo) },
           { k: 'costoVisita', l: 'Por visita', der: true, f: (x) => (x.costoVisita == null ? '—' : $(x.costoVisita)) },
           { k: 'costoKm', l: 'Por km', der: true, f: (x) => (x.costoKm == null ? '—' : $(x.costoKm)) },
+          { k: 'banos', l: 'Baños', der: true, f: (x) => num(x.banos) },
+          { k: 'costoBano', l: 'Por baño', der: true, f: (x) => (x.costoBano == null ? '—' : $(x.costoBano)) },
+          { k: 'l100', l: 'L/100 km', der: true, f: (x) => dec(x.l100) },
           { k: 'ingresoAtendido', l: 'Ingreso atendido', der: true, f: (x) => $(x.ingresoAtendido) },
           { k: 'pct', l: 'Margen', der: true, f: (x) => <Margen p={x.pct} /> },
         ]} vacio="No hay salidas de rutas en este mes." />
-      <Nota>Ingreso atendido = parte del ingreso de cada cliente según cuántas de sus visitas hizo esta ruta. "est." = alguna salida sin odómetro o con datos del vehículo incompletos.</Nota>
+      <Nota>Costo de ruta = diésel + desgaste (neumáticos, aceite, frenos, amortiguadores, preventiva, depreciación) + fijos (permiso, seguros, revisión) + conductor + agua y residuos. Costo por baño = (costo de ruta + insumos de limpieza) ÷ baños limpiados. Utilización = km recorridos ÷ km esperados del mes (km anuales ÷ 12 por vehículo). Ingreso atendido = parte del ingreso de cada cliente según cuántas de sus visitas hizo esta ruta. "est." = alguna salida sin odómetro o con datos del vehículo incompletos.</Nota>
     </>
   )
 }
@@ -200,7 +210,7 @@ function Ocupacion({ o }) {
     <>
       <Kpis items={[
         { v: pct(o.pct), l: 'Ocupación del mes' },
-        { v: o.hoy.arriendo, l: 'En arriendo hoy' },
+        { v: o.hoy.arriendo, l: 'Arrendados hoy' },
         { v: o.hoy.disponibles, l: 'Disponibles hoy' },
         { v: o.hoy.mantencion, l: 'En mantención hoy' },
       ]} />
@@ -213,7 +223,7 @@ function Ocupacion({ o }) {
         { k: 'modelo', l: 'Modelo' },
         { k: 'total', l: 'Total', der: true },
         { k: 'aptos', l: 'Aptos para arrendar', der: true },
-        { k: 'arriendo', l: 'En arriendo', der: true },
+        { k: 'arriendo', l: 'Arrendados', der: true },
         { k: 'pct', l: 'Ocupación hoy', der: true, f: (x) => pct(x.pct) },
       ]} />
     </>

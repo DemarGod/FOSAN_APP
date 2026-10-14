@@ -50,6 +50,7 @@ export function calcular(d) {
   const porCliente = {}      // cliente_id → { rutas, insumos, mant, despachos, visitas, estimado, registros[] }
   const acc = (id) => (porCliente[id] ||= { rutas: 0, insumos: 0, mant: 0, despachos: 0, visitas: 0, estimado: false, registros: [] })
   const porRuta = {}
+  const kmVeh = {}           // vehiculo_id → km anuales esperados
   const idsMes = new Set(d.salidas.map((s) => s.id))
   d.salidas.forEach((s) => {
     const c = costoSalida(s, d.par)
@@ -58,8 +59,11 @@ export function calcular(d) {
     const des = d.despachos.filter((x) => x.salida_id === s.id)
     const paradasTot = par.length + des.length
     const porParada = paradasTot ? c.total / paradasTot : 0
-    const r = (porRuta[s.ruta_id] ||= { ruta: s.ruta, salidas: 0, km: 0, costo: 0, visitas: 0, estimado: false, clientes: {}, registros: [] })
+    const r = (porRuta[s.ruta_id] ||= { ruta: s.ruta, salidas: 0, km: 0, costo: 0, visitas: 0, banos: 0, litros: 0, insumos: 0, estimado: false, clientes: {}, registros: [] })
+    const banosSal = par.filter((p) => p.tarea === 'limpieza').reduce((t, p) => t + n(p.banos), 0)
     r.salidas++; r.km += n(c.km); r.costo += c.total; r.visitas += par.length; r.estimado ||= est
+    r.banos += banosSal; r.litros += c.litrosDiesel; r.insumos += banosSal * costoLimpiezaBano
+    if (s.vehiculo_id) kmVeh[s.vehiculo_id] = n(s.km_anual) || n(d.par.km_anual)
     r.registros.push({ fecha: s.fecha, detalle: `${s.vehiculo || 'Sin vehículo'} · ${Math.round(c.km)} km${s.km_real == null ? ' (est.)' : ''} · ${par.length} visita(s)`, monto: c.total })
     par.forEach((p) => {
       const a = acc(p.cliente_id)
@@ -130,8 +134,11 @@ export function calcular(d) {
       id, ...r, ingresoAtendido, margen: ingresoAtendido - r.costo,
       pct: ingresoAtendido ? (ingresoAtendido - r.costo) / ingresoAtendido : null,
       costoVisita: r.visitas ? r.costo / r.visitas : null, costoKm: r.km ? r.costo / r.km : null,
+      costoBano: r.banos ? (r.costo + r.insumos) / r.banos : null,
+      l100: r.km ? (r.litros / r.km) * 100 : null,
     }
   }).sort((a, b) => b.costo - a.costo)
+  const kmDisponibles = Object.values(kmVeh).reduce((t, k) => t + k / 12, 0)
 
   // ── Ocupación ───────────────────────────────────────────────────────────
   const noAptos = ['mantencion', 'fuera_de_servicio']
@@ -197,7 +204,7 @@ export function calcular(d) {
 
   const tot = (arr, k) => arr.reduce((s, x) => s + n(x[k]), 0)
   return {
-    clientes: clientesTabla, rutas: rutasTabla, ocupacion, banos: banosTabla, insumos: insumosTabla,
+    clientes: clientesTabla, rutas: rutasTabla, kmDisponibles, vehiculosMes: Object.keys(kmVeh).length, ocupacion, banos: banosTabla, insumos: insumosTabla,
     resumen: {
       ingreso: tot(clientesTabla, 'ingreso'), costo: tot(clientesTabla, 'costo'),
       ventasSinCliente: d.ventas.filter((v) => !v.cliente_id).reduce((s, v) => s + n(v.neto), 0),

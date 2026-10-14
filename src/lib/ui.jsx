@@ -57,7 +57,7 @@ export const L_TIPO_ACTIVO = {
 }
 // Estados normalizados: se usan iguales en toda la app
 export const L_ESTADO_ACTIVO = {
-  disponible: 'Disponible', en_arriendo: 'Arrendado', en_limpieza: 'En limpieza', en_servicio: 'En servicio',
+  disponible: 'Disponible', en_arriendo: 'Arrendado', en_limpieza: 'En limpieza', en_servicio: 'En operación',
   mantencion: 'En mantención', fuera_de_servicio: 'Fuera de servicio', baja: 'Baja',
 }
 // Despachos: Planificado → Asignado → En ejecución → Finalizado; o Cancelado
@@ -98,6 +98,7 @@ export const L_MOVIMIENTO = {
   instalacion: 'Instalado', traslado: 'Traslado', retiro: 'Retiro',
   limpieza: 'Limpieza', mantencion: 'Mantención', ingreso: 'Ingreso',
 }
+export const COLORES_BANO = ['Azul', 'Verde', 'Rojo', 'Amarillo', 'Naranjo', 'Blanco', 'Gris', 'Negro', 'Café', 'Celeste', 'Rosado']
 
 export const COLOR_EVENTO = {
   mantencion: C.amarillo, pago: C.verde, servicio: C.azul, alerta: C.rojo, reunion: C.navy,

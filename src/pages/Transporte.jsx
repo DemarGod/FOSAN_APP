@@ -58,7 +58,7 @@ export default function Transporte() {
         kpis={[
           { v: filas.length, l: 'Total' },
           { v: filas.length - cuenta(/Mantención|Fuera de servicio/), l: 'Operativos' },
-          { v: cuenta(/Mantención/), l: 'Mantención' },
+          { v: cuenta(/Mantención/), l: 'En mantención' },
           { v: cuenta(/Fuera de servicio/), l: 'Fuera de servicio' },
         ]}
         cargando={cargando}

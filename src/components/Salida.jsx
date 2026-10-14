@@ -113,6 +113,8 @@ export default function Salida({ salida, par, editable, verCostos = true, onCerr
               <Fila k={`Diésel · ${c.litrosDiesel.toFixed(1).replace('.', ',')} L a ${c.rend ? c.rend.toFixed(1).replace('.', ',') : '—'} km/L`} v={clp(Math.round(c.combustible))} />
               <Fila k="Desgaste y mantención" v={clp(Math.round(c.desgaste))} />
               <Fila k="Seguro, permiso y revisión" v={clp(Math.round(c.fijos))} />
+              <Fila k="Conductor" v={clp(Math.round(c.conductor))} />
+              {c.servicio > 0 && <Fila k={`Agua y residuos · ${c.banosLimp} baño(s)`} v={clp(Math.round(c.servicio))} />}
               <Fila k={`Total · ${c.km} km`} v={clp(Math.round(c.total))} fuerte />
             </div>
           </div>}

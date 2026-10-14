@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Modal from './Modal'
 import { supabase } from '../lib/supabase'
 import { modelos, ubicaciones, clientesLista, crearUbicacion } from '../lib/api'
-import { C, Icon, I, L_TIPO_ACTIVO, L_ESTADO_ACTIVO } from '../lib/ui'
+import { C, Icon, I, L_TIPO_ACTIVO, L_ESTADO_ACTIVO, COLORES_BANO } from '../lib/ui'
 import { limpiarCodigo, codigoValido, formatoPesos, numeroDe } from '../lib/validar'
 
 const TIPOS = Object.keys(L_TIPO_ACTIVO)
@@ -12,7 +12,7 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
   const [v, setV] = useState({
     codigo: '', tipo: 'bano_quimico', modelo_id: '', detalle: '', serie: '',
     estado: 'disponible', ubicacion_id: '', cliente_id: '',
-    fecha_compra: '', valor_arriendo: '', notas: '',
+    fecha_compra: '', valor_arriendo: '', notas: '', color: '',
     patente: '', marca: '', capacidad_litros: '', conductor: '',
   })
   const [cat, setCat] = useState({ modelos: [], ubicaciones: [], clientes: [] })
@@ -32,7 +32,7 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
         setV((p) => ({
           ...p, codigo: t(data.codigo), tipo: data.tipo, modelo_id: t(data.modelo_id), detalle: t(data.detalle),
           serie: t(data.serie), estado: data.estado, ubicacion_id: t(data.ubicacion_id), cliente_id: t(data.cliente_id),
-          fecha_compra: t(data.fecha_compra), valor_arriendo: data.valor_arriendo ? formatoPesos(data.valor_arriendo) : '', notas: t(data.notas),
+          fecha_compra: t(data.fecha_compra), valor_arriendo: data.valor_arriendo ? formatoPesos(data.valor_arriendo) : '', notas: t(data.notas), color: t(data.color),
         }))
       })
     }
@@ -73,6 +73,7 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
         fecha_compra: v.fecha_compra || null,
         valor_arriendo: numeroDe(v.valor_arriendo),
         notas: v.notas || null,
+        color: esBano && v.color.trim() ? v.color.trim().charAt(0).toUpperCase() + v.color.trim().slice(1).toLowerCase() : null,
       }
       if (activoId) {
         const { error: e0 } = await supabase.from('activos').update(fila).eq('id', activoId)
@@ -132,6 +133,11 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
                 {cat.modelos.map((m) => <option key={m.id} value={m.id}>{m.nombre}</option>)}
               </select>
             </label>
+            <label className="campo">
+              <span>Color</span>
+              <input value={v.color} onChange={set('color')} list="colores-bano" maxLength={20} placeholder="Azul, verde…" />
+              <datalist id="colores-bano">{COLORES_BANO.map((c) => <option key={c} value={c} />)}</datalist>
+            </label>
           )}
 
           {!esBano && (
@@ -144,7 +150,8 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
           <label className="campo">
             <span>Estado inicial</span>
             <select value={v.estado} onChange={set('estado')}>
-              {ESTADOS.map((e) => <option key={e} value={e}>{L_ESTADO_ACTIVO[e]}</option>)}
+              {(esBano ? ['disponible', 'en_arriendo', 'en_limpieza', 'mantencion', 'fuera_de_servicio'] : esVehiculo ? ['disponible', 'en_servicio', 'mantencion', 'fuera_de_servicio'] : ESTADOS)
+                .map((e) => <option key={e} value={e}>{L_ESTADO_ACTIVO[e]}</option>)}
             </select>
           </label>
 
@@ -206,7 +213,7 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
           )}
 
           <label className="campo">
-            <span>Fecha de compra</span>
+            <span>Fecha de incorporación</span>
             <input type="date" value={v.fecha_compra} onChange={set('fecha_compra')} />
           </label>
 

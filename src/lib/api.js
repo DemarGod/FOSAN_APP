@@ -57,7 +57,7 @@ export const activoPorCodigo = (codigo) => one(
 
 export const movimientosDe = (activoId) => rows(
   supabase.from('movimientos_activo')
-    .select('id, fecha, tipo, detalle, desde:desde_id(nombre), hacia:hacia_id(nombre)')
+    .select('id, fecha, tipo, detalle, desde:desde_id(nombre), hacia:hacia_id(nombre), clientes(nombre), responsable:responsable_id(nombre)')
     .eq('activo_id', activoId).order('fecha', { ascending: false })
 )
 export const documentosDe = (activoId) => rows(
@@ -183,6 +183,11 @@ export const borrarEvento = async (id) => {
   const { error } = await supabase.from('eventos').delete().eq('id', id)
   if (error) throw error
 }
+
+// ── Ficha del baño: mantenciones y reparaciones ──────────────────────────
+export const mantencionesDe = (activoId) => rows(
+  supabase.from('mantenciones').select('*').eq('activo_id', activoId).order('fecha_programada', { ascending: false })
+)
 
 // ── Clientes: última visita y próximo servicio (rutas + despachos) ─────────
 export const clientesOperacion = async () => {
@@ -389,6 +394,20 @@ export const guardarInsumo = async (id, datos, receta) => {
     await supabase.from('receta_limpieza').delete().eq('insumo_id', iid)
   }
 }
+// Movimiento de insumo: suma o resta stock y deja registro (fecha, usuario, tipo, motivo)
+export const TIPOS_MOV_INSUMO = {
+  compra: { l: 'Compra', signo: 1 }, devolucion: { l: 'Devolución', signo: 1 },
+  consumo: { l: 'Consumo', signo: -1 }, merma: { l: 'Merma', signo: -1 }, ajuste: { l: 'Ajuste', signo: 0 },
+}
+export const movimientoInsumo = async (insumo, tipo, cantidad, motivo) => {
+  const { data } = await supabase.rpc('mover_insumo', { p_insumo: insumo.id, p_tipo: tipo, p_cantidad: cantidad, p_motivo: motivo || null })
+    .then((r) => { if (r.error) throw r.error; return r })
+  return data
+}
+export const movimientosInsumo = (insumoId) => rows(
+  supabase.from('movimientos_insumo').select('id, fecha, tipo, cantidad, motivo, usuario:usuario_id(nombre)')
+    .eq('insumo_id', insumoId).order('fecha', { ascending: false }).limit(200)
+)
 export const ingresoInsumo = async (insumo, cantidad, motivo) => {
   const { error } = await supabase.from('insumos')
     .update({ stock_actual: Number(insumo.stock_actual) + cantidad }).eq('id', insumo.id)

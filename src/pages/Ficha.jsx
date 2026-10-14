@@ -4,7 +4,7 @@ import Mapa from '../components/Mapa'
 import FormMantencion from '../components/FormMantencion'
 import { Aviso } from '../components/Listado'
 import {
-  activoPorQr, movimientosDe, documentosDe, observacionesDe, agregarObservacion,
+  activoPorQr, movimientosDe, documentosDe, observacionesDe, agregarObservacion, mantencionesDe,
 } from '../lib/api'
 import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
 import {
@@ -13,7 +13,9 @@ import {
 } from '../lib/ui'
 
 const TABS = [
-  { k: 'historial', l: 'Historial' },
+  { k: 'historial', l: 'Movimientos' },
+  { k: 'clientes', l: 'Clientes anteriores' },
+  { k: 'mantenciones', l: 'Mantenciones y reparaciones' },
   { k: 'documentos', l: 'Documentos' },
   { k: 'observaciones', l: 'Observaciones' },
 ]
@@ -29,6 +31,7 @@ export default function Ficha() {
   const [hist, setHist] = useState([])
   const [docs, setDocs] = useState([])
   const [obs, setObs] = useState([])
+  const [mants, setMants] = useState([])
   const [tab, setTab] = useState('historial')
   const [nuevaObs, setNuevaObs] = useState('')
   const [error, setError] = useState(null)
@@ -43,6 +46,7 @@ export default function Ficha() {
         if (!a) return
         const [m, d, o] = await Promise.all([movimientosDe(a.id), documentosDe(a.id), observacionesDe(a.id)])
         setHist(m); setDocs(d); setObs(o)
+        mantencionesDe(a.id).then(setMants).catch(() => {})
       })
       .catch(setError)
       .finally(() => setCargando(false))
@@ -90,7 +94,7 @@ export default function Ficha() {
     { k: 'Estado', v: L_ESTADO_ACTIVO[activo.estado] || activo.estado },
     { k: 'Cliente actual', v: activo.clientes?.nombre || 'Sin asignar' },
     { k: 'Ubicación', v: u?.nombre || 'Sin ubicación' },
-    { k: 'Fecha de compra', v: fecha(activo.fecha_compra) },
+    { k: 'Fecha de incorporación', v: fecha(activo.fecha_compra) },
     ...(finanzas ? [{ k: 'Valor arriendo', v: activo.valor_arriendo ? clp(activo.valor_arriendo) + ' / mes' : '—' }] : []),
   ]
 
@@ -220,12 +224,67 @@ export default function Ficha() {
                   <div style={{ font: '600 13px var(--font)' }}>{L_MOVIMIENTO[h.tipo] || h.tipo}</div>
                   <div style={{ font: '400 12px/1.45 var(--font)', color: C.gris }}>
                     {h.detalle || [h.desde?.nombre, h.hacia?.nombre].filter(Boolean).join(' → ') || '—'}
+                    {h.clientes?.nombre ? ' · ' + h.clientes.nombre : ''}{h.responsable?.nombre ? ' · por ' + h.responsable.nombre : ''}
                   </div>
                 </div>
               </div>
             ))}
             {hist.length === 0 && (
               <div style={{ padding: 18 }} className="text-muted">Sin movimientos registrados.</div>
+            )}
+          </div>
+        )}
+
+        {tab === 'clientes' && (() => {
+          // Clientes por los que pasó el baño, según sus movimientos
+          const m = {}
+          ;[...hist].sort((x, y) => String(x.fecha).localeCompare(String(y.fecha))).forEach((h) => {
+            const n = h.clientes?.nombre
+            if (!n) return
+            const x = (m[n] ||= { nombre: n, desde: h.fecha, hasta: h.fecha, veces: 0 })
+            x.hasta = h.fecha; x.veces++
+          })
+          const lista = Object.values(m).sort((a, b) => String(b.hasta).localeCompare(String(a.hasta)))
+          return (
+            <div className="scroller">
+              <table style={{ minWidth: 480 }}>
+                <thead><tr><th>Cliente</th><th>Primer movimiento</th><th>Último movimiento</th><th>Movimientos</th></tr></thead>
+                <tbody>
+                  {lista.map((c) => (
+                    <tr key={c.nombre}>
+                      <td style={{ fontWeight: 600 }}>{c.nombre}{c.nombre === activo.clientes?.nombre ? ' (actual)' : ''}</td>
+                      <td>{fecha(c.desde)}</td><td>{fecha(c.hasta)}</td><td>{c.veces}</td>
+                    </tr>
+                  ))}
+                  {lista.length === 0 && <tr><td colSpan={4} className="text-muted">Este baño todavía no ha pasado por clientes.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )
+        })()}
+
+        {tab === 'mantenciones' && (
+          <div className="scroller">
+            <table style={{ minWidth: 620 }}>
+              <thead><tr><th>Fecha</th><th>Tipo</th><th>Clase</th><th>Responsable</th>{finanzas && <th style={{ textAlign: 'right' }}>Costo</th>}<th>Estado</th></tr></thead>
+              <tbody>
+                {mants.map((m) => (
+                  <tr key={m.id}>
+                    <td>{fecha(m.fecha_realizada || m.fecha_programada)}</td>
+                    <td style={{ fontWeight: 600 }}>{m.tipo}</td>
+                    <td>{m.naturaleza === 'correctiva' ? 'Correctiva' : m.naturaleza === 'preventiva' ? 'Preventiva' : '—'}</td>
+                    <td>{m.responsable_ext || '—'}</td>
+                    {finanzas && <td style={{ textAlign: 'right' }}>{m.costo ? clp(m.costo) : '—'}</td>}
+                    <td>{({ programada: 'Programada', proxima: 'Próxima', urgente: 'Urgente', completada: 'Completada', anulada: 'Anulada' })[m.estado] || m.estado}</td>
+                  </tr>
+                ))}
+                {mants.length === 0 && <tr><td colSpan={finanzas ? 6 : 5} className="text-muted">Sin mantenciones registradas.</td></tr>}
+              </tbody>
+            </table>
+            {finanzas && mants.some((m) => m.estado === 'completada' && m.costo) && (
+              <div style={{ padding: '10px 18px', font: '600 12px var(--font)', color: '#3c4551', borderTop: `2px solid ${C.borde}` }}>
+                Costo acumulado en mantenciones: {clp(mants.filter((m) => m.estado === 'completada').reduce((t, m) => t + Number(m.costo || 0), 0))}
+              </div>
             )}
           </div>
         )}

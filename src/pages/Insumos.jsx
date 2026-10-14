@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import Listado from '../components/Listado'
 import Modal from '../components/Modal'
 import { Campo } from '../components/FormCliente'
-import { insumosLista, guardarInsumo, ingresoInsumo } from '../lib/api'
+import { insumosLista, guardarInsumo, movimientoInsumo, movimientosInsumo, TIPOS_MOV_INSUMO } from '../lib/api'
 import { formatoPesos, numeroDe, decimalDe } from '../lib/validar'
 import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
-import { C, I, clp } from '../lib/ui'
+import { C, I, clp, fechaHora } from '../lib/ui'
 
 const cant = (n) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('es-CL', { maximumFractionDigits: 2 }))
 const dec = (x) => String(x ?? '').replace(/[^0-9.,]/g, '').slice(0, 10)
@@ -19,6 +19,7 @@ export default function Insumos() {
   const [error, setError] = useState(null)
   const [form, setForm] = useState(null)
   const [ingreso, setIngreso] = useState(null)
+  const [kardex, setKardex] = useState(null)
 
   const cargar = () => {
     setCargando(true)
@@ -28,6 +29,7 @@ export default function Insumos() {
 
   const filas = useMemo(() => datos.map((i) => {
     const receta = Array.isArray(i.receta_limpieza) ? i.receta_limpieza[0] : i.receta_limpieza
+    const sin = Number(i.stock_actual) <= 0
     const bajo = Number(i.stock_actual) <= Number(i.stock_minimo)
     return {
       ...i,
@@ -37,7 +39,7 @@ export default function Insumos() {
       recetaL: receta ? `${cant(receta.cantidad)} ${i.unidad}` : '—',
       costoL: clp(i.costo_unitario),
       valorL: clp(Math.round(Number(i.stock_actual) * Number(i.costo_unitario || 0))),
-      estadoL: bajo ? 'Bajo mínimo' : 'Disponible',
+      estadoL: sin ? 'Sin stock' : bajo ? 'Bajo mínimo' : 'Disponible',
     }
   }), [datos])
 
@@ -45,11 +47,11 @@ export default function Insumos() {
     <>
       <Listado
         titulo="Insumos"
-        bajada="Químico, papel, repuestos y existencias. Cada limpieza descuenta la receta por baño."
+        bajada="Control de materiales: stock disponible, mínimo y cada entrada o salida con fecha, usuario y motivo. Cada limpieza descuenta la receta por baño."
         accion={{ label: 'Agregar insumo', onClick: () => setForm('nuevo'), disabled: !editable }}
         kpis={[
           { v: filas.length, l: 'Insumos' },
-          { v: filas.filter((f) => f.estadoL === 'Bajo mínimo').length, l: 'Bajo mínimo' },
+          { v: filas.filter((f) => f.estadoL !== 'Disponible').length, l: 'Stock bajo mínimo' },
           { v: filas.filter((f) => f.receta).length, l: 'En receta de limpieza' },
         ]}
         cargando={cargando}
@@ -58,8 +60,8 @@ export default function Insumos() {
         filtros={[{ k: 'estadoL', label: 'Estado' }]}
         buscar={['nombre']}
         cols={[
-          { k: 'nombre', label: 'Insumo' },
-          { k: 'stockL', label: 'Stock' },
+          { k: 'nombre', label: 'Producto' },
+          { k: 'stockL', label: 'Disponible' },
           { k: 'minimoL', label: 'Mínimo' },
           { k: 'estadoL', label: 'Estado', badge: true },
           { k: 'recetaL', label: 'Usa 1 baño limpiado' },
@@ -68,10 +70,13 @@ export default function Insumos() {
         datos={filas}
         onFila={(d) => editable && setForm(d)}
         acciones={(d) => [
-          { t: 'Registrar ingreso (compra)', label: 'Ingreso', d: I.plus, color: C.verde, borde: C.verde, disabled: !editable, onClick: () => setIngreso(d) },
+          { t: 'Registrar entrada o salida', label: 'Movimiento', d: I.plus, color: C.verde, borde: C.verde, disabled: !editable, onClick: () => setIngreso(d) },
+          { t: 'Ver movimientos', label: 'Historial', d: I.clip, color: C.navy, onClick: () => setKardex(d) },
           { t: 'Editar', d: I.lapiz, color: C.navy, disabled: !editable, onClick: () => setForm(d) },
         ]}
+        nota={filas.some((f) => f.estadoL !== 'Disponible') ? `Stock bajo mínimo: ${filas.filter((f) => f.estadoL !== 'Disponible').map((f) => f.nombre).join(', ')}.` : undefined}
       />
+      {kardex && <Kardex insumo={kardex} onCerrar={() => setKardex(null)} />}
       {form && <FormInsumo insumo={form === 'nuevo' ? null : form} onCerrar={() => setForm(null)} onGuardado={() => { setForm(null); cargar() }} />}
       {ingreso && <FormIngreso insumo={ingreso} onCerrar={() => setIngreso(null)} onGuardado={() => { setIngreso(null); cargar() }} />}
     </>
@@ -132,26 +137,88 @@ function FormInsumo({ insumo, onCerrar, onGuardado }) {
 }
 
 function FormIngreso({ insumo, onCerrar, onGuardado }) {
+  const [tipo, setTipo] = useState('compra')
   const [cantidad, setCantidad] = useState('')
-  const [motivo, setMotivo] = useState('Compra')
+  const [sentido, setSentido] = useState(1)
+  const [motivo, setMotivo] = useState('')
   const [error, setError] = useState(null)
+  const t = TIPOS_MOV_INSUMO[tipo]
   const guardar = async () => {
     const n = decimalDe(cantidad)
     if (!n) { setError('Ingresa una cantidad mayor a cero.'); return }
-    try { await ingresoInsumo(insumo, n, motivo.trim() || 'Ingreso'); onGuardado() } catch (x) { setError(String(x.message || x)) }
+    if (tipo !== 'compra' && !motivo.trim()) { setError('Escribe el motivo.'); return }
+    const signo = t.signo || sentido
+    if (signo < 0 && n > Number(insumo.stock_actual)) { setError(`No hay suficiente stock (quedan ${insumo.stockL}).`); return }
+    try { await movimientoInsumo(insumo, tipo, signo * n, motivo.trim() || t.l); onGuardado() } catch (x) { setError(String(x.message || x)) }
   }
   return (
-    <Modal titulo={`Ingreso · ${insumo.nombre}`} ancho={440} onCerrar={onCerrar} pie={
+    <Modal titulo={`Movimiento · ${insumo.nombre}`} ancho={460} onCerrar={onCerrar} pie={
       <>
         <button className="btn" onClick={onCerrar}>Cancelar</button>
-        <button className="btn btn-verde" onClick={guardar}>Sumar al stock</button>
+        <button className="btn btn-verde" onClick={guardar}>Registrar</button>
       </>
     }>
       <div style={{ display: 'grid', gap: 14, padding: 18 }}>
+        <Campo l="Tipo de movimiento">
+          <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
+            <optgroup label="Entrada">
+              <option value="compra">Compra</option>
+              <option value="devolucion">Devolución</option>
+            </optgroup>
+            <optgroup label="Salida">
+              <option value="consumo">Consumo</option>
+              <option value="merma">Merma (pérdida o daño)</option>
+            </optgroup>
+            <option value="ajuste">Ajuste de inventario</option>
+          </select>
+        </Campo>
+        {tipo === 'ajuste' && (
+          <Campo l="El ajuste">
+            <select value={sentido} onChange={(e) => setSentido(Number(e.target.value))}>
+              <option value={1}>Suma al stock</option>
+              <option value={-1}>Resta del stock</option>
+            </select>
+          </Campo>
+        )}
         <Campo l={`Cantidad (${insumo.unidad})`}><input autoFocus value={cantidad} onChange={(e) => setCantidad(dec(e.target.value))} inputMode="decimal" placeholder="50" /></Campo>
-        <Campo l="Motivo"><input value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={80} /></Campo>
+        <Campo l={tipo === 'compra' ? 'Motivo (opcional)' : 'Motivo'}><input value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={120} placeholder={tipo === 'compra' ? 'Factura 1234 · SAYPOR' : 'Conteo físico, bidón roto…'} /></Campo>
         <div style={{ font: '400 12px var(--font)', color: C.gris }}>Stock actual: {insumo.stockL}</div>
         {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `2px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#7c1405' }}>{String(error?.message || error)}</div>}
+      </div>
+    </Modal>
+  )
+}
+
+// Historial de movimientos (kardex) de un insumo
+function Kardex({ insumo, onCerrar }) {
+  const [lista, setLista] = useState(null)
+  const [error, setError] = useState(null)
+  useEffect(() => { movimientosInsumo(insumo.id).then(setLista).catch(setError) }, [insumo.id])
+  const tipoL = (m) => TIPOS_MOV_INSUMO[m.tipo]?.l || (Number(m.cantidad) >= 0 ? 'Entrada' : 'Salida')
+  return (
+    <Modal titulo={`Movimientos · ${insumo.nombre}`} ancho={820} onCerrar={onCerrar} pie={<button className="btn" onClick={onCerrar}>Cerrar</button>}>
+      <div className="scroller">
+        <table style={{ minWidth: 680 }}>
+          <thead><tr><th>Fecha</th><th>Tipo</th><th style={{ textAlign: 'right' }}>Entrada</th><th style={{ textAlign: 'right' }}>Salida</th><th>Usuario</th><th>Motivo</th></tr></thead>
+          <tbody>
+            {(lista || []).map((m) => {
+              const q = Number(m.cantidad)
+              return (
+                <tr key={m.id}>
+                  <td style={{ whiteSpace: 'nowrap' }}>{fechaHora(m.fecha)}</td>
+                  <td style={{ fontWeight: 600 }}>{tipoL(m)}</td>
+                  <td style={{ textAlign: 'right', color: C.verde, fontWeight: 600 }}>{q > 0 ? cant(q) : ''}</td>
+                  <td style={{ textAlign: 'right', color: C.rojo, fontWeight: 600 }}>{q < 0 ? cant(-q) : ''}</td>
+                  <td>{m.usuario?.nombre || (m.tipo === 'consumo' || !m.tipo ? 'Automático' : '—')}</td>
+                  <td>{m.motivo || '—'}</td>
+                </tr>
+              )
+            })}
+            {lista && lista.length === 0 && <tr><td colSpan={6} className="text-muted">Sin movimientos registrados.</td></tr>}
+            {!lista && !error && <tr><td colSpan={6} className="text-muted">Cargando…</td></tr>}
+            {error && <tr><td colSpan={6} style={{ color: C.rojo }}>{String(error.message || error)}</td></tr>}
+          </tbody>
+        </table>
       </div>
     </Modal>
   )

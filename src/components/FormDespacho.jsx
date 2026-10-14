@@ -141,7 +141,7 @@ export default function FormDespacho({ inicial = {}, onCerrar, onGuardado }) {
             </div>
           )}
           <div style={{ padding: '11px 13px', background: C.suave, border: `2px solid ${C.borde}`, font: '400 12px/1.45 var(--font)', color: '#3c4551' }}>
-            Al marcar el despacho como hecho, los baños entregados pasan a "En arriendo" en el cliente y los retirados vuelven a "Disponible" en bodega. Queda registrado en la ficha de cada baño.
+            Al marcar el despacho como hecho, los baños entregados pasan a "Arrendado" en el cliente y los retirados vuelven a "Disponible" en bodega. Queda registrado en la ficha de cada baño.
           </div>
           {error && <div style={{ padding: '11px 13px', background: '#fce8e6', border: `2px solid ${C.rojo}`, font: '400 12px/1.45 var(--font)', color: '#7c1405' }}>{String(error?.message || error)}</div>}
         </div>
