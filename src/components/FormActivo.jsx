@@ -126,6 +126,7 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
           </label>
 
           {esBano && (
+            <>
             <label className="campo">
               <span>Modelo</span>
               <select value={v.modelo_id} onChange={set('modelo_id')}>
@@ -138,6 +139,7 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
               <input value={v.color} onChange={set('color')} list="colores-bano" maxLength={20} placeholder="Azul, verde…" />
               <datalist id="colores-bano">{COLORES_BANO.map((c) => <option key={c} value={c} />)}</datalist>
             </label>
+            </>
           )}
 
           {!esBano && (
