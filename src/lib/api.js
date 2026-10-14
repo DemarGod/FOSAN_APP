@@ -414,9 +414,7 @@ export const ingresoInsumo = async (insumo, cantidad, motivo) => {
   if (error) throw error
   await supabase.from('movimientos_insumo').insert({ insumo_id: insumo.id, cantidad, motivo })
 }
-export const movimientosInsumo = (id) => rows(
-  supabase.from('movimientos_insumo').select('*').eq('insumo_id', id).order('fecha', { ascending: false }).limit(30)
-)
+
 
 // ── Despachos ─────────────────────────────────────────────────────────────
 export const despachos = () => rows(supabase.from('v_despachos').select('*').order('fecha_programada', { ascending: false }))
