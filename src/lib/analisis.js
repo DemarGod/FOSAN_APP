@@ -57,8 +57,10 @@ export function calcular(d) {
     const est = s.km_real == null || c.faltan.length > 0
     const par = d.paradas.filter((p) => p.salida_id === s.id && (s.estado === 'cerrada' ? p.hecha : true))
     const des = d.despachos.filter((x) => x.salida_id === s.id)
-    const paradasTot = par.length + des.length
-    const porParada = paradasTot ? c.total / paradasTot : 0
+    // Reparto proporcional a los baños atendidos en cada parada (mínimo 1 por parada o despacho)
+    const peso = (p) => Math.max(1, n(p.banos))
+    const pesoTot = par.reduce((t, p) => t + peso(p), 0) + des.length
+    const cuota = (w) => (pesoTot ? (c.total * w) / pesoTot : 0)
     const r = (porRuta[s.ruta_id] ||= { ruta: s.ruta, salidas: 0, km: 0, costo: 0, visitas: 0, banos: 0, litros: 0, insumos: 0, estimado: false, clientes: {}, registros: [] })
     const banosSal = par.filter((p) => p.tarea === 'limpieza').reduce((t, p) => t + n(p.banos), 0)
     r.salidas++; r.km += n(c.km); r.costo += c.total; r.visitas += par.length; r.estimado ||= est
@@ -67,9 +69,9 @@ export function calcular(d) {
     r.registros.push({ fecha: s.fecha, detalle: `${s.vehiculo || 'Sin vehículo'} · ${Math.round(c.km)} km${s.km_real == null ? ' (est.)' : ''} · ${par.length} visita(s)`, monto: c.total })
     par.forEach((p) => {
       const a = acc(p.cliente_id)
-      a.rutas += porParada; a.visitas++; a.estimado ||= est
+      a.rutas += cuota(peso(p)); a.visitas++; a.estimado ||= est
       r.clientes[p.cliente_id] = (r.clientes[p.cliente_id] || 0) + 1
-      a.registros.push({ fecha: s.fecha, detalle: `Visita ${p.tarea} · ${s.ruta}`, monto: porParada })
+      a.registros.push({ fecha: s.fecha, detalle: `Visita ${p.tarea} · ${s.ruta}${n(p.banos) ? ` · ${p.banos} baño(s)` : ''}`, monto: cuota(peso(p)) })
       if (p.tarea === 'limpieza') {
         const ci = n(p.banos) * costoLimpiezaBano
         a.insumos += ci
@@ -78,8 +80,8 @@ export function calcular(d) {
     })
     des.forEach((x) => {
       const a = acc(x.cliente_id)
-      a.despachos += porParada; a.estimado ||= est
-      a.registros.push({ fecha: s.fecha, detalle: `Despacho ${x.folio} (${x.tipo}) en ruta ${s.ruta}`, monto: porParada })
+      a.despachos += cuota(1); a.estimado ||= est
+      a.registros.push({ fecha: s.fecha, detalle: `Despacho ${x.folio} (${x.tipo}) en ruta ${s.ruta}`, monto: cuota(1) })
     })
   })
   const despachosSinCosto = d.despachos.filter((x) => !x.salida_id || !idsMes.has(x.salida_id))
