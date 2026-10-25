@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import Modal from './Modal'
 import { supabase } from '../lib/supabase'
-import { modelos, ubicaciones, clientesLista, crearUbicacion } from '../lib/api'
+import { modelos, ubicaciones, clientesLista, crearUbicacion, crearModelo } from '../lib/api'
 import { C, Icon, I, L_TIPO_ACTIVO, L_ESTADO_ACTIVO, COLORES_BANO } from '../lib/ui'
 import { limpiarCodigo, codigoValido, formatoPesos, numeroDe } from '../lib/validar'
 
 const TIPOS = Object.keys(L_TIPO_ACTIVO)
 const ESTADOS = ['disponible', 'en_arriendo', 'en_servicio', 'mantencion', 'fuera_de_servicio']
+
+const ESTADOS_BANO = ['en_arriendo', 'disponible', 'extraviado', 'vendido', 'donacion', 'fuera_de_servicio', 'mantencion']
 
 export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
   const [v, setV] = useState({
@@ -18,6 +20,7 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
   const [cat, setCat] = useState({ modelos: [], ubicaciones: [], clientes: [] })
   const [nuevaUbic, setNuevaUbic] = useState('')
   const [mostrarNueva, setMostrarNueva] = useState(false)
+  const [nuevoModelo, setNuevoModelo] = useState(null)
   const [error, setError] = useState(null)
   const [guardando, setGuardando] = useState(false)
 
@@ -51,6 +54,17 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
       setV((p) => ({ ...p, ubicacion_id: u.id }))
       setNuevaUbic('')
       setMostrarNueva(false)
+    } catch (e) { setError(e) }
+  }
+
+  const agregarModelo = async () => {
+    const n = (nuevoModelo || '').trim().toUpperCase()
+    if (!n) return
+    try {
+      const m = await crearModelo(n)
+      setCat((p) => ({ ...p, modelos: [...p.modelos, m].sort((a, b) => a.nombre.localeCompare(b.nombre)) }))
+      setV((p) => ({ ...p, modelo_id: m.id }))
+      setNuevoModelo(null)
     } catch (e) { setError(e) }
   }
 
@@ -128,17 +142,26 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
           {esBano && (
             <>
             <label className="campo">
-              <span>Modelo</span>
-              <select value={v.modelo_id} onChange={set('modelo_id')}>
+              <span>Modelo (marca)</span>
+              <select value={v.modelo_id} onChange={(e) => {
+                if (e.target.value === '__nuevo') { setNuevoModelo(''); return }
+                set('modelo_id')(e)
+              }}>
                 <option value="">Elegir modelo…</option>
                 {cat.modelos.map((m) => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+                <option value="__nuevo">+ Agregar nuevo modelo…</option>
               </select>
             </label>
-            <label className="campo">
-              <span>Color</span>
-              <input value={v.color} onChange={set('color')} list="colores-bano" maxLength={20} placeholder="Azul, verde…" />
-              <datalist id="colores-bano">{COLORES_BANO.map((c) => <option key={c} value={c} />)}</datalist>
-            </label>
+            {nuevoModelo !== null && (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input autoFocus value={nuevoModelo} onChange={(e) => setNuevoModelo(e.target.value)} maxLength={30}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); agregarModelo() } }}
+                  placeholder="Nombre del modelo"
+                  style={{ flex: 1, minWidth: 0, border: `2px solid ${C.azul}`, background: '#fff', font: '400 13px var(--font)', padding: '10px 12px', minHeight: 44, outline: 'none' }} />
+                <button className="btn btn-verde" onClick={agregarModelo} style={{ padding: '0 14px' }}>Agregar</button>
+                <button className="btn" onClick={() => setNuevoModelo(null)} style={{ padding: '0 12px' }}>✕</button>
+              </div>
+            )}
             </>
           )}
 
@@ -152,7 +175,7 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
           <label className="campo">
             <span>Estado inicial</span>
             <select value={v.estado} onChange={set('estado')}>
-              {(esBano ? ['disponible', 'en_arriendo', 'en_limpieza', 'mantencion', 'fuera_de_servicio'] : esVehiculo ? ['disponible', 'en_servicio', 'mantencion', 'fuera_de_servicio'] : ESTADOS)
+              {(esBano ? ESTADOS_BANO : esVehiculo ? ['disponible', 'en_servicio', 'mantencion', 'fuera_de_servicio'] : ESTADOS)
                 .map((e) => <option key={e} value={e}>{L_ESTADO_ACTIVO[e]}</option>)}
             </select>
           </label>

@@ -59,7 +59,9 @@ export const L_TIPO_ACTIVO = {
 export const L_ESTADO_ACTIVO = {
   disponible: 'Disponible', en_arriendo: 'Arrendado', en_limpieza: 'En limpieza', en_servicio: 'En operación',
   mantencion: 'En mantención', fuera_de_servicio: 'Fuera de servicio', baja: 'Baja',
+  extraviado: 'Extraviado', vendido: 'Vendido', donacion: 'Donación',
 }
+
 // Despachos: Planificado → Asignado → En ejecución → Finalizado; o Cancelado
 export const etiquetaDespacho = (d, hoy = new Date().toISOString().slice(0, 10)) => {
   if (d.estado === 'hecho') return 'Finalizado'
@@ -112,7 +114,7 @@ const ALERTA = { bg: '#ffe0d9', fg: '#7c1405' }
 export function tono(valor) {
   const v = String(valor || '').toLowerCase()
   if (/en_arriendo|en arriendo|en_servicio|en servicio|completad|vigente|activo|activa|hecho|cerrada/.test(v)) return FUERTE
-  if (/disponible|programad|indefinido|planificada/.test(v)) return SUAVE
+  if (/disponible|programad|indefinido|planificada|vendido|donaci/.test(v)) return SUAVE
   return ALERTA
 }
 

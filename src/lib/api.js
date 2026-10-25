@@ -97,6 +97,14 @@ export const clientesParaRuta = async () => {
   a.forEach((x) => { n[x.cliente_id] = (n[x.cliente_id] || 0) + 1 })
   return c.map((x) => ({ ...x, banos_arriendo: n[x.id] || 0, banos_propios: x.banos_propios || 0 }))
 }
+
+export const crearModelo = async (nombre) => {
+  const { data, error } = await supabase.from('modelos_bano').insert({ nombre, tipo: nombre }).select('*').single()
+  if (error) throw error.code === '23505' ? new Error('Ese modelo ya existe.') : error
+  return data
+}
+
+
 export const buscarGlobal = async (q) => {
   const t = q.replace(/[%,()]/g, ' ').trim()
   const [activos, clientes] = await Promise.all([

@@ -4,6 +4,9 @@ import Listado from '../components/Listado'
 import FormActivo from '../components/FormActivo'
 import FormMantencion from '../components/FormMantencion'
 import Modal from '../components/Modal'
+
+import ImportarInventario from '../components/ImportarInventario'
+
 import { inventario, banosKpi, eliminarActivos } from '../lib/api'
 import { exportarVista } from '../lib/excel'
 import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
@@ -46,6 +49,20 @@ export default function Banos() {
 
   return (
     <>
+
+
+
+
+      {editable && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+          <button className="btn" onClick={() => setForm('importar')}>Importar inventario (Excel)</button>
+        </div>
+      )}
+     
+     
+
+
+
       <Listado
         titulo="Baños químicos"
         bajada="Trazabilidad por unidad: modelo, estado, cliente y ubicación."
@@ -56,7 +73,10 @@ export default function Banos() {
           { v: kpi.disponibles ?? 0, l: 'Disponibles' },
           { v: kpi.en_arriendo ?? 0, l: 'Arrendados' },
           { v: kpi.mantencion ?? 0, l: 'En mantención' },
-          { v: kpi.fuera_servicio ?? 0, l: 'Fuera de servicio' },
+          { v: kpi.fuera_servicio ?? kpi.fuera_de_servicio ?? 0, l: 'Fuera de servicio' },
+          { v: kpi.extraviados ?? 0, l: 'Extraviados' },
+          { v: kpi.vendidos ?? 0, l: 'Vendidos' },
+          { v: kpi.donados ?? 0, l: 'Donados' },
         ]}
         cargando={cargando}
         error={error}
@@ -104,6 +124,18 @@ export default function Banos() {
           },
         ]}
       />
+
+
+      {form === 'importar' && <ImportarInventario onCerrar={() => setForm(null)} onImportado={() => { setForm(null); cargar() }} />}
+      {form === 'activo' && (
+        <FormActivo onCerrar={() => setForm(null)} onGuardado={() => { setForm(null); cargar() }} />
+      )}
+
+
+
+
+
+
 
       {form === 'activo' && (
         <FormActivo onCerrar={() => setForm(null)} onGuardado={() => { setForm(null); cargar() }} />
