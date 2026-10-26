@@ -5,7 +5,7 @@ import FormActivo from '../components/FormActivo'
 import FormMantencion from '../components/FormMantencion'
 import { inventario, resumenInventario } from '../lib/api'
 import { exportarVista } from '../lib/excel'
-import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
+import { useSesion, puedeOperar, verFinanzas } from '../lib/sesion'
 import { C, I, L_TIPO_ACTIVO, L_ESTADO_ACTIVO, clp, fecha } from '../lib/ui'
 
 const SEGMENTOS = [
@@ -19,7 +19,7 @@ export default function Inventario() {
   const navegar = useNavigate()
   const [params] = useSearchParams()
   const { perfil } = useSesion()
-  const editable = puedeEditar(perfil)
+  const editable = puedeOperar(perfil, 'banos')
   const operar = puedeOperar(perfil)
   const finanzas = verFinanzas(perfil)
 

@@ -5,7 +5,7 @@ import FormVehiculo from '../components/FormVehiculo'
 import FormMantencion from '../components/FormMantencion'
 import { vehiculos, parametros } from '../lib/api'
 import { TIPOS_VEHICULO, costoKmVehiculo, mapaParametros } from '../lib/costos'
-import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
+import { useSesion, puedeOperar, verFinanzas } from '../lib/sesion'
 import { C, I, L_ESTADO_ACTIVO, clp } from '../lib/ui'
 
 const miles = (n, u) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('es-CL') + (u ? ' ' + u : ''))
@@ -13,7 +13,7 @@ const miles = (n, u) => (n === null || n === undefined ? '—' : Number(n).toLoc
 export default function Transporte() {
   const navegar = useNavigate()
   const { perfil } = useSesion()
-  const editable = puedeEditar(perfil)
+  const editable = puedeOperar(perfil, 'transporte')
   const operar = puedeOperar(perfil, 'transporte')
   const finanzas = verFinanzas(perfil)
 
@@ -58,7 +58,7 @@ export default function Transporte() {
         kpis={[
           { v: filas.length, l: 'Total' },
           { v: filas.length - cuenta(/Mantención|Fuera de servicio/), l: 'Operativos' },
-          { v: cuenta(/Mantención/), l: 'Mantención' },
+          { v: cuenta(/Mantención/), l: 'En mantención' },
           { v: cuenta(/Fuera de servicio/), l: 'Fuera de servicio' },
         ]}
         cargando={cargando}

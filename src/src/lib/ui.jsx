@@ -55,10 +55,22 @@ export const L_TIPO_ACTIVO = {
   bano_quimico: 'Baño químico', camion: 'Camión', camioneta: 'Camioneta',
   generador: 'Generador', lavamanos: 'Lavamanos', accesorio: 'Accesorio',
 }
+// Estados normalizados: se usan iguales en toda la app
 export const L_ESTADO_ACTIVO = {
-  disponible: 'Disponible', en_arriendo: 'En arriendo', en_servicio: 'En servicio',
+  disponible: 'Disponible', en_arriendo: 'En arriendo', en_limpieza: 'En limpieza', en_servicio: 'En operación',
   mantencion: 'Mantención', fuera_de_servicio: 'Fuera de servicio', baja: 'Baja',
+  extraviado: 'Extraviado', vendido: 'Vendido', donacion: 'Donado',
 }
+
+// Despachos: Planificado → Asignado → En ejecución → Finalizado; o Cancelado
+export const etiquetaDespacho = (d, hoy = new Date().toISOString().slice(0, 10)) => {
+  if (d.estado === 'hecho') return 'Finalizado'
+  if (d.estado === 'cancelado') return 'Cancelado'
+  const dia = d.fecha_salida || d.fecha_programada
+  if ((d.vehiculo_id || d.salida_id) && dia === hoy) return 'En ejecución'
+  return d.vehiculo_id || d.salida_id ? 'Asignado' : 'Planificado'
+}
+export const L_ESTADO_DESPACHO = { programado: 'Planificado', hecho: 'Finalizado', cancelado: 'Cancelado' }
 export const L_ESTADO_MANT = {
   programada: 'Programada', proxima: 'Próxima', urgente: 'Urgente',
   completada: 'Completada', anulada: 'Anulada',
@@ -88,6 +100,7 @@ export const L_MOVIMIENTO = {
   instalacion: 'Instalado', traslado: 'Traslado', retiro: 'Retiro',
   limpieza: 'Limpieza', mantencion: 'Mantención', ingreso: 'Ingreso',
 }
+export const COLORES_BANO = ['Azul', 'Verde', 'Rojo', 'Amarillo', 'Naranjo', 'Blanco', 'Gris', 'Negro', 'Café', 'Celeste', 'Rosado']
 
 export const COLOR_EVENTO = {
   mantencion: C.amarillo, pago: C.verde, servicio: C.azul, alerta: C.rojo, reunion: C.navy,
@@ -101,7 +114,7 @@ const ALERTA = { bg: '#ffe0d9', fg: '#7c1405' }
 export function tono(valor) {
   const v = String(valor || '').toLowerCase()
   if (/en_arriendo|en arriendo|en_servicio|en servicio|completad|vigente|activo|activa|hecho|cerrada/.test(v)) return FUERTE
-  if (/disponible|programad|indefinido|planificada/.test(v)) return SUAVE
+  if (/disponible|programad|indefinido|planificada|vendido|donad/.test(v)) return SUAVE
   return ALERTA
 }
 
