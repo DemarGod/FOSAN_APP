@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { C, Icon, I } from '../lib/ui'
 
-// Lista de baños con filtro por tipo/modelo y casillas para elegir unidades.
+// Lista de baños con filtro por modelo y casillas para elegir unidades.
 export default function SelectorBanos({ banos = [], elegidos = [], onChange, vacio = 'No hay baños disponibles.' }) {
   const [tipo, setTipo] = useState('')
   const tipos = useMemo(() => [...new Set(banos.map(etiqueta))].sort(), [banos])
@@ -19,7 +19,7 @@ export default function SelectorBanos({ banos = [], elegidos = [], onChange, vac
           border: `2px solid ${C.borde}`, background: '#fff', font: '600 12px var(--font)',
           padding: '6px 8px', minHeight: 34, color: C.navy, maxWidth: '100%', minWidth: 0,
         }}>
-          <option value="">Tipo: todos</option>
+          <option value="">Todos los modelos</option>
           {tipos.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
         <span style={{ flex: 1 }} />

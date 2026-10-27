@@ -99,14 +99,14 @@ export default function FormCliente({ clienteId = null, onCerrar, onGuardado }) 
     setError(null)
     try {
       const datos = ({
-        nombre: v.nombre.trim() || 'Sin nombre',
+        nombre: v.nombre.trim().replace(/\s+/g, ' ').toUpperCase() || 'SIN NOMBRE',
         rut: v.rut || null,
         rubro: v.rubro,
-        contacto_nombre: v.contacto_nombre.trim() || null,
+        contacto_nombre: v.contacto_nombre.trim().toUpperCase() || null,
         telefono: v.telefono || null,
         correo: v.correo.trim() || null,
-        direccion: v.direccion.trim() || null,
-        comuna: v.comuna.trim() || null,
+        direccion: v.direccion.trim().toUpperCase() || null,
+        comuna: v.comuna.trim().toUpperCase() || null,
         lat: v.lat ? -Math.abs(decimalDe(v.lat)) : null,
         lng: v.lng ? -Math.abs(decimalDe(v.lng)) : null,
         fecha_inicio_contrato: v.fecha_inicio_contrato || null,

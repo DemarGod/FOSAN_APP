@@ -4,15 +4,15 @@ import Modal from '../components/Modal'
 import FormDespacho from '../components/FormDespacho'
 import { despachos, estadoDespacho, procesarVencidos } from '../lib/api'
 import { useSesion, puedeEditar, puedeOperar } from '../lib/sesion'
-import { C, I, fecha } from '../lib/ui'
+import { C, I, fecha, L_ESTADO_DESPACHO, etiquetaDespacho } from '../lib/ui'
 import { hoyISO } from '../lib/costos'
 
 const L_TIPO = { entrega: 'Entrega', retiro: 'Retiro', cambio: 'Cambio' }
-const L_ESTADO = { programado: 'Programado', hecho: 'Hecho', cancelado: 'Cancelado' }
+const L_ESTADO = L_ESTADO_DESPACHO
 const L_ORIGEN = { manual: 'Manual', vencimiento: 'Contrato vencido', nuevo_cliente: 'Cliente nuevo' }
 const SEGMENTOS = [
-  { v: 'programado', l: 'Programados', d: I.cal },
-  { v: 'hecho', l: 'Hechos', d: I.check },
+  { v: 'programado', l: 'Por ejecutar', d: I.cal },
+  { v: 'hecho', l: 'Finalizados', d: I.check },
   { v: 'todos', l: 'Todos', d: I.clip },
 ]
 
@@ -36,11 +36,12 @@ export default function Despachos() {
   const filas = useMemo(() => datos.map((d) => ({
     ...d,
     tipoL: L_TIPO[d.tipo],
-    estadoL: d.estado === 'programado' && d.fecha_programada < hoy ? 'Atrasado' : L_ESTADO[d.estado],
-    fechaL: fecha(d.fecha_programada),
+    estadoL: etiquetaDespacho(d, hoy),
+    fechaL: fecha(d.fecha_programada) + (d.estado === 'programado' && d.fecha_programada < hoy ? ' · atrasado' : ''),
     origenL: L_ORIGEN[d.origen] || d.origen,
     vehiculoL: d.vehiculo || 'Sin asignar',
     rutaL: d.ruta ? `${d.ruta}` : 'Viaje aparte',
+    banosL: d.banos ? String(d.banos).split(/\s*,\s*/).filter(Boolean).map((b) => (/^\d+$/.test(b) ? 'N.º ' + b : b)).join(' · ') : '—',
   })), [datos, hoy])
 
   const visibles = seg === 'todos' ? filas : filas.filter((f) => f.estado === seg)
@@ -56,7 +57,7 @@ export default function Despachos() {
       <Listado
         titulo="Despachos y retiros"
         bajada="Qué baño se entrega o retira, cuándo y en qué vehículo."
-        accion={{ label: 'Nuevo despacho', onClick: () => setForm(true), disabled: !editable }}
+        accion={{ label: 'Nuevo despacho/retiro', onClick: () => setForm(true), disabled: !editable }}
         segmentos={{ opciones: SEGMENTOS, valor: seg, onChange: setSeg }}
         kpis={[
           { v: prog.length, l: 'Programados' },
@@ -75,14 +76,14 @@ export default function Despachos() {
           { k: 'tipoL', label: 'Tipo' },
           { k: 'cliente', label: 'Cliente' },
           { k: 'direccion', label: 'Dirección', render: (d) => d.direccion || '—' },
-          { k: 'banos', label: 'Baños', render: (d) => d.banos || '—' },
+          { k: 'banosL', label: 'Baños' },
           { k: 'vehiculoL', label: 'Vehículo' },
           { k: 'rutaL', label: 'Ruta' },
           { k: 'estadoL', label: 'Estado', badge: true },
         ]}
         datos={visibles}
         acciones={(d) => d.estado === 'programado' ? [
-          { t: 'Marcar como hecho', label: 'Hecho', d: I.check, color: '#fff', bg: C.verde, borde: C.verde, disabled: !editable, onClick: () => setConfirmar({ d, estado: 'hecho' }) },
+          { t: 'Marcar como finalizado', label: 'Finalizar', d: I.check, color: '#fff', bg: C.verde, borde: C.verde, disabled: !editable, onClick: () => setConfirmar({ d, estado: 'hecho' }) },
           { t: 'Cancelar despacho', d: 'M6 6l12 12M18 6 6 18', color: C.rojo, disabled: !editable, onClick: () => setConfirmar({ d, estado: 'cancelado' }) },
         ] : []}
       />
@@ -101,7 +102,7 @@ export default function Despachos() {
           }>
           <div style={{ padding: 18, display: 'grid', gap: 12, font: '400 13px/1.5 var(--font)' }}>
             <p style={{ margin: 0 }}>
-              <strong>{confirmar.d.folio}</strong> · {confirmar.d.tipoL} en {confirmar.d.cliente}: {confirmar.d.banos}.
+              <strong>{confirmar.d.folio}</strong> · {confirmar.d.tipoL} en {confirmar.d.cliente}: {confirmar.d.banosL}.
             </p>
             {confirmar.estado === 'hecho' && (
               <p style={{ margin: 0, color: C.gris }}>

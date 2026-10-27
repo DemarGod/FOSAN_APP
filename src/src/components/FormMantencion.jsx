@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import Modal from './Modal'
-import { activosLista, crearMantencion, tiposMantencion } from '../lib/api'
+import { activosLista, crearMantencion, tiposMantencion, mantencionPorId, actualizarMantencion, mantencionesMismoDia } from '../lib/api'
 import { C, Icon, I, L_CLASE_MANT, L_ESTADO_MANT } from '../lib/ui'
 import { useSesion, esSecretaria } from '../lib/sesion'
+import { formatoPesos } from '../lib/validar'
+
+const hoyISO = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10) }
 
 const CLASES = Object.keys(L_CLASE_MANT)
 const ESTADOS = ['programada', 'proxima', 'urgente', 'completada']
@@ -12,7 +15,7 @@ const TIPOS = [
   'Revisión de bomba', 'Cambio de neumáticos',
 ]
 
-export default function FormMantencion({ activoInicial = '', onCerrar, onGuardado }) {
+export default function FormMantencion({ activoInicial = '', mantencionId = null, onCerrar, onGuardado }) {
   const [v, setV] = useState({
     activo_id: activoInicial, clase: 'bano', tipo: TIPOS[0],
     fecha_programada: new Date().toISOString().slice(0, 10),
@@ -25,11 +28,21 @@ export default function FormMantencion({ activoInicial = '', onCerrar, onGuardad
   const [otro, setOtro] = useState(null)
   const [error, setError] = useState(null)
   const [guardando, setGuardando] = useState(false)
+  const [duplicado, setDuplicado] = useState(null)
 
   useEffect(() => {
     activosLista().then(setActivos).catch(setError)
     tiposMantencion().then((extra) => setTipos([...TIPOS, ...extra.filter((t) => !TIPOS.includes(t)).sort()])).catch(() => {})
-  }, [])
+    if (mantencionId) mantencionPorId(mantencionId).then((m) => {
+      if (!m) return
+      setV({
+        activo_id: m.activo_id, clase: m.clase, tipo: m.tipo || TIPOS[0], fecha_programada: m.fecha_programada || hoyISO(),
+        responsable_ext: m.responsable_ext || '', costo: m.costo ? formatoPesos(m.costo) : '', estado: m.estado, detalle: m.detalle || '',
+      })
+      if (m.tipo) setTipos((p) => (p.includes(m.tipo) ? p : [...p, m.tipo]))
+    }).catch(setError)
+  }, [mantencionId])
+  useEffect(() => { setDuplicado(null) }, [v.activo_id, v.fecha_programada])
   const agregarTipo = () => {
     const t = (otro || '').trim()
     if (!t) return
@@ -44,10 +57,20 @@ export default function FormMantencion({ activoInicial = '', onCerrar, onGuardad
   const guardar = async () => {
     if (!v.activo_id) { setError({ message: 'Elige el activo al que corresponde la mantención.' }); return }
     if (otro !== null) { setError({ message: 'Termina de agregar el tipo "Otro" o cancélalo.' }); return }
+    if (!v.fecha_programada) { setError({ message: 'Indica la fecha.' }); return }
+    if (v.estado === 'completada' && v.fecha_programada > hoyISO()) {
+      setError({ message: 'No se puede marcar como completada una mantención con fecha futura. Déjala como programada o corrige la fecha.' }); return
+    }
     setGuardando(true)
     setError(null)
     try {
-      await crearMantencion({
+      if (!duplicado) {
+        const otras = await mantencionesMismoDia(v.activo_id, v.fecha_programada, mantencionId)
+        if (otras.length) {
+          setDuplicado(otras); setGuardando(false); return
+        }
+      }
+      const datos = {
         activo_id: v.activo_id,
         clase: v.clase,
         tipo: v.tipo,
@@ -57,17 +80,20 @@ export default function FormMantencion({ activoInicial = '', onCerrar, onGuardad
         costo: v.costo ? Number(String(v.costo).replace(/\D/g, '')) : 0,
         estado: v.estado,
         detalle: v.detalle || null,
-      })
+      }
+      if (sec) delete datos.costo
+      if (mantencionId) await actualizarMantencion(mantencionId, datos)
+      else await crearMantencion(datos)
       onGuardado()
     } catch (e) { setError(e); setGuardando(false) }
   }
 
   return (
-    <Modal titulo="Nueva mantención" onCerrar={onCerrar} pie={
+    <Modal titulo={mantencionId ? 'Editar mantención' : 'Nueva mantención'} onCerrar={onCerrar} pie={
       <>
         <button className="btn" onClick={onCerrar}>Cancelar</button>
         <button className="btn btn-verde" onClick={guardar} disabled={guardando}>
-          {guardando ? 'Guardando…' : 'Guardar mantención'}
+          {guardando ? 'Guardando…' : duplicado ? 'Guardar de todas formas' : mantencionId ? 'Guardar cambios' : 'Guardar mantención'}
         </button>
       </>
     }>
@@ -111,7 +137,8 @@ export default function FormMantencion({ activoInicial = '', onCerrar, onGuardad
 
           <label className="campo">
             <span>Fecha programada</span>
-            <input type="date" value={v.fecha_programada} onChange={set('fecha_programada')} />
+            <input type="date" min="2000-01-01" max="2100-12-31" value={v.fecha_programada} onChange={set('fecha_programada')} />
+            {v.estado === 'completada' && <em style={{ font: '400 11px var(--font)', color: C.gris, fontStyle: 'normal' }}>Si está completada, esta es la fecha en que se hizo (hoy o antes).</em>}
           </label>
         </div>
 
@@ -153,6 +180,11 @@ export default function FormMantencion({ activoInicial = '', onCerrar, onGuardad
             </span>
           </div>
 
+          {duplicado && (
+            <div style={{ padding: '11px 13px', background: '#fff4d6', border: `2px solid ${C.amarillo}`, font: '400 12px/1.45 var(--font)', color: '#5c3d00' }}>
+              Este activo ya tiene {duplicado.length} mantención(es) ese día: {duplicado.map((d) => d.tipo).join(', ')}. Revisa que no sea la misma. Si es otra, vuelve a presionar guardar.
+            </div>
+          )}
           {error && (
             <div style={{
               padding: '11px 13px', background: '#fce8e6', border: `2px solid ${C.rojo}`,

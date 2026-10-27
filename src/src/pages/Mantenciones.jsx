@@ -4,7 +4,7 @@ import FormMantencion from '../components/FormMantencion'
 import { mantenciones, mantencionesKpi } from '../lib/api'
 import { exportarVista } from '../lib/excel'
 import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
-import { I, L_CLASE_MANT, L_ESTADO_MANT, clp, fecha } from '../lib/ui'
+import { C, I, L_CLASE_MANT, L_ESTADO_MANT, clp, fecha } from '../lib/ui'
 
 const SEGMENTOS = [
   { v: 'todos', l: 'Todos', d: I.clip },
@@ -16,6 +16,7 @@ export default function Mantenciones() {
   const { perfil } = useSesion()
   const editable = puedeOperar(perfil, 'mantenciones')
   const finanzas = verFinanzas(perfil)
+  const dueno = puedeEditar(perfil)
 
   const [datos, setDatos] = useState([])
   const [kpi, setKpi] = useState({})
@@ -83,10 +84,17 @@ export default function Mantenciones() {
           { k: 'estadoL', label: 'Estado', badge: true },
         ]}
         datos={visibles}
+        acciones={(d) => {
+          const cerrada = d.estado === 'completada' || d.estado === 'anulada'
+          return [{
+            t: cerrada && !dueno ? 'Cerrada: solo un dueño la corrige' : 'Editar mantención', d: I.lapiz, color: C.navy,
+            disabled: !editable || (cerrada && !dueno), onClick: () => setForm({ id: d.id }),
+          }]
+        }}
       />
 
       {form && (
-        <FormMantencion onCerrar={() => setForm(false)} onGuardado={() => { setForm(false); cargar() }} />
+        <FormMantencion mantencionId={form.id || null} onCerrar={() => setForm(false)} onGuardado={() => { setForm(false); cargar() }} />
       )}
     </>
   )

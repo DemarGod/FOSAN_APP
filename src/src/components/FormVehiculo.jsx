@@ -44,7 +44,7 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
       }, {
         tipo_vehiculo: v.tipo_vehiculo,
         patente: v.patente.trim().toUpperCase() || null,
-        marca: v.marca.trim() || null, modelo: v.modelo.trim() || null, anio,
+        marca: v.marca.trim().toUpperCase() || null, modelo: v.modelo.trim().toUpperCase() || null, anio,
         capacidad_kg: numeroDe(v.capacidad_kg), capacidad_banos: numeroDe(v.capacidad_banos),
         capacidad_litros: limpiafosas ? numeroDe(v.capacidad_litros) : null,
         rend_vacio: rv, rend_cargado: rc, kilometraje: numeroDe(v.kilometraje),

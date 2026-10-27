@@ -95,8 +95,9 @@ export default function FormDespacho({ inicial = {}, onCerrar, onGuardado }) {
           <Campo l="Cliente">
             <select value={v.cliente_id} onChange={set('cliente_id')}>
               <option value="">Elegir cliente…</option>
-              {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}{c.rut ? ' · ' + c.rut : ''}</option>)}
             </select>
+            {(() => { const c = clientes.find((x) => x.id === v.cliente_id); return c ? <em style={{ font: '400 11px var(--font)', color: C.gris, fontStyle: 'normal' }}>RUT {c.rut || 'sin registrar'}{c.direccion ? ' · ' + c.direccion : ''}</em> : null })()}
           </Campo>
           <Campo l="Fecha programada">
             <input type="date" min={FECHA_MIN} max={FECHA_MAX} value={v.fecha_programada} onChange={set('fecha_programada')} />
@@ -128,14 +129,14 @@ export default function FormDespacho({ inicial = {}, onCerrar, onGuardado }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 14, alignContent: 'start', minWidth: 0 }}>
           {conRetiro && (
             <div className="campo">
-              <span>Baños a retirar del cliente</span>
+              <span>Baños a retirar (solo los instalados en este cliente)</span>
               <SelectorBanos banos={delCliente} elegidos={retirar} onChange={setRetirar}
                 vacio={v.cliente_id ? 'Este cliente no tiene baños instalados.' : 'Elige primero el cliente.'} />
             </div>
           )}
           {conEntrega && (
             <div className="campo">
-              <span>Baños a entregar (disponibles en bodega)</span>
+              <span>Baños a entregar (solo disponibles para arriendo)</span>
               <SelectorBanos banos={libres} elegidos={entregar} onChange={setEntregar}
                 vacio="No hay baños disponibles. Los que están en mantención no se pueden despachar." />
             </div>
