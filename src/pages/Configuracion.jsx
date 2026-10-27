@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Aviso } from '../components/Listado'
-import { perfiles, todosPermisos, guardarPermiso, guardarPerfil, accesosAutorizados, autorizarCorreo, quitarAutorizacion } from '../lib/api'
+import { perfiles, todosPermisos, guardarPermiso, guardarPerfil, accesosAutorizados, autorizarCorreo } from '../lib/api'
 import { useSesion, esDueno, nombreRol, SECCIONES, ROLES } from '../lib/sesion'
 import { Badge, C } from '../lib/ui'
 import { supabase } from '../lib/supabase'
@@ -50,11 +50,12 @@ export default function Configuracion() {
   }
   const alternar = (u) => hacer(() => guardarPerfil(u.perfil, { activo: u.perfil.activo === false }), 'Usuario actualizado.')
   const quitar = (u) => {
-    if (!window.confirm(`¿Quitar el acceso de ${u.nombre} (${u.correo})?`)) return
-    hacer(async () => {
-      if (u.autorizado) await quitarAutorizacion(u.correo)
-      if (u.perfil && u.perfil.activo !== false) await guardarPerfil(u.perfil, { activo: false })
-    }, 'Acceso quitado.')
+    if (!u.correo) return setMsg(new Error('Este usuario no tiene correo registrado; elimínalo desde Supabase.'))
+    const txt = `Eliminar a ${u.nombre} (${u.correo})\n\nSe borra su cuenta y ya no podrá entrar. Lo que registró (mantenciones, movimientos, etc.) se conserva sin usuario asignado.\n\nEsta acción no se puede deshacer. Escribe ELIMINAR para confirmar.`
+    const r = window.prompt(txt)
+    if (r === null) return
+    if (r.trim().toUpperCase() !== 'ELIMINAR') return setMsg(new Error('No se eliminó: no escribiste ELIMINAR.'))
+    hacer(() => rpc('eliminar_usuario', { p_correo: u.correo }), 'Usuario eliminado.')
   }
   const agregar = (e) => {
     e.preventDefault()
@@ -147,7 +148,7 @@ export default function Configuracion() {
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                           {u.perfil && u.correo && <button className="btn" onClick={() => cambiarClave(u)} style={{ minHeight: 34, padding: '4px 10px' }}>Cambiar clave</button>}
-                          {!yo && <button className="btn" onClick={() => quitar(u)} style={{ minHeight: 34, padding: '4px 10px', color: C.rojo }}>Quitar</button>}
+                          {!yo && <button className="btn" onClick={() => quitar(u)} style={{ minHeight: 34, padding: '4px 10px', color: C.rojo }}>Eliminar</button>}
                         </div>
                       </td>
                     </tr>
