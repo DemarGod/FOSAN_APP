@@ -4,7 +4,7 @@ import Modal from '../components/Modal'
 import ParametrosCosto from '../components/ParametrosCosto'
 import { supabase } from '../lib/supabase'
 import { cargarMes, calcular, tendencia, mesActual } from '../lib/analisis'
-import { useSesion, puedeEditar, puedeVer, esDueno } from '../lib/sesion'
+import { useSesion, puedeVer, esDueno } from '../lib/sesion'
 import { C, clp, fecha, mesLargo, L_ESTADO_ACTIVO } from '../lib/ui'
 
 const VISTAS = [
@@ -16,8 +16,8 @@ const VISTAS = [
   { v: 'tendencia', l: 'Tendencia mensual' },
 ]
 const pct = (x) => (x === null || x === undefined || isNaN(x) ? '—' : Math.round(x * 100) + '%')
-const $ = (x) => clp(Math.round(x || 0))
-const num = (x, d = 0) => (x === null || x === undefined ? '—' : Number(x).toLocaleString('es-CL', { maximumFractionDigits: d }))
+const $ = (x) => clp(Math.round(x || 0) || 0)
+const num = (x, d = 0) => (x === null || x === undefined ? '—' : (Number(x) || 0).toLocaleString('es-CL', { maximumFractionDigits: d }))
 const L_ESTADO = L_ESTADO_ACTIVO
 
 export default function Analisis() {
@@ -70,12 +70,12 @@ export default function Analisis() {
 
       {!cargando && datos && (
         <>
-          <Calidad r={r} />
+          <Calidad r={r} vista={vista} />
           {vista === 'clientes' && <Clientes d={datos} r={r} onDetalle={setDetalle} />}
           {vista === 'rutas' && <Rutas d={datos} onDetalle={setDetalle} onParametros={() => setParams(true)} />}
           {vista === 'ocupacion' && <Ocupacion o={datos.ocupacion} />}
-          {vista === 'banos' && <Banos d={datos} />}
-          {vista === 'insumos' && <Insumos d={datos} />}
+          {vista === 'banos' && <Banos d={datos} r={r} />}
+          {vista === 'insumos' && <Insumos d={datos} r={r} />}
           {vista === 'tendencia' && <Tendencia t={tend} onDetalle={setDetalle} />}
         </>
       )}
@@ -98,24 +98,48 @@ export default function Analisis() {
   )
 }
 
-function Calidad({ r }) {
-  const avisos = [
-    r.ventasSinClienteN > 0 && `${r.ventasSinClienteN} venta(s) de Maxxa por ${$(r.ventasSinCliente)} no se asociaron a ningún cliente (revisa RUT o nombre).`,
-    r.despachosSinCosto > 0 && `${r.despachosSinCosto} despacho(s) en viaje aparte todavía no tienen costo.`,
-    r.recetaSinCosto && 'Hay insumos de la receta de limpieza sin costo unitario.',
-  ].filter(Boolean)
+// Avisos de datos faltantes, solo los que afectan la vista abierta
+function Calidad({ r, vista }) {
+  const s = (k, uno, varios) => (k === 1 ? uno : varios)
+  const por = {
+    clientes: [
+      r.ventasMes === 0 && 'No hay ventas de Maxxa importadas este mes. Importa el informe de ventas en Utilidades o carga el valor mensual de cada cliente en Clientes.',
+      r.clientesSinIngreso > 0 && `${r.clientesSinIngreso} ${s(r.clientesSinIngreso, 'cliente tiene', 'clientes tienen')} costos pero ningún ingreso registrado (${$(r.costoSinIngreso)} en costos). No se calcula su margen hasta tener ventas o valor de contrato.`,
+      r.ventasSinClienteN > 0 && `${r.ventasSinClienteN} venta(s) de Maxxa por ${$(r.ventasSinCliente)} no se asociaron a ningún cliente (revisa RUT o nombre).`,
+      r.despachosSinCosto > 0 && `${r.despachosSinCosto} despacho(s) en viaje aparte todavía no tienen costo.`,
+    ],
+    rutas: [
+      r.salidasSinKm > 0 && `${r.salidasSinKm} de ${r.salidas} salida(s) no tienen odómetro de inicio y término. Sin kilómetros, el diésel y el desgaste no se calculan y el costo queda solo con fijos y conductor.`,
+      r.despachosSinCosto > 0 && `${r.despachosSinCosto} despacho(s) en viaje aparte todavía no tienen costo.`,
+    ],
+    ocupacion: [],
+    banos: [
+      r.banosSinIngreso > 0 && `${r.banosSinIngreso} baño(s) arrendados no tienen valor de arriendo ni ingreso del cliente: su margen no se puede calcular.`,
+      r.banosSinInstalacion > 0 && `${r.banosSinInstalacion} baño(s) arrendados no tienen instalación registrada, por eso no muestran días arrendado.`,
+    ],
+    insumos: [
+      r.recetaVacia && 'No hay receta de limpieza: define cuánto de cada insumo usa una limpieza de baño para calcular consumo y compras.',
+      r.insumosSinCosto > 0 && `${r.insumosSinCosto} insumo(s) sin costo unitario: el gasto mensual sale en $0.`,
+    ],
+    tendencia: [r.ventasMes === 0 && 'Sin ventas importadas, la tendencia muestra solo costos.'],
+  }
+  const avisos = (por[vista] || []).filter(Boolean)
   if (!avisos.length) return null
   return (
-    <div style={{ margin: '16px 0 0', padding: '10px 14px', background: '#fef7e0', border: `2px solid ${C.amarillo}`, font: '400 12px/1.5 var(--font)', color: '#5c4400' }}>
-      <strong>Calidad de los datos:</strong> {avisos.join(' ')}
+    <div style={{ margin: '16px 0 0', padding: '10px 14px', background: '#fef7e0', border: `2px solid ${C.amarillo}`, font: '400 12px/1.5 var(--font)', color: '#5c4400', display: 'grid', gap: 4 }}>
+      <strong>Datos que faltan para que esta vista sea exacta</strong>
+      {avisos.map((a, i) => <span key={i}>· {a}</span>)}
     </div>
   )
 }
 
 const Est = ({ on }) => (on ? <span title="Incluye costos estimados o ingreso tomado del contrato" style={{ marginLeft: 6, padding: '1px 5px', font: '700 9px var(--font)', letterSpacing: '.06em', textTransform: 'uppercase', background: '#fef7e0', color: '#8a5a00', border: `1px solid ${C.amarillo}` }}>est.</span> : null)
-const Margen = ({ p }) => <span style={{ fontWeight: 700, color: p === null ? C.gris : p < 0.2 ? '#b3261e' : '#1e6b34', background: p !== null && p < 0.2 ? '#fce8e6' : undefined, padding: p !== null && p < 0.2 ? '2px 6px' : 0 }}>{pct(p)}</span>
+const SinDato = ({ children = 'Sin ingreso' }) => <span style={{ font: '600 11px var(--font)', color: C.gris }}>{children}</span>
+const Margen = ({ p }) => (p === null || p === undefined ? <SinDato>—</SinDato>
+  : <span style={{ fontWeight: 700, color: p < 0.2 ? '#b3261e' : '#1e6b34', background: p < 0.2 ? '#fce8e6' : undefined, padding: p < 0.2 ? '2px 6px' : 0 }}>{pct(p)}</span>)
+const Plata = ({ v }) => (v === null || v === undefined ? <SinDato>—</SinDato> : <span style={{ fontWeight: 700, color: v < 0 ? '#b3261e' : '#1e6b34' }}>{$(v)}</span>)
 
-function Tabla({ cols, filas, onFila, vacio = 'Sin datos para este mes.', min = 640 }) {
+function Tabla({ cols, filas, onFila, vacio = 'Sin datos para este mes.', min = 640, pie }) {
   return (
     <div className="scroller" style={{ border: `2px solid ${C.borde}`, background: '#fff' }}>
       <table style={{ minWidth: min }}>
@@ -127,6 +151,11 @@ function Tabla({ cols, filas, onFila, vacio = 'Sin datos para este mes.', min = 
               {cols.map((c, ci) => <td key={c.k} style={{ whiteSpace: 'nowrap', textAlign: c.der ? 'right' : 'left', fontWeight: ci === 0 ? 600 : 400 }}>{c.f ? c.f(x) : x[c.k] ?? '—'}</td>)}
             </tr>
           ))}
+          {pie && filas.length > 0 && (
+            <tr style={{ background: C.suave }}>
+              {cols.map((c, ci) => <td key={c.k} style={{ whiteSpace: 'nowrap', textAlign: c.der ? 'right' : 'left', fontWeight: 700, borderTop: `2px solid ${C.borde}` }}>{ci === 0 ? 'Total' : c.f ? c.f(pie) : pie[c.k] ?? ''}</td>)}
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
@@ -136,35 +165,42 @@ function Tabla({ cols, filas, onFila, vacio = 'Sin datos para este mes.', min = 
 const Nota = ({ children }) => <p style={{ margin: '10px 2px 0', font: '400 12px/1.5 var(--font)', color: C.gris }}>{children}</p>
 
 function Clientes({ d, r, onDetalle }) {
+  const margenTot = r.ingreso ? (r.ingreso - r.costoConIngreso) / r.ingreso : null
   return (
     <>
       <Kpis items={[
-        { v: $(r.ingreso), l: 'Ingresos del mes' },
+        { v: r.ingreso ? $(r.ingreso) : 'Sin datos', l: 'Ingresos del mes' },
         { v: $(r.costo), l: 'Costos atribuidos' },
-        { v: pct(r.ingreso ? (r.ingreso - r.costo) / r.ingreso : null), l: 'Margen de contribución' },
+        { v: pct(margenTot), l: 'Margen de clientes con ingreso' },
         { v: r.bajo20, l: 'Clientes bajo 20% de margen' },
+        { v: r.clientesSinIngreso, l: 'Clientes sin ingreso cargado' },
       ]} />
-      <Tabla onFila={(x) => onDetalle({ titulo: x.nombre, resumen: `Ingreso ${$(x.ingreso)} (${x.fuente}) − costos ${$(x.costo)} = margen ${$(x.margen)} (${pct(x.pct)}).`, registros: x.registros })}
-        filas={d.clientes} min={900} cols={[
-          { k: 'nombre', l: 'Cliente', f: (x) => <>{x.nombre}<Est on={x.estimado} /></> },
-          { k: 'ingreso', l: 'Ingreso', der: true, f: (x) => $(x.ingreso) },
-          { k: 'fuente', l: 'Fuente' },
+      <Tabla onFila={(x) => onDetalle({ titulo: x.nombre, resumen: x.sinIngreso
+        ? `Sin ingreso registrado este mes. Costos atribuidos: ${$(x.costo)}. Carga ventas de Maxxa o el valor mensual del contrato para calcular el margen.`
+        : `Ingreso ${$(x.ingreso)} (${x.fuente}) − costos ${$(x.costo)} = margen ${$(x.margen)} (${pct(x.pct)}).`, registros: x.registros })}
+        filas={d.clientes} min={980} cols={[
+          { k: 'nombre', l: 'Cliente', f: (x) => <>{x.nombre}<Est on={x.estimado && !x.sinIngreso} /></> },
+          { k: 'banos', l: 'Baños arrendados', der: true },
+          { k: 'ingreso', l: 'Ingreso', der: true, f: (x) => (x.sinIngreso ? <SinDato /> : $(x.ingreso)) },
+          { k: 'fuente', l: 'Fuente', f: (x) => (x.sinIngreso ? '—' : x.fuente) },
           { k: 'visitas', l: 'Visitas', der: true },
           { k: 'rutas', l: 'Rutas', der: true, f: (x) => $(x.rutas) },
           { k: 'insumos', l: 'Insumos', der: true, f: (x) => $(x.insumos) },
           { k: 'mant', l: 'Mantenciones', der: true, f: (x) => $(x.mant) },
           { k: 'despachos', l: 'Despachos', der: true, f: (x) => $(x.despachos) },
-          { k: 'margen', l: 'Margen', der: true, f: (x) => $(x.margen) },
+          { k: 'costo', l: 'Costo total', der: true, f: (x) => $(x.costo) },
+          { k: 'margen', l: 'Margen', der: true, f: (x) => <Plata v={x.margen} /> },
           { k: 'pct', l: '%', der: true, f: (x) => <Margen p={x.pct} /> },
         ]} />
-      <Nota>Margen de contribución = ingreso − costos variables del cliente. Ingreso: ventas importadas de Maxxa; si el mes no tiene ventas, se usa el valor mensual del contrato. El costo de cada salida se reparte en partes iguales entre sus paradas. En rojo, margen bajo 20%. Clic en un cliente para ver el detalle.</Nota>
+      <Nota>Margen de contribución = ingreso − costos variables del cliente. Ingreso: ventas importadas de Maxxa; si el mes no tiene ventas, se usa el valor mensual del contrato. Si no hay ninguno de los dos, el margen queda en "—" (no se informa como pérdida). El costo de cada salida se reparte según los baños atendidos en cada parada. En rojo, margen bajo 20%. Clic en un cliente para ver el detalle.</Nota>
     </>
   )
 }
 
 function Rutas({ d, onDetalle, onParametros }) {
-  const t = d.rutas.reduce((a, x) => ({ costo: a.costo + x.costo, visitas: a.visitas + x.visitas, km: a.km + x.km, banos: a.banos + x.banos, litros: a.litros + x.litros, insumos: a.insumos + x.insumos }), { costo: 0, visitas: 0, km: 0, banos: 0, litros: 0, insumos: 0 })
+  const t = d.rutas.reduce((a, x) => ({ costo: a.costo + x.costo, visitas: a.visitas + x.visitas, km: a.km + x.km, banos: a.banos + x.banos, litros: a.litros + x.litros, insumos: a.insumos + x.insumos, salidas: a.salidas + x.salidas, sinKm: a.sinKm + x.sinKm }), { costo: 0, visitas: 0, km: 0, banos: 0, litros: 0, insumos: 0, salidas: 0, sinKm: 0 })
   const dec = (v) => (v == null ? '—' : v.toFixed(1).replace('.', ','))
+  const sinKm = 'Sin odómetro'
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
@@ -175,21 +211,22 @@ function Rutas({ d, onDetalle, onParametros }) {
       </div>
       <Kpis items={[
         { v: $(t.costo), l: 'Costo de rutas del mes' },
-        { v: num(t.km) + ' km', l: 'Kilómetros' },
+        { v: t.km ? num(t.km) + ' km' : sinKm, l: `Kilómetros · ${t.salidas - t.sinKm} de ${t.salidas} salidas con odómetro` },
         { v: t.visitas, l: 'Visitas' },
-        { v: $(t.visitas ? t.costo / t.visitas : 0), l: 'Costo promedio por visita' },
+        { v: t.visitas ? $(t.costo / t.visitas) : '—', l: 'Costo promedio por visita' },
       ]} />
       <Kpis items={[
-        { v: t.km ? $(t.costo / t.km) + '/km' : '—', l: 'Costo por km' },
-        { v: t.banos ? $((t.costo + t.insumos) / t.banos) : '—', l: `Costo por baño atendido · ${num(t.banos)} baños` },
-        { v: t.km ? dec((t.litros / t.km) * 100) + ' L' : '—', l: 'Consumo cada 100 km' },
-        { v: d.kmDisponibles ? pct(t.km / d.kmDisponibles) : '—', l: `Utilización de camiones · ${d.vehiculosMes} vehículo(s)` },
+        { v: t.km ? $(t.costo / t.km) + '/km' : sinKm, l: 'Costo por km' },
+        { v: t.banos ? $((t.costo + t.insumos) / t.banos) : '—', l: `Costo por baño limpiado · ${num(t.banos)} baños` },
+        { v: t.km ? dec((t.litros / t.km) * 100) + ' L' : sinKm, l: 'Consumo cada 100 km' },
+        { v: t.km && d.kmDisponibles ? pct(t.km / d.kmDisponibles) : sinKm, l: `Utilización de camiones · ${d.vehiculosMes} vehículo(s)` },
       ]} />
-      <Tabla onFila={(x) => onDetalle({ titulo: x.ruta, resumen: `${x.salidas} salida(s), ${num(x.km)} km, ${x.visitas} visita(s). Costo ${$(x.costo)}.`, registros: x.registros })}
-        filas={d.rutas} min={1100} cols={[
+      <Tabla onFila={(x) => onDetalle({ titulo: x.ruta, resumen: `${x.salidas} salida(s), ${x.km ? num(x.km) + ' km' : 'sin odómetro'}, ${x.visitas} visita(s). Costo ${$(x.costo)}.`, registros: x.registros })}
+        filas={d.rutas} min={1100} pie={{ ...t, costoVisita: t.visitas ? t.costo / t.visitas : null, costoKm: t.km ? t.costo / t.km : null, costoBano: t.banos ? (t.costo + t.insumos) / t.banos : null, l100: t.km ? (t.litros / t.km) * 100 : null, ingresoAtendido: d.rutas.reduce((s, x) => s + x.ingresoAtendido, 0), pct: null }}
+        cols={[
           { k: 'ruta', l: 'Ruta', f: (x) => <>{x.ruta}<Est on={x.estimado} /></> },
           { k: 'salidas', l: 'Salidas', der: true },
-          { k: 'km', l: 'Km', der: true, f: (x) => num(x.km) },
+          { k: 'km', l: 'Km', der: true, f: (x) => (x.km ? num(x.km) : <SinDato>{sinKm}</SinDato>) },
           { k: 'visitas', l: 'Visitas', der: true },
           { k: 'costo', l: 'Costo', der: true, f: (x) => $(x.costo) },
           { k: 'costoVisita', l: 'Por visita', der: true, f: (x) => (x.costoVisita == null ? '—' : $(x.costoVisita)) },
@@ -197,67 +234,88 @@ function Rutas({ d, onDetalle, onParametros }) {
           { k: 'banos', l: 'Baños', der: true, f: (x) => num(x.banos) },
           { k: 'costoBano', l: 'Por baño', der: true, f: (x) => (x.costoBano == null ? '—' : $(x.costoBano)) },
           { k: 'l100', l: 'L/100 km', der: true, f: (x) => dec(x.l100) },
-          { k: 'ingresoAtendido', l: 'Ingreso atendido', der: true, f: (x) => $(x.ingresoAtendido) },
+          { k: 'ingresoAtendido', l: 'Ingreso atendido', der: true, f: (x) => (x.ingresoAtendido ? $(x.ingresoAtendido) : <SinDato />) },
           { k: 'pct', l: 'Margen', der: true, f: (x) => <Margen p={x.pct} /> },
         ]} vacio="No hay salidas de rutas en este mes." />
-      <Nota>Costo de ruta = diésel + desgaste (neumáticos, aceite, frenos, amortiguadores, preventiva, depreciación) + fijos (permiso, seguros, revisión) + conductor + agua y residuos. Costo por baño = (costo de ruta + insumos de limpieza) ÷ baños limpiados. Utilización = km recorridos ÷ km esperados del mes (km anuales ÷ 12 por vehículo). Ingreso atendido = parte del ingreso de cada cliente según cuántas de sus visitas hizo esta ruta. "est." = alguna salida sin odómetro o con datos del vehículo incompletos.</Nota>
+      <Nota>Costo de ruta = diésel + desgaste (neumáticos, aceite, frenos, amortiguadores, preventiva, depreciación) + fijos (permiso, seguros, revisión) + conductor + agua y residuos. Diésel y desgaste dependen de los km: si la salida no tiene odómetro, esa parte queda fuera. Costo por baño = (costo de ruta + insumos de limpieza) ÷ baños limpiados. Utilización = km recorridos ÷ km esperados del mes. "est." = alguna salida sin odómetro o con datos del vehículo incompletos.</Nota>
     </>
   )
 }
 
 function Ocupacion({ o }) {
+  const h = o.hoy
+  const otros = Object.entries(o.otrosEstados).map(([k, v]) => `${v} ${(L_ESTADO[k] || k).toLowerCase()}`).join(', ')
+  const pie = o.porModelo.reduce((a, m) => ({ total: a.total + m.total, arriendo: a.arriendo + m.arriendo, disponible: a.disponible + m.disponible, mantencion: a.mantencion + m.mantencion, otros: a.otros + m.otros }), { total: 0, arriendo: 0, disponible: 0, mantencion: 0, otros: 0 })
+  pie.pct = o.pctHoy
   return (
     <>
       <Kpis items={[
-        { v: pct(o.pct), l: 'Ocupación del mes' },
-        { v: o.hoy.arriendo, l: 'Arrendados hoy' },
-        { v: o.hoy.disponibles, l: 'Disponibles hoy' },
-        { v: o.hoy.mantencion, l: 'En mantención hoy' },
+        { v: h.total, l: 'Total de baños' },
+        { v: h.arriendo, l: 'En arriendo hoy' },
+        { v: h.disponible, l: 'Disponibles hoy' },
+        { v: h.mantencion, l: 'En mantención hoy' },
+        ...(h.otros ? [{ v: h.otros, l: 'Otros estados' }] : []),
+      ]} />
+      <Kpis items={[
+        { v: pct(o.pctHoy), l: `Ocupación hoy · ${h.arriendo} de ${h.arriendo + h.disponible} arrendables` },
+        { v: pct(o.pct), l: 'Ocupación promedio del mes' },
       ]} />
       <div style={{ padding: '14px 16px', border: `2px solid ${C.borde}`, background: C.suave, font: '400 13px/1.55 var(--font)', marginBottom: 16 }}>
-        <strong>Cómo se lee:</strong> de los baños que se pueden arrendar (se descuentan los que están en mantención o fuera de servicio), qué porcentaje estuvo arrendado.
-        Ejemplo: 40 baños, 4 en mantención y 27 arrendados → 27 ÷ 36 = 75%. Si la ocupación se mantiene sobre 85%, conviene comprar más baños. Si baja de 60%, sobran unidades o hay que mejorar la rotación.
-        <div style={{ marginTop: 6, color: C.gris, font: '400 12px var(--font)' }}>Fuente: {o.fuente}. La app guarda una foto diaria del estado de cada baño, así que el historial se completa con el uso.</div>
+        <strong>Cómo se lee:</strong> ocupación = baños en arriendo ÷ baños arrendables (en arriendo + disponibles). Los que están en mantención u otros estados no se cuentan porque no se pueden arrendar.
+        Hoy: {h.arriendo} ÷ ({h.arriendo} + {h.disponible}) = {pct(o.pctHoy)}. Sobre 85% sostenido conviene comprar baños; bajo 60% sobran unidades o hay que mejorar la rotación.
+        <div style={{ marginTop: 6, color: C.gris, font: '400 12px var(--font)' }}>
+          {h.total} = {h.arriendo} en arriendo + {h.disponible} disponibles + {h.mantencion} en mantención{h.otros ? ` + ${h.otros} en otros estados (${otros})` : ''}.
+          Promedio del mes: {o.fuente}.
+        </div>
       </div>
-      <Tabla filas={o.porModelo} min={520} cols={[
+      <Tabla filas={o.porModelo} min={760} pie={pie} cols={[
         { k: 'modelo', l: 'Modelo' },
         { k: 'total', l: 'Total', der: true },
-        { k: 'aptos', l: 'Aptos para arrendar', der: true },
-        { k: 'arriendo', l: 'Arrendados', der: true },
+        { k: 'arriendo', l: 'En arriendo', der: true },
+        { k: 'disponible', l: 'Disponibles', der: true },
+        { k: 'mantencion', l: 'En mantención', der: true },
+        { k: 'otros', l: 'Otros estados', der: true },
         { k: 'pct', l: 'Ocupación hoy', der: true, f: (x) => pct(x.pct) },
       ]} />
     </>
   )
 }
 
-function Banos({ d }) {
-  const [filtro, setFiltro] = useState('')
+function Banos({ d, r }) {
+  const [filtro, setFiltro] = useState('en_arriendo')
   const filas = useMemo(() => (filtro ? d.banos.filter((b) => b.estado === filtro) : d.banos), [d.banos, filtro])
+  const arr = d.banos.filter((b) => b.estado === 'en_arriendo')
+  const conMargen = arr.filter((b) => b.margen !== null)
   return (
     <>
       <Kpis items={[
-        { v: d.banos.length, l: 'Baños' },
-        { v: d.banos.filter((b) => b.margen < 0).length, l: 'Con margen negativo' },
+        { v: arr.length, l: 'Baños en arriendo' },
+        { v: conMargen.length, l: 'Con ingreso conocido' },
+        { v: conMargen.filter((b) => b.margen < 0).length, l: 'Con margen negativo' },
+        { v: r.banosSinIngreso, l: 'Sin valor de arriendo' },
         { v: $(d.banos.reduce((s, b) => s + b.mant, 0)), l: 'Mantenciones del mes' },
       ]} />
       <div style={{ marginBottom: 12 }}>
         <select value={filtro} onChange={(e) => setFiltro(e.target.value)} style={{ border: `2px solid ${C.borde}`, font: '600 13px var(--font)', color: C.navy, padding: '9px 12px', minHeight: 42 }}>
-          <option value="">Estado: todos</option>
-          {Object.entries(L_ESTADO).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+          <option value="">Estado: todos ({d.banos.length})</option>
+          {Object.entries(L_ESTADO).filter(([k]) => k !== 'baja').map(([k, l]) => {
+            const c = d.banos.filter((b) => b.estado === k).length
+            return c ? <option key={k} value={k}>{l} ({c})</option> : null
+          })}
         </select>
       </div>
-      <Tabla filas={filas} min={860} cols={[
-        { k: 'codigo', l: 'Baño', f: (x) => <span style={{ display: 'inline-block', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', verticalAlign: 'bottom' }}>{x.codigo}<Est on={x.estimado} /></span> },
+      <Tabla filas={filas} min={980} cols={[
+        { k: 'codigo', l: 'Baño', f: (x) => <>{x.codigo}<Est on={x.estimado} /></> },
         { k: 'modelo', l: 'Modelo' },
         { k: 'estado', l: 'Estado', f: (x) => L_ESTADO[x.estado] || x.estado },
         { k: 'cliente', l: 'Cliente' },
-        { k: 'diasArriendo', l: 'Días arrendado', der: true, f: (x) => x.diasArriendo ?? '—' },
-        { k: 'ingreso', l: 'Ingreso', der: true, f: (x) => $(x.ingreso) },
+        { k: 'diasArriendo', l: 'Días arrendado', der: true, f: (x) => (x.estado !== 'en_arriendo' ? '—' : x.diasArriendo == null ? <SinDato>Sin instalación</SinDato> : <span title={'Desde ' + fecha(x.desde)}>{x.diasArriendo}</span>) },
+        { k: 'ingreso', l: 'Ingreso del mes', der: true, f: (x) => (x.sinIngreso ? <SinDato /> : x.estado === 'en_arriendo' ? $(x.ingreso) : '—') },
         { k: 'operacion', l: 'Rutas e insumos', der: true, f: (x) => $(x.operacion) },
         { k: 'mant', l: 'Mantención', der: true, f: (x) => $(x.mant) },
-        { k: 'margen', l: 'Margen', der: true, f: (x) => <span style={{ fontWeight: 700, color: x.margen < 0 ? '#b3261e' : '#1e6b34' }}>{$(x.margen)}</span> },
+        { k: 'margen', l: 'Margen', der: true, f: (x) => <Plata v={x.margen} /> },
       ]} />
-      <Nota>Ingreso del baño = su valor de arriendo; si no tiene, el ingreso del cliente dividido por sus baños. Los costos de rutas e insumos del cliente también se dividen por sus baños. Un baño con margen negativo varios meses seguidos conviene repararlo, reasignarlo o reemplazarlo.</Nota>
+      <Nota>Días arrendado = días desde la última instalación registrada del baño (mismo cálculo que la ficha). Ingreso del baño = su valor de arriendo; si no tiene, el ingreso del cliente dividido por sus baños arrendados ("est."). Si el cliente tampoco tiene ingreso, el margen queda en "—". Los costos de rutas e insumos del cliente se dividen entre sus baños.</Nota>
     </>
   )
 }
@@ -266,31 +324,34 @@ function Insumos({ d }) {
   return (
     <>
       <Kpis items={[
+        { v: d.insumos.length, l: 'Insumos' },
         { v: d.insumos.filter((i) => i.comprar > 0).length, l: 'Para reponer' },
-        { v: d.insumos.filter((i) => i.cobertura !== null && i.cobertura < 7).length, l: 'Cobertura menor a 7 días' },
+        { v: d.insumos.filter((i) => i.cobertura !== null && i.cobertura < 7).length, l: 'Alcanzan para menos de 7 días' },
         { v: $(d.insumos.reduce((s, i) => s + i.costoMes, 0)), l: 'Gasto mensual estimado' },
       ]} />
-      <Tabla filas={d.insumos} min={900} cols={[
+      <Tabla filas={d.insumos} min={1040} cols={[
         { k: 'nombre', l: 'Insumo', f: (x) => <>{x.nombre}<Est on={x.estimado} /></> },
-        { k: 'stock', l: 'Stock', der: true, f: (x) => `${num(x.stock, 1)} ${x.unidad}` },
-        { k: 'consumo30', l: 'Consumo 30 días', der: true, f: (x) => num(x.consumo30, 1) },
-        { k: 'proyectado14', l: 'Próx. 14 días (rutas)', der: true, f: (x) => num(x.proyectado14, 1) },
-        { k: 'diario', l: 'Por día', der: true, f: (x) => num(x.diario, 2) },
-        { k: 'cobertura', l: 'Alcanza para', der: true, f: (x) => (x.cobertura == null ? '—' : <span style={{ fontWeight: 700, color: x.cobertura < 7 ? '#b3261e' : undefined }}>{num(x.cobertura)} días</span>) },
-        { k: 'punto', l: 'Punto de reposición', der: true, f: (x) => num(x.punto, 1) },
+        { k: 'stock', l: 'Stock', der: true, f: (x) => <span style={{ fontWeight: x.bajoMinimo ? 700 : 400, color: x.bajoMinimo ? '#b3261e' : undefined }}>{num(x.stock, 1)} {x.unidad}</span> },
+        { k: 'porBano', l: 'Por limpieza', der: true, f: (x) => (x.sinReceta ? <SinDato>Sin receta</SinDato> : num(x.porBano, 2)) },
+        { k: 'usadoRutas', l: `Limpiezas del mes (${num(d.banosLimpiadosMes)})`, der: true, f: (x) => (x.sinReceta ? '—' : num(x.usadoRutas, 1)) },
+        { k: 'consumo30', l: 'Salidas de bodega 30 días', der: true, f: (x) => num(x.consumo30, 1) },
+        { k: 'proyectado14', l: 'Próx. 14 días (rutas)', der: true, f: (x) => (x.sinReceta ? '—' : num(x.proyectado14, 1)) },
+        { k: 'cobertura', l: 'Alcanza para', der: true, f: (x) => (x.cobertura == null ? <SinDato>Sin consumo</SinDato> : <span style={{ fontWeight: 700, color: x.cobertura < 7 ? '#b3261e' : undefined }}>{num(x.cobertura)} días</span>) },
+        { k: 'punto', l: 'Reponer bajo', der: true, f: (x) => `${num(x.punto, 1)} ${x.unidad}` },
         { k: 'comprar', l: 'Comprar', der: true, f: (x) => (x.comprar ? <strong>{num(x.comprar)} {x.unidad}</strong> : '—') },
       ]} />
-      <Nota>Consumo por día = el mayor entre el promedio real de los últimos 30 días y lo que van a gastar las limpiezas planificadas en los próximos 14 días. Punto de reposición = 7 días de consumo + stock mínimo. La compra sugerida cubre 30 días.</Nota>
+      <Nota>Consumo por día = el mayor entre: salidas de bodega de los últimos 30 días, lo usado en las limpiezas del mes según la receta, y lo que van a gastar las limpiezas planificadas en los próximos 14 días. Reponer bajo = 7 días de consumo + stock mínimo. La compra sugerida cubre 30 días. En rojo, stock bajo el mínimo.</Nota>
     </>
   )
 }
 
 function Tendencia({ t, onDetalle }) {
   const max = Math.max(1, ...t.map((x) => Math.max(x.ventas, x.costo)))
+  const conVentas = t.some((x) => x.ventas > 0)
   return (
     <>
       <div style={{ border: `2px solid ${C.borde}`, background: '#fff', padding: '18px 16px 10px', margin: '18px 0 14px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${t.length}, minmax(0,1fr))`, gap: 8, alignItems: 'end', height: 180 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${t.length}, minmax(0, 120px))`, gap: 12, alignItems: 'end', height: 180 }}>
           {t.map((x) => (
             <div key={x.mes} title={`${mesLargo(x.mes)}: ventas ${$(x.ventas)} · costos ${$(x.costo)}`} style={{ display: 'flex', gap: 2, alignItems: 'end', height: '100%' }}>
               <div style={{ flex: 1, height: `${(x.ventas / max) * 100}%`, background: C.navy, minHeight: x.ventas ? 2 : 0 }} />
@@ -298,15 +359,15 @@ function Tendencia({ t, onDetalle }) {
             </div>
           ))}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${t.length}, minmax(0,1fr))`, gap: 8, marginTop: 6 }}>
-          {t.map((x) => <div key={x.mes} style={{ font: '400 10px var(--font)', color: C.gris, textAlign: 'center' }}>{mesLargo(x.mes).slice(0, 3)}</div>)}
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${t.length}, minmax(0, 120px))`, gap: 12, marginTop: 6 }}>
+          {t.map((x) => <div key={x.mes} style={{ font: '400 10px var(--font)', color: C.gris, textAlign: 'center' }}>{mesLargo(x.mes).slice(0, 3)} {x.mes.slice(2, 4)}</div>)}
         </div>
         <div style={{ display: 'flex', gap: 16, marginTop: 10, font: '400 12px var(--font)', color: '#3c4551' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 11, height: 11, background: C.navy }} />Ventas</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 11, height: 11, background: C.amarillo }} />Costos</span>
         </div>
       </div>
-      <Tabla filas={[...t].reverse()} min={820} onFila={(x) => onDetalle({ titulo: mesLargo(x.mes), resumen: `Ventas ${$(x.ventas)} − costos ${$(x.costo)} = ${$(x.margen)} (${pct(x.pct)}).`, registros: [
+      <Tabla filas={[...t].reverse()} min={820} onFila={(x) => onDetalle({ titulo: mesLargo(x.mes), resumen: x.ventas ? `Ventas ${$(x.ventas)} − costos ${$(x.costo)} = ${$(x.margen)} (${pct(x.pct)}).` : `Sin ventas importadas. Costos registrados: ${$(x.costo)}.`, registros: [
         { fecha: x.mes + '-01', detalle: 'Ventas importadas de Maxxa', monto: x.ventas, ingreso: true },
         { fecha: x.mes + '-01', detalle: 'Costo de rutas (diésel, desgaste y fijos)', monto: x.rutas },
         { fecha: x.mes + '-01', detalle: 'Mantenciones completadas', monto: x.mant },
@@ -314,15 +375,15 @@ function Tendencia({ t, onDetalle }) {
         { fecha: x.mes + '-01', detalle: 'Otros costos registrados', monto: x.otros },
       ] })} cols={[
         { k: 'mes', l: 'Mes', f: (x) => <>{mesLargo(x.mes)}<Est on={x.estimado} /></> },
-        { k: 'ventas', l: 'Ventas', der: true, f: (x) => $(x.ventas) },
+        { k: 'ventas', l: 'Ventas', der: true, f: (x) => (x.ventas ? $(x.ventas) : <SinDato>Sin importar</SinDato>) },
         { k: 'rutas', l: 'Rutas', der: true, f: (x) => $(x.rutas) },
         { k: 'mant', l: 'Mantenciones', der: true, f: (x) => $(x.mant) },
         { k: 'insumos', l: 'Insumos', der: true, f: (x) => $(x.insumos) },
         { k: 'otros', l: 'Otros', der: true, f: (x) => $(x.otros) },
-        { k: 'margen', l: 'Margen', der: true, f: (x) => $(x.margen) },
+        { k: 'margen', l: 'Margen', der: true, f: (x) => <Plata v={x.margen} /> },
         { k: 'pct', l: '%', der: true, f: (x) => <Margen p={x.pct} /> },
       ]} />
-      <Nota>Margen operativo estimado: no reemplaza la utilidad contable. Los meses sin ventas importadas muestran solo costos.</Nota>
+      <Nota>Se muestran los meses desde el primero con registros (hasta 12). Margen operativo estimado: no reemplaza la utilidad contable.{!conVentas && ' Mientras no se importen ventas de Maxxa, el margen queda en "—".'}</Nota>
     </>
   )
 }
