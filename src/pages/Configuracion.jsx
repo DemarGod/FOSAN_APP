@@ -3,6 +3,15 @@ import { Aviso } from '../components/Listado'
 import { perfiles, todosPermisos, guardarPermiso, guardarPerfil, accesosAutorizados, autorizarCorreo, quitarAutorizacion } from '../lib/api'
 import { useSesion, esDueno, nombreRol, SECCIONES, ROLES } from '../lib/sesion'
 import { Badge, C } from '../lib/ui'
+import { supabase } from '../lib/supabase'
+
+const rpc = async (fn, args) => { const { error } = await supabase.rpc(fn, args); if (error) throw error }
+const pedirClave = (texto) => {
+  const c = window.prompt(texto + '\n\nMínimo 8 caracteres. Entrégasela a la persona; podrá usarla de inmediato.')
+  if (c === null) return null
+  if (c.length < 8) { window.alert('La contraseña debe tener al menos 8 caracteres.'); return null }
+  return c
+}
 
 const ROLES_EDITABLES = ROLES.filter((r) => r.v !== 'dueno')
 const TODOS_ROLES = ROLES
@@ -12,7 +21,7 @@ export default function Configuracion() {
   const [lista, setLista] = useState([])
   const [error, setError] = useState(null)
   const [msg, setMsg] = useState(null)
-  const [nuevo, setNuevo] = useState({ nombre: '', correo: '', rol: 'secretaria' })
+  const [nuevo, setNuevo] = useState({ nombre: '', correo: '', rol: 'secretaria', clave: '' })
 
   // Une perfiles (cuentas creadas) con correos autorizados, por correo
   const cargar = () => Promise.all([perfiles(), accesosAutorizados().catch(() => [])]).then(([p, a]) => {
@@ -31,6 +40,14 @@ export default function Configuracion() {
     try { await fn(); await cargar(); setMsg(ok) } catch (e) { setMsg(e) }
   }
   const cambiarRol = (u, rol) => hacer(() => (u.perfil ? guardarPerfil(u.perfil, { rol }) : autorizarCorreo({ correo: u.correo, nombre: u.nombre, rol })), 'Rol actualizado.')
+  const crearCuenta = (u) => {
+    const clave = pedirClave(`Contraseña inicial para ${u.nombre} (${u.correo})`)
+    if (clave) hacer(() => rpc('crear_usuario', { p_correo: u.correo, p_nombre: u.nombre, p_rol: u.rol, p_clave: clave }), 'Cuenta creada. Ya puede entrar.')
+  }
+  const cambiarClave = (u) => {
+    const clave = pedirClave(`Nueva contraseña para ${u.nombre} (${u.correo})`)
+    if (clave) hacer(() => rpc('cambiar_clave_usuario', { p_correo: u.correo, p_clave: clave }), 'Contraseña cambiada.')
+  }
   const alternar = (u) => hacer(() => guardarPerfil(u.perfil, { activo: u.perfil.activo === false }), 'Usuario actualizado.')
   const quitar = (u) => {
     if (!window.confirm(`¿Quitar el acceso de ${u.nombre} (${u.correo})?`)) return
@@ -43,8 +60,11 @@ export default function Configuracion() {
     e.preventDefault()
     if (!nuevo.nombre.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(nuevo.correo.trim())) return setMsg(new Error('Escribe nombre y un correo válido.'))
     if (lista.some((u) => u.correo?.toLowerCase() === nuevo.correo.trim().toLowerCase())) return setMsg(new Error('Ese correo ya está en la lista.'))
-    hacer(async () => { await autorizarCorreo({ ...nuevo, nombre: nuevo.nombre.trim() }); setNuevo({ nombre: '', correo: '', rol: 'secretaria' }) },
-      'Correo autorizado. Ahora crea su cuenta en Supabase → Authentication → Add user, con ese mismo correo.')
+    if (nuevo.clave.length < 8) return setMsg(new Error('Escribe una contraseña inicial de al menos 8 caracteres.'))
+    hacer(async () => {
+      await rpc('crear_usuario', { p_correo: nuevo.correo.trim(), p_nombre: nuevo.nombre.trim(), p_rol: nuevo.rol, p_clave: nuevo.clave })
+      setNuevo({ nombre: '', correo: '', rol: 'secretaria', clave: '' })
+    }, 'Usuario creado. Ya puede entrar con su correo y la contraseña inicial.')
   }
 
   if (!esDueno(perfil)) {
@@ -85,18 +105,19 @@ export default function Configuracion() {
             </span>
           </div>
           <form onSubmit={agregar} style={{
-            display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.4fr) 150px auto', gap: 8,
+            display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.4fr) minmax(0,1fr) 150px auto', gap: 8,
             padding: '12px 18px', borderBottom: `2px solid ${C.borde}`,
           }}>
             <input value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} placeholder="Nombre" maxLength={60} style={{ ...sel, minHeight: 40, minWidth: 0 }} />
             <input value={nuevo.correo} onChange={(e) => setNuevo({ ...nuevo, correo: e.target.value })} placeholder="correo@ejemplo.cl" type="email" maxLength={120} style={{ ...sel, minHeight: 40, minWidth: 0 }} />
+            <input value={nuevo.clave} onChange={(e) => setNuevo({ ...nuevo, clave: e.target.value })} placeholder="Contraseña inicial" type="text" autoComplete="off" maxLength={72} style={{ ...sel, minHeight: 40, minWidth: 0 }} />
             <select value={nuevo.rol} onChange={(e) => setNuevo({ ...nuevo, rol: e.target.value })} style={{ ...sel, minHeight: 40 }}>
               {TODOS_ROLES.map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}
             </select>
-            <button className="btn btn-verde" type="submit" style={{ minHeight: 40 }}>Agregar</button>
+            <button className="btn btn-verde" type="submit" style={{ minHeight: 40 }}>Crear usuario</button>
           </form>
           <div className="scroller">
-            <table style={{ minWidth: 680 }}>
+            <table style={{ minWidth: 780 }}>
               <thead>
                 <tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th></th></tr>
               </thead>
@@ -116,7 +137,7 @@ export default function Configuracion() {
                       </td>
                       <td>
                         {yo ? <Badge>Activo</Badge> : !u.perfil ? (
-                          <span title="Falta crear su cuenta en Supabase → Authentication" style={{ font: '600 12px var(--font)', color: '#8a5a00' }}>Sin cuenta</span>
+                          <button className="btn" onClick={() => crearCuenta(u)} title="Crear su cuenta con una contraseña inicial" style={{ minHeight: 34, padding: '4px 10px', color: '#8a5a00', borderColor: C.amarillo }}>Sin cuenta · crear</button>
                         ) : (
                           <button className="btn" style={{ minHeight: 34, padding: '4px 10px' }} onClick={() => alternar(u)}>
                             {u.perfil.activo === false ? 'Inactivo · activar' : 'Activo · desactivar'}
@@ -124,7 +145,10 @@ export default function Configuracion() {
                         )}
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        {!yo && <button className="btn" onClick={() => quitar(u)} style={{ minHeight: 34, padding: '4px 10px', color: C.rojo }}>Quitar</button>}
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                          {u.perfil && u.correo && <button className="btn" onClick={() => cambiarClave(u)} style={{ minHeight: 34, padding: '4px 10px' }}>Cambiar clave</button>}
+                          {!yo && <button className="btn" onClick={() => quitar(u)} style={{ minHeight: 34, padding: '4px 10px', color: C.rojo }}>Quitar</button>}
+                        </div>
                       </td>
                     </tr>
                   )
@@ -136,7 +160,7 @@ export default function Configuracion() {
             </table>
           </div>
           <div style={{ padding: '10px 18px', font: '400 12px/1.45 var(--font)', color: C.gris }}>
-            "Sin cuenta": el correo está autorizado pero falta crearle el usuario en Supabase → Authentication → Add user.
+            Al crear un usuario se le asigna una contraseña inicial; entrégasela y podrá entrar de inmediato. "Sin cuenta · crear": el correo está autorizado pero aún no tiene contraseña.
           </div>
         </section>
 
