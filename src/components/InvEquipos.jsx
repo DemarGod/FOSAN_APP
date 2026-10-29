@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Modal from './Modal'
 import ImportarInventario from './ImportarInventario'
-import { Boton, Campo, Tabla, Estado, Ayuda, Indicador } from './Base'
+import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
 import {
   equiposLista, siguienteNumeroUnidad, equipoPorNumero, crearEquipo,
   catCategorias, catModelos, catUbicacionesInternas, clientesLista, ubicacionesDe,
@@ -32,7 +32,7 @@ const POR_PAGINA = 20
 const chico = { minHeight: 34, padding: '6px 12px' }
 const atencion = (e) => e.propiedad === 'empresa' && e.situacion !== 'baja'
   && (e.condicion !== 'operativo' || ['en_mantenimiento', 'no_localizado'].includes(e.situacion))
-const FILTRO_VACIO = { numero: '', categoria: '', situacion: '', condicion: '', ubicacion: '', propiedad: 'empresa' }
+const FILTRO_VACIO = { numero: '', categoria: '', situacion: '', condicion: '', ubicacion: '', propiedad: 'empresa', atencion: false }
 
 export default function InvEquipos() {
   const navegar = useNavigate()
@@ -62,6 +62,7 @@ export default function InvEquipos() {
     if (a.condicion && e.condicion !== a.condicion) return false
     if (a.ubicacion && e.ubicacion !== a.ubicacion) return false
     if (a.propiedad && e.propiedad !== a.propiedad) return false
+    if (a.atencion && !atencion(e)) return false
     return true
   }), [lista, aplicado])
   const paginas = Math.max(1, Math.ceil(filas.length / POR_PAGINA))
@@ -70,6 +71,11 @@ export default function InvEquipos() {
   const aplicar = (e) => { e?.preventDefault(); setAplicado(f); setPagina(1) }
   const limpiar = () => { setF(FILTRO_VACIO); setAplicado(FILTRO_VACIO); setPagina(1) }
   const verFicha = (e) => navegar(`/activo/${e.qr_token}`)
+  // Pinchar un indicador aplica su filtro
+  const filtrar = (cambios) => { const n = { ...FILTRO_VACIO, ...cambios }; setF(n); setAplicado(n); setPagina(1) }
+  const bajas = lista.filter((e) => e.propiedad === 'empresa' && e.situacion === 'baja').length
+  const kpiActivo = (cond) => (cond ? { outline: `2px solid ${C.azul}`, outlineOffset: -2 } : {})
+  const esFiltro = (c) => Object.entries({ ...FILTRO_VACIO, ...c }).every(([k, x]) => aplicado[k] === x)
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
@@ -80,15 +86,30 @@ export default function InvEquipos() {
       </div>
 
       <div className="kpis">
-        <Indicador rotulo="Unidades propias activas" valor={datos ? propios.length : '…'} />
-        <Indicador rotulo="Disponibles" valor={datos ? propios.filter((e) => e.situacion === 'disponible' && e.condicion === 'operativo').length : '…'} />
-        <Indicador rotulo="Asignadas" valor={datos ? propios.filter((e) => e.situacion === 'asignado').length : '…'} />
-        <div className="indicador" style={{ background: '#fce8e6', borderColor: '#f5c2bc', display: 'block' }}>
+        <button type="button" className="indicador" onClick={() => filtrar({})} title="Ver todas las unidades propias activas"
+          style={{ display: 'block', textAlign: 'left', cursor: 'pointer', ...kpiActivo(esFiltro({})) }}>
+          <span>Unidades propias activas</span><b>{datos ? propios.length : '…'}</b>
+          {datos && bajas > 0 && (
+            <small style={{ display: 'block', font: '400 12px/1.4 var(--font)', color: C.gris, marginTop: 4 }}>
+              {propios.length + bajas} registradas · <span role="link" tabIndex={0} onClick={(ev) => { ev.stopPropagation(); filtrar({ situacion: 'baja' }) }} style={{ color: C.azul, textDecoration: 'underline' }}>{bajas} dadas de baja</span>
+            </small>
+          )}
+        </button>
+        <button type="button" className="indicador" onClick={() => filtrar({ situacion: 'disponible', condicion: 'operativo' })}
+          style={{ display: 'block', textAlign: 'left', cursor: 'pointer', ...kpiActivo(esFiltro({ situacion: 'disponible', condicion: 'operativo' })) }}>
+          <span>Disponibles</span><b>{datos ? propios.filter((e) => e.situacion === 'disponible' && e.condicion === 'operativo').length : '…'}</b>
+        </button>
+        <button type="button" className="indicador" onClick={() => filtrar({ situacion: 'asignado' })}
+          style={{ display: 'block', textAlign: 'left', cursor: 'pointer', ...kpiActivo(esFiltro({ situacion: 'asignado' })) }}>
+          <span>Asignadas</span><b>{datos ? propios.filter((e) => e.situacion === 'asignado').length : '…'}</b>
+        </button>
+        <button type="button" className="indicador" onClick={() => filtrar({ atencion: true })}
+          style={{ background: '#fce8e6', borderColor: '#f5c2bc', display: 'block', textAlign: 'left', cursor: 'pointer', ...kpiActivo(esFiltro({ atencion: true })) }}>
           <span>Requieren atención</span><b>{datos ? lista.filter(atencion).length : '…'}</b>
           <small style={{ display: 'block', font: '400 12px/1.4 var(--font)', color: C.tinta, marginTop: 4 }}>
             Es una alerta; puede coincidir con otras situaciones.
           </small>
-        </div>
+        </button>
       </div>
 
       <section className="card">
@@ -119,6 +140,11 @@ export default function InvEquipos() {
 
         {error && <div style={{ padding: 16 }}><Ayuda tono="error">{String(error.message || error)}</Ayuda></div>}
         {aviso && <div style={{ padding: '16px 16px 0' }}><Ayuda>{aviso}</Ayuda></div>}
+        {aplicado.atencion && (
+          <div style={{ padding: '16px 16px 0' }}>
+            <Ayuda tono="atencion">Mostrando los que requieren atención: condición distinta de Operativo, en mantenimiento o no localizados. <a href="#" onClick={(e) => { e.preventDefault(); limpiar() }}>Quitar filtro</a></Ayuda>
+          </div>
+        )}
         {datos === null && !error ? <div style={{ padding: 24, color: C.gris }}>Cargando…</div> : (
           <Tabla filas={filas.slice((pag - 1) * POR_PAGINA, pag * POR_PAGINA)} vacio={
             <span>Sin resultados para estos filtros. <a href="#" onClick={(e) => { e.preventDefault(); limpiar() }}>Limpiar filtros</a></span>
