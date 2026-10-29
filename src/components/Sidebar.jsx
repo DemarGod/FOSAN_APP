@@ -10,14 +10,13 @@ export const NAV = [
   { to: '/', label: 'Inicio', d: I.home, fin: true, s: 'inicio' },
   { to: '/clientes', label: 'Clientes', d: I.users, s: 'clientes' },
   { grupo: 'Logística' },
-  { to: '/banos', label: 'Baños químicos', d: I.drop, s: 'banos' },
+  // Inventario (lámina 3): Equipos · Insumos y EPP · Mapa
+  { to: '/inventario', label: 'Inventario', d: I.box, s: ['banos', 'insumos', 'ubicaciones'] },
   { to: '/transporte', label: 'Transporte', d: I.truck, s: 'transporte' },
-  { to: '/insumos', label: 'Insumos', d: I.box, s: 'insumos' },
   { to: '/rutas-semanales', label: 'Rutas semanales', d: RUTA, s: 'rutas' },
   { to: '/mi-ruta', label: 'Mi ruta', d: DESPACHO },
   { grupo: 'Gestión' },
   { to: '/mantenciones', label: 'Mantenciones', d: I.wrench, s: 'mantenciones' },
-  { to: '/ubicaciones', label: 'Mapa', d: I.pin, s: 'ubicaciones' },
   { calendario: true, label: 'Calendario', d: I.cal, s: 'calendario' },
   { to: '/reportes', label: 'Reportes', d: I.chart, s: 'reportes' },
   { to: '/analisis', label: 'Análisis', d: 'M3 3v18h18M7 15l4-4 3 3 5-6', s: 'analisis' },
@@ -50,7 +49,7 @@ export default function Sidebar({ onCalendario }) {
       </div>
 
       <nav style={{ flex: 1, overflowY: 'auto', padding: '10px 0' }}>
-        {NAV.filter((n) => (!n.s || puedeVer(perfil, n.s)) && !(n.soloDueno && !esDueno(perfil))).map((n, i) => {
+        {NAV.filter((n) => (!n.s || [].concat(n.s).some((x) => puedeVer(perfil, x))) && !(n.soloDueno && !esDueno(perfil))).map((n, i) => {
           if (n.grupo) {
             return (
               <div key={n.grupo} style={{

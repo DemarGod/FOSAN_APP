@@ -584,6 +584,29 @@ export const usoCatalogo = async (tipo, id) => {
   return 0
 }
 
+// ── Inventario → Equipos (láminas 3.1 a 3.4) ────────────────────────────
+export const equiposLista = () => rows(supabase.from('v_equipos').select('*').order('numero', { ascending: true, nullsFirst: false }).limit(5000))
+export const siguienteNumeroUnidad = async () => {
+  const { data, error } = await supabase.rpc('siguiente_numero_unidad')
+  if (error) throw error
+  return data
+}
+// ¿Ya existe ese N.º de unidad? (102 = 0102). Devuelve el equipo o null
+export const equipoPorNumero = async (numero) => {
+  const n = String(numero).replace(/^0+/, '')
+  const r = await rows(supabase.from('v_equipos').select('id, codigo, qr_token, situacion').eq('propiedad', 'empresa').eq('tipo', 'bano_quimico'))
+  return r.find((x) => String(x.codigo).replace(/^0+/, '') === n) || null
+}
+// Alta de equipo. La base pone situación, deja el registro inicial en Movimientos y, si es del cliente, el código EXT-###
+export const crearEquipo = async (datos) => {
+  const { data, error } = await supabase.from('activos').insert(datos).select('id, codigo, qr_token').single()
+  if (error) {
+    if (error.code === '23505') throw new Error('Ese N.º de unidad ya existe.')
+    throw error
+  }
+  return data
+}
+
 // ── Logística: baños disponibles para despachar ──────────────────────────
 export const banosDisponibles = async () => {
   const [lista, ocupados] = await Promise.all([

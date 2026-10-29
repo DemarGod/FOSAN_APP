@@ -9,6 +9,7 @@ import Tabbar from './components/Tabbar'
 import Calendario from './components/Calendario'
 import Inicio from './pages/Inicio'
 import Banos from './pages/Banos'
+import Inventario from './pages/Inventario'
 import Transporte from './pages/Transporte'
 import Insumos from './pages/Insumos'
 import RutasSemana from './pages/RutasSemana'
@@ -76,7 +77,7 @@ export default function App() {
           <div className="pad">
             <Routes>
               <Route path="/" element={puedeVer(perfil, 'inicio') ? <Inicio onCalendario={() => setCal(true)} /> : <Navigate to="/mi-ruta" replace />} />
-              <Route path="/inventario" element={<Navigate to="/banos" replace />} />
+              <Route path="/inventario" element={puedeVer(perfil, 'banos') || puedeVer(perfil, 'insumos') || puedeVer(perfil, 'ubicaciones') ? <Inventario /> : <SinAcceso />} />
               <Route path="/banos" element={puedeVer(perfil, 'banos') ? <Banos /> : <SinAcceso />} />
               <Route path="/camiones" element={<Navigate to="/transporte" replace />} />
               <Route path="/transporte" element={puedeVer(perfil, 'transporte') ? <Transporte /> : <SinAcceso />} />
