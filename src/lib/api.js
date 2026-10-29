@@ -680,6 +680,37 @@ export const registrarMovInsumo = async (m) => {
   return data
 }
 
+// ── Operaciones → Programación (láminas 4.1 a 4.4b) ─────────────────────
+// Una operación es un despacho: Rutas semanales y Mi ruta la ejecutan igual que siempre.
+export const operaciones = (desde, hasta) => {
+  let q = supabase.from('v_operaciones').select('*').order('fecha_programada', { ascending: false }).limit(3000)
+  if (desde) q = q.gte('fecha_programada', desde)
+  if (hasta) q = q.lte('fecha_programada', hasta)
+  return rows(q)
+}
+export const banosDeOperacion = (id) => rows(supabase.from('despacho_banos').select('activo_id, accion, activos(id, codigo)').eq('despacho_id', id))
+// Baños FOSAN asignados al cliente (y a la ubicación, si se indica): para retiros y cambios
+export const banosAsignados = (clienteId, ubicacionId) => {
+  let q = supabase.from('activos').select('id, codigo, ubicacion_id, modelos_bano(nombre)')
+    .eq('cliente_id', clienteId).eq('estado', 'en_arriendo').eq('propiedad', 'empresa').order('codigo')
+  if (ubicacionId) q = q.eq('ubicacion_id', ubicacionId)
+  return rows(q)
+}
+export const editarOperacion = async (id, datos, banos) => {
+  const { error } = await supabase.from('despachos').update(datos).eq('id', id).eq('estado', 'programado')
+  if (error) throw error
+  const { error: e1 } = await supabase.from('despacho_banos').delete().eq('despacho_id', id)
+  if (e1) throw e1
+  if (banos.length) {
+    const { error: e2 } = await supabase.from('despacho_banos').insert(banos.map((b) => ({ despacho_id: id, activo_id: b.id, accion: b.accion })))
+    if (e2) throw e2
+  }
+}
+export const cancelarOperacion = async (id, motivo) => {
+  const { error } = await supabase.rpc('cancelar_operacion', { p_id: id, p_motivo: motivo })
+  if (error) throw error
+}
+
 // ── Logística: baños disponibles para despachar ──────────────────────────
 export const banosDisponibles = async () => {
   const [lista, ocupados] = await Promise.all([

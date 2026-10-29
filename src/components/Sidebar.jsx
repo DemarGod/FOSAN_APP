@@ -13,7 +13,8 @@ export const NAV = [
   // Inventario (lámina 3): Equipos · Insumos y EPP · Mapa
   { to: '/inventario', label: 'Inventario', d: I.box, s: ['banos', 'insumos', 'ubicaciones'] },
   { to: '/transporte', label: 'Transporte', d: I.truck, s: 'transporte' },
-  { to: '/rutas-semanales', label: 'Rutas semanales', d: RUTA, s: 'rutas' },
+  // Operaciones (lámina 4): Programación · Rutas (las Rutas semanales de siempre) · Respaldos
+  { to: '/operaciones', label: 'Operaciones', d: RUTA, s: 'rutas' },
   { to: '/mi-ruta', label: 'Mi ruta', d: DESPACHO },
   { grupo: 'Gestión' },
   { to: '/mantenciones', label: 'Mantenciones', d: I.wrench, s: 'mantenciones' },
