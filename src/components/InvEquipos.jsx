@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Modal from './Modal'
+import ImportarInventario from './ImportarInventario'
 import { Boton, Campo, Tabla, Estado, Ayuda, Indicador } from './Base'
 import {
   equiposLista, siguienteNumeroUnidad, equipoPorNumero, crearEquipo,
@@ -46,6 +47,7 @@ export default function InvEquipos() {
   const [form, setForm] = useState(false)
   const [exportar, setExportar] = useState(false)
   const [aviso, setAviso] = useState(null)
+  const [importar, setImportar] = useState(false)
   const cargar = () => equiposLista().then(setDatos).catch(setError)
   useEffect(() => { cargar() }, [])
 
@@ -73,6 +75,7 @@ export default function InvEquipos() {
     <div style={{ display: 'grid', gap: 16 }}>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
         <Boton tipo="principal" icono={I.plus} onClick={() => setForm(true)} disabled={!editable}>Agregar equipo</Boton>
+        {editable && <Boton onClick={() => setImportar(true)}>Importar inventario (Excel)</Boton>}
         {exporta && <Boton icono={I.descarga} onClick={() => setExportar(true)} disabled={!lista.length}>Exportar</Boton>}
       </div>
 
@@ -161,6 +164,7 @@ export default function InvEquipos() {
 
       {form && <FormEquipo onCerrar={() => setForm(false)} onAbrir={verFicha}
         onGuardado={(r) => { setForm(false); setAviso(`Equipo ${r.codigo} creado. Quedó su registro inicial en Movimientos.`); cargar() }} />}
+      {importar && <ImportarInventario onCerrar={() => setImportar(false)} onImportado={() => { setImportar(false); cargar() }} />}
       {exportar && <Exportar todos={lista} filtrados={filas} onCerrar={() => setExportar(false)} />}
     </div>
   )
@@ -184,7 +188,7 @@ function FormEquipo({ onCerrar, onGuardado, onAbrir }) {
   const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
-    Promise.all([catCategorias(), catModelos(), catUbicacionesInternas(), siguienteNumeroUnidad(), clientesLista()])
+    Promise.all([catCategorias(), catModelos(), catUbicacionesInternas(), siguienteNumeroUnidad().catch(() => null), clientesLista()])
       .then(([c, m, u, n, cl]) => {
         const eq = c.filter((x) => x.clase === 'equipo' && x.activo)
         setCat(eq); setMod(m.filter((x) => x.activo)); setUbi(u.filter((x) => x.activa)); setClientes(cl)
