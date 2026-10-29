@@ -11,7 +11,6 @@ import Inicio from './pages/Inicio'
 import Banos from './pages/Banos'
 import Inventario from './pages/Inventario'
 import Transporte from './pages/Transporte'
-import Insumos from './pages/Insumos'
 import RutasSemana from './pages/RutasSemana'
 import MiRuta from './pages/MiRuta'
 import Analisis from './pages/Analisis'
@@ -81,7 +80,7 @@ export default function App() {
               <Route path="/banos" element={puedeVer(perfil, 'banos') ? <Banos /> : <SinAcceso />} />
               <Route path="/camiones" element={<Navigate to="/transporte" replace />} />
               <Route path="/transporte" element={puedeVer(perfil, 'transporte') ? <Transporte /> : <SinAcceso />} />
-              <Route path="/insumos" element={puedeVer(perfil, 'insumos') ? <Insumos /> : <SinAcceso />} />
+              <Route path="/insumos" element={<Navigate to="/inventario?tab=insumos" replace />} />
               <Route path="/rutas-semanales" element={puedeVer(perfil, 'rutas') ? <RutasSemana /> : <SinAcceso />} />
               <Route path="/mi-ruta" element={<MiRuta />} />
               <Route path="/despachos" element={<Navigate to="/rutas-semanales" replace />} />

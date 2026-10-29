@@ -648,6 +648,38 @@ export const darDeBaja = async (activo, fecha, motivo, observaciones) => {
   if (error) throw error
 }
 
+// ── Inventario → Insumos y EPP (láminas 3.9 a 3.12) ─────────────────────
+export const insumosInventario = async () => {
+  const [ins, ex] = await Promise.all([
+    rows(supabase.from('insumos').select('*, categorias(nombre, clase), unidades_medida(nombre, abreviatura), receta_limpieza(cantidad)').order('codigo')),
+    rows(supabase.from('insumo_existencias').select('id, insumo_id, ubicacion_id, lote_id, cantidad, insumo_lotes(codigo, vencimiento, bloqueado)')),
+  ])
+  return ins.map((i) => ({ ...i, existencias: ex.filter((e) => e.insumo_id === i.id) }))
+}
+export const movimientosInsumoDe = (insumoId) => rows(
+  supabase.from('movimientos_insumo')
+    .select('*, origen:origen_id(nombre), destino:destino_id(nombre), insumo_lotes(codigo), usuario:usuario_id(nombre), servicios_cliente(codigo)')
+    .eq('insumo_id', insumoId).order('fecha', { ascending: false }).limit(1000)
+)
+export const siguienteCodigoInsumo = async (prefijo) => {
+  const { data, error } = await supabase.rpc('siguiente_codigo_insumo', { p_prefijo: prefijo })
+  if (error) throw error
+  return data
+}
+export const serviciosVigentes = () => rows(
+  supabase.from('servicios_cliente').select('id, codigo, clientes(nombre), ubicaciones(nombre)').eq('estado', 'vigente').order('codigo')
+)
+export const registrarMovInsumo = async (m) => {
+  const { data, error } = await supabase.rpc('registrar_movimiento_insumo', {
+    p_insumo: m.insumo, p_tipo: m.tipo, p_cantidad: m.cantidad, p_fecha: m.fecha,
+    p_origen: m.origen || null, p_destino: m.destino || null, p_lote: m.lote || null,
+    p_lote_codigo: m.loteCodigo || null, p_vencimiento: m.vencimiento || null, p_motivo: m.motivo || null,
+    p_referencia: m.referencia || null, p_servicio: m.servicio || null, p_receptor: m.receptor || null,
+  })
+  if (error) throw error
+  return data
+}
+
 // ── Logística: baños disponibles para despachar ──────────────────────────
 export const banosDisponibles = async () => {
   const [lista, ocupados] = await Promise.all([
