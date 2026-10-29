@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { C, Icon, I } from '../lib/ui'
-import { useSesion, puedeVer } from '../lib/sesion'
+import { useSesion, puedeVer, esDueno } from '../lib/sesion'
 
 const DESPACHO = 'M3 7h11v9H3zM14 10h4l3 3v3h-7zM7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM6 4h5M8.5 1.5 11 4 8.5 6.5'
 const HISTORIAL = 'M12 21a9 9 0 1 0-9-9M3 4v5h5M12 7v5l3 2'
@@ -21,8 +21,10 @@ export const NAV = [
   { calendario: true, label: 'Calendario', d: I.cal, s: 'calendario' },
   { to: '/reportes', label: 'Reportes', d: I.chart, s: 'reportes' },
   { to: '/analisis', label: 'Análisis', d: 'M3 3v18h18M7 15l4-4 3 3 5-6', s: 'analisis' },
-  { to: '/historial', label: 'Historial de cambios', d: HISTORIAL, s: 'historial' },
-  { to: '/configuracion', label: 'Configuración', d: I.gear },
+  // Administración (lámina 8) reúne Personal y usuarios, Roles y permisos, Catálogos e Historial de cambios.
+  // Solo el dueño la ve; el resto de los usuarios mantiene "Mi perfil".
+  { to: '/administracion', label: 'Administración', d: I.gear, soloDueno: true },
+  { to: '/configuracion', label: 'Mi perfil', d: I.users, noDueno: true },
 ]
 
 const item = (activo) => ({
@@ -48,7 +50,7 @@ export default function Sidebar({ onCalendario }) {
       </div>
 
       <nav style={{ flex: 1, overflowY: 'auto', padding: '10px 0' }}>
-        {NAV.filter((n) => !n.s || puedeVer(perfil, n.s)).map((n, i) => {
+        {NAV.filter((n) => (!n.s || puedeVer(perfil, n.s)) && !(n.soloDueno && !esDueno(perfil)) && !(n.noDueno && esDueno(perfil))).map((n, i) => {
           if (n.grupo) {
             return (
               <div key={n.grupo} style={{

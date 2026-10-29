@@ -81,6 +81,12 @@ export default function FichaCliente() {
           </div>
           <Boton tipo="principal" icono={I.lapiz} onClick={() => setEditar(true)} disabled={!editable}>Editar datos</Boton>
         </div>
+        {c.activo && c.ubicaciones_activas === 0 && (
+          <Ayuda tono="atencion" style={{ marginTop: 12 }}>
+            Este cliente no tiene ubicaciones activas. Agrega una en la pestaña <a href="#" onClick={(e) => { e.preventDefault(); irA('ubicaciones') }}>Ubicaciones</a>:
+            los servicios y los baños que se le asignen quedan en una ubicación del cliente. No se copian coordenadas de otros registros.
+          </Ayuda>
+        )}
         {!c.activo && (
           <Ayuda tono="atencion" style={{ marginTop: 12 }}>
             Desactivado el {fecha(c.desactivado_en)}{c.motivo_desactivacion ? `: ${c.motivo_desactivacion}` : ''}. Se reactiva desde el listado de Clientes.

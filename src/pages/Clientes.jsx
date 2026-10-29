@@ -79,7 +79,13 @@ export default function Clientes() {
       ),
     },
     { k: 'comuna', label: 'Comuna', render: (c) => c.comuna || '—' },
-    { k: 'ubicaciones', label: 'Ubicaciones', alinear: 'right' },
+    {
+      k: 'ubicaciones', label: 'Ubicaciones', alinear: 'right', render: (c) => (c.ubicaciones > 0 || !c.activo ? c.ubicaciones : (
+        <span title="Sin ubicaciones activas: agrégala en la ficha del cliente" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#b06000', fontWeight: 600 }}>
+          <Icon d={I.alert} size={15} color={C.amarillo} /> Sin ubicación
+        </span>
+      )),
+    },
     { k: 'servicios_vigentes', label: 'Servicios vigentes', alinear: 'right' },
     {
       k: 'activo', label: 'Estado', render: (c) => c.activo

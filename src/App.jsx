@@ -22,6 +22,7 @@ import Reportes from './pages/Reportes'
 import Configuracion from './pages/Configuracion'
 import Ficha from './pages/Ficha'
 import Historial from './pages/Historial'
+import Administracion from './pages/Administracion'
 import { C } from './lib/ui'
 import { puedeOperar, puedeVer, esDueno } from './lib/sesion'
 
@@ -93,6 +94,7 @@ export default function App() {
               <Route path="/analisis" element={puedeVer(perfil, 'analisis') ? <Analisis /> : <SinAcceso />} />
               <Route path="/configuracion" element={<Configuracion />} />
               <Route path="/historial" element={esDueno(perfil) ? <Historial /> : <SinAcceso />} />
+              <Route path="/administracion" element={esDueno(perfil) ? <Administracion /> : <SinAcceso />} />
               <Route path="/activo/:token" element={<Ficha />} />
               <Route path="*" element={<p className="text-muted">Esta página no existe.</p>} />
             </Routes>

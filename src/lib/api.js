@@ -480,6 +480,54 @@ export const historial = (desde) => {
   return rows(q)
 }
 
+// ── Administración: historial con rango de fechas ────────────────────────
+export const historialRango = (desde, hasta) => {
+  let q = supabase.from('auditoria').select('*').order('fecha', { ascending: false }).limit(2000)
+  if (desde) q = q.gte('fecha', desde)
+  if (hasta) q = q.lte('fecha', hasta)
+  return rows(q)
+}
+
+// ── Administración → Catálogos (categorías, modelos, ubicaciones internas, unidades) ──
+// Nada se borra: se desactiva. Los nombres no se repiten.
+export const catCategorias = () => rows(supabase.from('categorias').select('*').order('nombre'))
+export const catModelos = () => rows(supabase.from('modelos_bano').select('*').order('nombre'))
+export const catUbicacionesInternas = () => rows(
+  supabase.from('ubicaciones').select('id, nombre, tipo, descripcion, activa').in('tipo', ['bodega', 'taller']).order('nombre')
+)
+export const catUnidades = () => rows(supabase.from('unidades_medida').select('*').order('nombre'))
+const duplicado = (e, txt) => (e.code === '23505' ? new Error(txt) : e)
+export const guardarCategoria = async (id, datos) => {
+  const { error } = id ? await supabase.from('categorias').update(datos).eq('id', id) : await supabase.from('categorias').insert(datos)
+  if (error) throw duplicado(error, 'Ya existe una categoría con ese nombre.')
+}
+export const guardarModelo = async (id, datos) => {
+  const fila = { ...datos, ...(id ? {} : { tipo: datos.nombre }) }
+  const { error } = id ? await supabase.from('modelos_bano').update(fila).eq('id', id) : await supabase.from('modelos_bano').insert(fila)
+  if (error) throw duplicado(error, 'Ya existe un modelo con ese nombre.')
+}
+export const guardarUbicacionInterna = async (id, datos) => {
+  const { error } = id ? await supabase.from('ubicaciones').update(datos).eq('id', id) : await supabase.from('ubicaciones').insert(datos)
+  if (error) throw duplicado(error, 'Ya existe una ubicación con ese nombre.')
+}
+export const guardarUnidad = async (id, datos) => {
+  const { error } = id ? await supabase.from('unidades_medida').update(datos).eq('id', id) : await supabase.from('unidades_medida').insert(datos)
+  if (error) throw duplicado(error, 'Ya existe una unidad con ese nombre o abreviatura.')
+}
+// Cuántos registros usan un elemento del catálogo (para avisar al desactivar)
+export const usoCatalogo = async (tipo, id) => {
+  const n = async (q) => (await rows(q)).length
+  if (tipo === 'categoria') {
+    return (await n(supabase.from('activos').select('id').eq('categoria_id', id).neq('estado', 'baja')))
+      + (await n(supabase.from('modelos_bano').select('id').eq('categoria_id', id).eq('activo', true)))
+      + (await n(supabase.from('insumos').select('id').eq('categoria_id', id).eq('activo', true)))
+  }
+  if (tipo === 'modelo') return n(supabase.from('activos').select('id').eq('modelo_id', id).neq('estado', 'baja'))
+  if (tipo === 'ubicacion') return n(supabase.from('activos').select('id').eq('ubicacion_id', id).neq('estado', 'baja'))
+  if (tipo === 'unidad') return n(supabase.from('insumos').select('id').eq('unidad_id', id).eq('activo', true))
+  return 0
+}
+
 // ── Logística: baños disponibles para despachar ──────────────────────────
 export const banosDisponibles = async () => {
   const [lista, ocupados] = await Promise.all([
