@@ -86,7 +86,8 @@ export const crearActivo = async (datos) => {
 // ── Catálogos para los formularios ────────────────────────────────────────
 export const modelos = () => rows(supabase.from('modelos_bano').select('*').order('nombre'))
 export const ubicaciones = () => rows(supabase.from('ubicaciones').select('id, nombre, tipo, lat, lng').eq('activa', true).order('nombre'))
-export const clientesLista = () => rows(supabase.from('clientes').select('id, nombre, direccion').order('nombre'))
+// Solo clientes activos: los desactivados no se eligen en despachos ni equipos nuevos
+export const clientesLista = () => rows(supabase.from('clientes').select('id, nombre, direccion').eq('activo', true).order('nombre'))
 // Clientes para armar rutas: con días de limpieza, comuna y baños (arrendados + propios)
 export const clientesParaRuta = async () => {
   const [c, a] = await Promise.all([
@@ -147,6 +148,48 @@ export const actualizarCliente = async (id, datos) => {
 }
 export const eliminarCliente = async (id) => {
   const { error } = await supabase.rpc('eliminar_cliente', { p_id: id })
+  if (error) throw error
+}
+// ── Clientes (etapa 2): listado, datos generales y desactivación ─────────
+export const normalizarRut = (rut) => String(rut || '').replace(/[^0-9kK]/g, '').toUpperCase()
+export const clientesListado = async () => {
+  const [c, u, s] = await Promise.all([
+    rows(supabase.from('clientes')
+      .select('id, codigo, nombre, nombre_comercial, rut, tipo_cliente, comuna, telefono, correo, activo, motivo_desactivacion, desactivado_en')
+      .order('nombre')),
+    rows(supabase.from('ubicaciones').select('cliente_id').eq('tipo', 'cliente').eq('activa', true).not('cliente_id', 'is', null)),
+    rows(supabase.from('servicios_cliente').select('cliente_id').eq('estado', 'vigente')),
+  ])
+  const cuenta = (lista) => lista.reduce((m, x) => { m[x.cliente_id] = (m[x.cliente_id] || 0) + 1; return m }, {})
+  const nu = cuenta(u), ns = cuenta(s)
+  return c.map((x) => ({ ...x, ubicaciones: nu[x.id] || 0, servicios_vigentes: ns[x.id] || 0 }))
+}
+// Otro cliente con el mismo RUT (comparado sin puntos ni guion)
+export const clientePorRut = async (rut, excluirId = null) => {
+  const norm = normalizarRut(rut)
+  if (!norm) return null
+  let q = supabase.from('clientes').select('id, codigo, nombre, activo').eq('rut_norm', norm)
+  if (excluirId) q = q.neq('id', excluirId)
+  const r = await rows(q.limit(1))
+  return r[0] || null
+}
+// Solo datos generales: no toca ubicaciones, servicios ni los campos antiguos (valor, días, baños propios, lat/lng)
+export const guardarDatosCliente = async (id, datos) => {
+  if (id) {
+    const { error } = await supabase.from('clientes').update(datos).eq('id', id)
+    if (error) throw error
+    return { id }
+  }
+  const { data, error } = await supabase.from('clientes').insert(datos).select('id, codigo').single()
+  if (error) throw error
+  return data
+}
+export const desactivarCliente = async (id, motivo) => {
+  const { error } = await supabase.rpc('desactivar_cliente', { p_id: id, p_motivo: motivo })
+  if (error) throw error
+}
+export const reactivarCliente = async (id) => {
+  const { error } = await supabase.rpc('reactivar_cliente', { p_id: id })
   if (error) throw error
 }
 export const procesarVencidos = () => supabase.rpc('procesar_vencidos').then(() => null, () => null)
