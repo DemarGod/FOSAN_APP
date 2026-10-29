@@ -1,8 +1,11 @@
 // Iconos, colores, etiquetas de los enum de la base y formateadores.
 
+// Sistema de diseño FOSAN (láminas). Mismos valores que :root en src/index.css.
 export const C = {
-  navy: '#1f3a63',
-  azul: '#4085f4',
+  navy: '#13294b',      // barra lateral y encabezados
+  azul: '#2f6fdd',      // botones principales, activo, enlaces
+  azulClaro: '#4085f4', // solo íconos y foco (no de fondo bajo texto blanco)
+  blanco: '#ffffff',
   verde: '#34a853',
   amarillo: '#f9ab00',
   rojo: '#ea4335',
@@ -10,6 +13,7 @@ export const C = {
   tinte: '#e8f0fe',
   suave: '#f6f8fb',
   fila: '#eef1f5',
+  thead: '#eaf0f9',
   gris: '#5f6368',
   tinta: '#201e1d',
 }
@@ -107,8 +111,8 @@ export const COLOR_EVENTO = {
 }
 
 // ── Badges ─────────────────────────────────────────────────────────────────
-const FUERTE = { bg: '#1f3a63', fg: '#eef2f9' }
-const SUAVE = { bg: '#eaf0f9', fg: '#1f3a63' }
+const FUERTE = { bg: C.navy, fg: '#eef2f9' }
+const SUAVE = { bg: C.thead, fg: C.navy }
 const ALERTA = { bg: '#ffe0d9', fg: '#7c1405' }
 
 export function tono(valor) {
@@ -123,7 +127,7 @@ export function Badge({ children }) {
   return (
     <span style={{
       display: 'inline-block', font: '600 10px var(--font)', textTransform: 'uppercase',
-      letterSpacing: '.06em', padding: '3px 8px', background: t.bg, color: t.fg,
+      letterSpacing: '.06em', padding: '3px 8px', background: t.bg, color: t.fg, borderRadius: 'var(--radio-sm)',
     }}>{children}</span>
   )
 }

@@ -1,9 +1,13 @@
+/* Sistema de diseño FOSAN (láminas): barra lateral navy, botones azules, tarjetas blancas,
+   esquinas de 6 y 8 px, bordes de 1 px. Los nombres de los colores son los de C en src/lib/ui.jsx. */
 :root {
-  --navy: #1f3a63;
-  --azul: #4085f4;
+  --navy: #13294b;
+  --azul: #2f6fdd;
+  --azul-claro: #4085f4;
   --verde: #34a853;
   --amarillo: #f9ab00;
   --rojo: #ea4335;
+  --blanco: #ffffff;
   --borde: #dbe3ee;
   --tinte: #e8f0fe;
   --suave: #f6f8fb;
@@ -11,6 +15,10 @@
   --thead: #eaf0f9;
   --gris: #5f6368;
   --tinta: #201e1d;
+  --sidebar-texto: #c9d4e5;
+  --sidebar-titulo: #8fa3c2;
+  --radio-sm: 6px;
+  --radio-md: 8px;
   --font: 'Archivo', system-ui, sans-serif;
 }
 
@@ -18,7 +26,7 @@
 
 html, body, #root {
   margin: 0;
-  background: #fff;
+  background: var(--suave);
   color: var(--tinta);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
@@ -26,17 +34,17 @@ html, body, #root {
 }
 
 h1, h2, h3, h4, h5, h6 { font-family: var(--font); letter-spacing: -.02em; }
-h2 { font-size: 26px; font-weight: 800; color: var(--azul); }
-h6 { font-size: 14px; font-weight: 700; }
+h2 { font-size: 26px; line-height: 32px; font-weight: 800; color: var(--tinta); }
+h6 { font-size: 16px; line-height: 22px; font-weight: 700; }
 p { text-wrap: pretty; }
 
 a { color: var(--azul); text-decoration: none; }
-a:hover { color: #1a5fc4; }
+a:hover { text-decoration: underline; }
 
 button { font-family: var(--font); }
 input, select, textarea { font-family: var(--font); color: var(--tinta); }
 
-:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--azul-claro); outline-offset: 2px; }
 
 .text-muted { color: var(--gris); font-size: 13px; }
 
@@ -49,44 +57,77 @@ input, select, textarea { font-family: var(--font); color: var(--tinta); }
 .cols2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
 
-.card { border: 2px solid var(--borde); background: #fff; }
+/* ── Tarjeta ── */
+.card { border: 1px solid var(--borde); background: var(--blanco); border-radius: var(--radio-md); overflow: hidden; }
 .card > h6 {
-  margin: 0; padding: 14px 18px; background: var(--tinte);
-  color: #1a3c72; border-bottom: 2px solid var(--borde);
+  margin: 0; padding: 14px 18px; background: var(--blanco);
+  color: var(--tinta); border-bottom: 1px solid var(--borde);
 }
 
+/* ── Botones: .btn secundario · .btn-azul principal · .btn-verde = principal (mismo azul, nombre antiguo) · .btn-rojo destructivo ── */
 .btn {
-  display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
-  border: 2px solid var(--borde); background: #fff; color: var(--navy);
-  font: 600 13px var(--font); padding: 11px 16px; min-height: 44px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap;
+  border: 1px solid var(--borde); border-radius: var(--radio-sm); background: var(--blanco); color: var(--azul);
+  font: 600 13px var(--font); padding: 10px 16px; min-height: 40px; cursor: pointer;
 }
 .btn:hover { background: var(--tinte); border-color: var(--azul); }
-.btn-verde { border: 0; background: var(--verde); color: #fff; padding: 11px 18px; }
-.btn-verde:hover { background: #2c8c46; }
-.btn-azul { border: 0; background: var(--azul); color: #fff; }
-.btn-azul:hover { background: #1a5fc4; }
-.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-azul, .btn-verde { border: 1px solid var(--azul); background: var(--azul); color: #fff; }
+.btn-azul:hover, .btn-verde:hover { background: var(--azul); border-color: var(--azul); filter: brightness(.9); }
+.btn-rojo { border: 1px solid var(--rojo); background: var(--rojo); color: #fff; }
+.btn-rojo:hover { background: var(--rojo); border-color: var(--rojo); filter: brightness(.9); }
+.btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
 
+/* ── Campos ── */
 .campo { display: grid; gap: 5px; }
-.campo > span {
-  font: 600 11px var(--font); text-transform: uppercase;
-  letter-spacing: .06em; color: var(--gris);
-}
+.campo > span { font: 600 13px/18px var(--font); color: var(--tinta); }
+.campo > small { font: 400 12px/16px var(--font); color: var(--gris); }
 .campo input, .campo select, .campo textarea {
-  border: 2px solid var(--borde); background: #fff; font: 400 13px var(--font);
-  padding: 10px 12px; min-height: 44px; outline: none; width: 100%;
+  border: 1px solid var(--borde); border-radius: var(--radio-sm); background: var(--blanco); font: 400 14px var(--font);
+  padding: 9px 12px; min-height: 40px; outline: none; width: 100%;
 }
 .campo textarea { min-height: 90px; line-height: 1.5; resize: vertical; }
 .campo input:focus, .campo select:focus, .campo textarea:focus { border-color: var(--azul); }
+.campo input[readonly], .campo input:disabled, .campo select:disabled { background: var(--fila); color: var(--gris); }
+.campo.error input, .campo.error select, .campo.error textarea { border-color: var(--rojo); }
+.campo .obligatorio { color: var(--rojo); }
 
+/* ── Tablas ── */
 table { width: 100%; border-collapse: collapse; }
 thead tr { background: var(--thead); }
 th {
-  text-align: left; font: 600 11px var(--font); text-transform: uppercase;
-  letter-spacing: .07em; padding: 11px 14px;
-  border-bottom: 2px solid var(--borde); white-space: nowrap;
+  text-align: left; font: 600 13px var(--font); color: var(--tinta);
+  padding: 10px 14px; border-bottom: 1px solid var(--borde); white-space: nowrap;
 }
-td { padding: 11px 14px; border-bottom: 1px solid var(--fila); font: 400 13px var(--font); }
+td { padding: 10px 14px; border-bottom: 1px solid var(--borde); font: 400 14px var(--font); }
+tbody tr:hover { background: var(--suave); }
+
+/* ── Pestañas ── */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--borde); overflow-x: auto; }
+.tabs > button {
+  border: 0; background: transparent; cursor: pointer; white-space: nowrap;
+  font: 600 13px var(--font); color: var(--gris); padding: 11px 16px;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tabs > button:hover { color: var(--tinta); }
+.tabs > button.on { color: var(--azul); border-bottom-color: var(--azul); }
+
+/* ── Estado: punto de color + texto ── */
+.estado { display: inline-flex; align-items: center; gap: 6px; font: 600 13px var(--font); color: var(--tinta); white-space: nowrap; }
+.estado::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--gris)); flex: none; }
+
+/* ── Recuadro de ayuda ── */
+.ayuda {
+  display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px;
+  background: var(--tinte); border-radius: var(--radio-md); font: 400 13px/1.45 var(--font); color: var(--tinta);
+}
+
+/* ── Indicador ── */
+.indicador {
+  display: flex; align-items: center; gap: 14px; padding: 16px 18px;
+  background: var(--blanco); border: 1px solid var(--borde); border-radius: var(--radio-md);
+}
+.indicador b { display: block; font: 800 28px/32px var(--font); color: var(--tinta); }
+.indicador span { font: 400 14px/20px var(--font); color: var(--tinta); }
 
 .leaflet-container { font-family: var(--font); }
 
