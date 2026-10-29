@@ -20,7 +20,11 @@ const SECCIONES = [
     nota: '(Valor compra − residual) ÷ vida útil ÷ km al año.' },
   { t: 'Fijos anuales', claves: ['km_anual', 'permiso_anual', 'seguro_anual', 'revision_anual'],
     km: (k) => [['Permiso', k.permiso], ['Seguro', k.seguro], ['Revisión', k.revision]] },
-  { t: 'Conductor', claves: ['conductor_sueldo'], km: (k) => [['Conductor', k.conductor]], nota: 'Sueldo × 12 ÷ km al año.' },
+  { t: 'Conductor', claves: ['conductor_sueldo', 'conductores'], km: (k) => [['Conductor', k.conductor]], nota: 'Sueldo × 12 ÷ km al año. En el punto de equilibrio se usa sueldo × conductores.' },
+  { t: 'Recorrido real', claves: ['factor_recorrido'],
+    nota: 'Las rutas no siguen el camino más corto. Sin odómetro, los km se estiman en línea recta × este factor (1,3 = 30% más).' },
+  { t: 'Depreciación de baños (supuesto)', claves: ['bano_valor_compra', 'bano_valor_residual', 'bano_vida_anos'],
+    nota: 'El dueño no tiene el dato: es un supuesto lineal. (Compra − residual) ÷ (vida × 12) por baño al mes. Validar con una cotización.' },
   { t: 'Servicio de baños', claves: ['agua_bano', 'estanque_agua', 'estanque_grises', 'litros_limpieza', 'densidad_residuo', 'agua_litro', 'residuo_litro'] },
 ]
 const USADAS = new Set(SECCIONES.flatMap((s) => s.claves))

@@ -19,7 +19,6 @@ export const NAV = [
   { to: '/mantenciones', label: 'Mantenciones', d: I.wrench, s: 'mantenciones' },
   { to: '/ubicaciones', label: 'Mapa', d: I.pin, s: 'ubicaciones' },
   { calendario: true, label: 'Calendario', d: I.cal, s: 'calendario' },
-  { to: '/utilidades', label: 'Utilidades y ventas', d: I.money, s: 'utilidades' },
   { to: '/reportes', label: 'Reportes', d: I.chart, s: 'reportes' },
   { to: '/analisis', label: 'Análisis', d: 'M3 3v18h18M7 15l4-4 3 3 5-6', s: 'analisis' },
   { to: '/historial', label: 'Historial de cambios', d: HISTORIAL, s: 'historial' },

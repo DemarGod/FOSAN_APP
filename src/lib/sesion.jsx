@@ -36,7 +36,6 @@ export const SECCIONES = [
   { s: 'mantenciones', l: 'Mantenciones' },
   { s: 'ubicaciones', l: 'Mapa' },
   { s: 'calendario', l: 'Calendario' },
-  { s: 'utilidades', l: 'Utilidades y ventas', soloVer: true },
   { s: 'reportes', l: 'Reportes', soloVer: true },
   { s: 'analisis', l: 'Análisis', soloVer: true },
   { s: 'finanzas', l: 'Ver montos (valores, costos, ventas)', soloVer: true },

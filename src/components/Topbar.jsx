@@ -26,9 +26,8 @@ const SINONIMOS = {
   '/insumos': 'insumo insumos stock quimico papel',
   '/mantenciones': 'mantencion mantenciones taller reparacion',
   '/ubicaciones': 'mapa ubicacion ubicaciones faena direccion',
-  '/utilidades': 'utilidad utilidades ventas venta margen',
-  '/reportes': 'reporte reportes excel maxxa informe',
-  '/analisis': 'analisis costos rentabilidad',
+  '/reportes': 'reporte reportes excel informe',
+  '/analisis': 'analisis costos rentabilidad margen utilidad aseo equilibrio km',
   '/configuracion': 'configuracion parametros diesel usuarios',
 }
 
