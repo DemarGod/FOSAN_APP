@@ -147,19 +147,20 @@ export const millones = (n) => {
 // Las fechas sin hora ('2026-08-31') se leen como hora local para no correrse un día
 const aFecha = (d) => new Date(/^\d{4}-\d{2}-\d{2}$/.test(String(d)) ? d + 'T12:00:00' : d)
 
+// Fechas siempre DD/MM/AAAA (regla de la estandarización)
+const dma = (x) => `${String(x.getDate()).padStart(2, '0')}/${String(x.getMonth() + 1).padStart(2, '0')}/${x.getFullYear()}`
 export const fecha = (d) => {
   if (!d) return '—'
   const x = aFecha(d)
   if (isNaN(x)) return '—'
-  return x.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  return dma(x)
 }
 
 export const fechaHora = (d) => {
   if (!d) return '—'
   const x = new Date(d)
   if (isNaN(x)) return '—'
-  return x.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
-    ' · ' + x.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+  return dma(x) + ' · ' + `${String(x.getHours()).padStart(2, '0')}:${String(x.getMinutes()).padStart(2, '0')}`
 }
 
 export const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
