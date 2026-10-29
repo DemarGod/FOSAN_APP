@@ -11,8 +11,8 @@ import Inicio from './pages/Inicio'
 import Banos from './pages/Banos'
 import Transporte from './pages/Transporte'
 import Insumos from './pages/Insumos'
-import Despachos from './pages/Despachos'
-import Rutas from './pages/Rutas'
+import RutasSemana from './pages/RutasSemana'
+import MiRuta from './pages/MiRuta'
 import Analisis from './pages/Analisis'
 import Clientes from './pages/Clientes'
 import Utilidades from './pages/Utilidades'
@@ -74,14 +74,16 @@ export default function App() {
           <Topbar perfil={perfil} onCalendario={() => setCal(true)} version={calVersion} />
           <div className="pad">
             <Routes>
-              <Route path="/" element={puedeVer(perfil, 'inicio') ? <Inicio onCalendario={() => setCal(true)} /> : <SinAcceso />} />
+              <Route path="/" element={puedeVer(perfil, 'inicio') ? <Inicio onCalendario={() => setCal(true)} /> : <Navigate to="/mi-ruta" replace />} />
               <Route path="/inventario" element={<Navigate to="/banos" replace />} />
               <Route path="/banos" element={puedeVer(perfil, 'banos') ? <Banos /> : <SinAcceso />} />
               <Route path="/camiones" element={<Navigate to="/transporte" replace />} />
               <Route path="/transporte" element={puedeVer(perfil, 'transporte') ? <Transporte /> : <SinAcceso />} />
               <Route path="/insumos" element={puedeVer(perfil, 'insumos') ? <Insumos /> : <SinAcceso />} />
-              <Route path="/despachos" element={puedeVer(perfil, 'despachos') ? <Despachos /> : <SinAcceso />} />
-              <Route path="/rutas" element={puedeVer(perfil, 'rutas') ? <Rutas /> : <SinAcceso />} />
+              <Route path="/rutas-semanales" element={puedeVer(perfil, 'rutas') ? <RutasSemana /> : <SinAcceso />} />
+              <Route path="/mi-ruta" element={<MiRuta />} />
+              <Route path="/despachos" element={<Navigate to="/rutas-semanales" replace />} />
+              <Route path="/rutas" element={<Navigate to="/rutas-semanales" replace />} />
               <Route path="/clientes" element={puedeVer(perfil, 'clientes') ? <Clientes /> : <SinAcceso />} />
               <Route path="/utilidades" element={puedeVer(perfil, 'utilidades') ? <Utilidades /> : <SinAcceso />} />
               <Route path="/mantenciones" element={puedeVer(perfil, 'mantenciones') ? <Mantenciones /> : <SinAcceso />} />

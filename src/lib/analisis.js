@@ -44,7 +44,7 @@ export async function cargarMes(mes) {
   ])
   const ids = [...new Set([...salidas.map((s) => s.id), ...futuras.map((s) => s.id)])]
   const paradas = ids.length
-    ? await opc(supabase.from('salida_paradas').select('salida_id, cliente_id, tarea, banos, hecha').in('salida_id', ids))
+    ? await opc(supabase.from('salida_paradas').select('salida_id, cliente_id, tarea, banos, hecha, despacho_id').in('salida_id', ids))
     : []
   return { mes, ini, fin, ventas, clientes, banos, salidas, despachos, mant, insumos, receta, par: mapaParametros(pars), movIns, ocup, futuras, paradas, instalaciones }
 }
@@ -67,12 +67,13 @@ export function calcular(d) {
   d.salidas.forEach((s) => {
     const c = costoSalida(s, d.par)
     const est = s.km_real == null || c.faltan.length > 0
-    const par = d.paradas.filter((p) => p.salida_id === s.id && (s.estado === 'cerrada' ? p.hecha : true))
+    // Las paradas de entrega/retiro ya se cuentan como despacho
+    const par = d.paradas.filter((p) => p.salida_id === s.id && !p.despacho_id && (s.estado === 'cerrada' ? p.hecha : true))
     const des = d.despachos.filter((x) => x.salida_id === s.id)
     const peso = (p) => Math.max(1, n(p.banos))
     const pesoTot = par.reduce((t, p) => t + peso(p), 0) + des.length
     const cuota = (w) => (pesoTot ? (c.total * w) / pesoTot : 0)
-    const r = (porRuta[s.ruta_id] ||= { ruta: s.ruta, salidas: 0, sinKm: 0, km: 0, costo: 0, visitas: 0, banos: 0, litros: 0, insumos: 0, estimado: false, clientes: {}, registros: [] })
+    const r = (porRuta[s.ruta_id || s.ruta] ||= { ruta: s.ruta, salidas: 0, sinKm: 0, km: 0, costo: 0, visitas: 0, banos: 0, litros: 0, insumos: 0, estimado: false, clientes: {}, registros: [] })
     const banosSal = par.filter((p) => p.tarea === 'limpieza').reduce((t, p) => t + n(p.banos), 0)
     if (s.fecha <= hoy) banosLimpiadosMes += banosSal
     r.salidas++; if (s.km_real == null) r.sinKm++

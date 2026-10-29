@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Modal from './Modal'
 import { eventosDelMes, crearEvento, borrarEvento } from '../lib/api'
+import { rutasDelMes } from '../lib/rutasSemana'
 import { C, MESES, L_TIPO_EVENTO, COLOR_EVENTO } from '../lib/ui'
 
 const TIPOS = Object.keys(L_TIPO_EVENTO)
@@ -19,7 +20,10 @@ export default function Calendario({ puedeEditar, onCerrar }) {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    eventosDelMes(anio, mes).then(setEventos).catch(setError)
+    const ini = `${anio}-${pad(mes + 1)}-01`
+    const fin = `${anio}-${pad(mes + 1)}-${pad(new Date(anio, mes + 1, 0).getDate())}`
+    Promise.all([eventosDelMes(anio, mes), rutasDelMes(ini, fin).catch(() => [])])
+      .then(([e, r]) => setEventos([...r, ...e])).catch(setError)
   }, [anio, mes])
 
   const porDia = useMemo(() => {
@@ -136,7 +140,7 @@ export default function Calendario({ puedeEditar, onCerrar }) {
               {L_TIPO_EVENTO[e.tipo]}
             </span>
             <span style={{ flex: 1, minWidth: 0, font: '400 13px var(--font)' }}>{e.titulo}</span>
-            {puedeEditar && (
+            {puedeEditar && !e.soloLectura && (
               <button onClick={() => borrar(e.id)} style={{
                 border: 0, background: 'transparent', color: C.gris,
                 cursor: 'pointer', font: '400 12px var(--font)',

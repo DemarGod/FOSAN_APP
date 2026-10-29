@@ -234,7 +234,7 @@ export const tableroInicio = async () => {
   const [act, des, salHoy, man] = await Promise.all([
     rows(supabase.from('activos').select('id, codigo, tipo, estado').neq('estado', 'baja')),
     seguro(rows(supabase.from('despachos').select('id, tipo, fecha_programada, vehiculo_id').eq('estado', 'programado'))),
-    seguro(rows(supabase.from('salidas').select('id, vehiculo_id, salida_paradas(id)').eq('estado', 'planificada').eq('fecha', hoy))),
+    seguro(rows(supabase.from('salidas').select('id, vehiculo_id, salida_paradas(id)').eq('estado', 'planificada').eq('fecha', hoy).is('salida_paradas.despacho_id', null))),
     seguro(rows(supabase.from('mantenciones').select('id, fecha_programada, activos!inner(tipo)').in('estado', ['programada', 'proxima', 'urgente']))),
   ])
   const banos = act.filter((x) => x.tipo === 'bano_quimico')
