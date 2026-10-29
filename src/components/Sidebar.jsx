@@ -26,23 +26,22 @@ export const NAV = [
 ]
 
 const item = (activo) => ({
-  width: '100%', display: 'flex', alignItems: 'center', gap: 11,
-  padding: '10px 18px', boxSizing: 'border-box', border: 0, cursor: 'pointer', textAlign: 'left',
-  background: activo ? C.tinte : 'transparent',
-  color: activo ? '#1a3c72' : '#3c4551',
-  font: '400 14px/1.2 var(--font)', textDecoration: 'none',
-  borderLeft: `3px solid ${activo ? C.navy : 'transparent'}`,
+  width: 'calc(100% - 16px)', margin: '2px 8px', display: 'flex', alignItems: 'center', gap: 11,
+  padding: '10px 12px', boxSizing: 'border-box', border: 0, cursor: 'pointer', textAlign: 'left',
+  background: activo ? '#2f6fdd' : 'transparent',
+  color: activo ? '#fff' : '#c9d4e5',
+  font: `${activo ? 600 : 400} 14px/1.2 var(--font)`, textDecoration: 'none', borderRadius: 4,
 })
 
 export default function Sidebar({ onCalendario }) {
   const { perfil } = useSesion()
   return (
     <aside className="sidebar" style={{
-      background: '#fff', color: C.navy, borderRight: `2px solid ${C.borde}`,
+      background: '#13294b', color: '#fff', borderRight: 0,
       display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh',
     }}>
       <div style={{
-        height: 64, padding: '0 18px', borderBottom: `2px solid ${C.borde}`,
+        height: 64, padding: '0 18px', borderBottom: '1px solid rgba(255,255,255,.12)',
         display: 'flex', alignItems: 'center',
       }}>
         <span style={{ font: '800 32px/1 var(--font)', letterSpacing: '-.02em' }}>FOSAN</span>
@@ -54,8 +53,8 @@ export default function Sidebar({ onCalendario }) {
             return (
               <div key={n.grupo} style={{
                 margin: i ? '10px 0 4px' : '0 0 4px', padding: '10px 18px 4px',
-                borderTop: `2px solid ${C.borde}`, font: '700 10px var(--font)',
-                textTransform: 'uppercase', letterSpacing: '.08em', color: C.gris,
+                borderTop: '1px solid rgba(255,255,255,.12)', font: '700 10px var(--font)',
+                textTransform: 'uppercase', letterSpacing: '.08em', color: '#8fa3c2',
               }}>{n.grupo}</div>
             )
           }
