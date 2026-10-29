@@ -1,281 +1,42 @@
-import { useEffect, useState } from 'react'
-import { Aviso } from '../components/Listado'
-import { perfiles, todosPermisos, guardarPermiso, guardarPerfil, accesosAutorizados, autorizarCorreo } from '../lib/api'
-import { useSesion, esDueno, nombreRol, SECCIONES, ROLES } from '../lib/sesion'
-import { Badge, C } from '../lib/ui'
-import { supabase } from '../lib/supabase'
-
-const rpc = async (fn, args) => { const { error } = await supabase.rpc(fn, args); if (error) throw error }
-const pedirClave = (texto) => {
-  const c = window.prompt(texto + '\n\nMínimo 8 caracteres. Entrégasela a la persona; podrá usarla de inmediato.')
-  if (c === null) return null
-  if (c.length < 8) { window.alert('La contraseña debe tener al menos 8 caracteres.'); return null }
-  return c
-}
-
-const ROLES_EDITABLES = ROLES.filter((r) => r.v !== 'dueno')
-const TODOS_ROLES = ROLES
+// Mi perfil: datos de la sesión de quien entró.
+// Usuarios, roles y permisos se gestionan en Administración (solo el dueño).
+import { useNavigate } from 'react-router-dom'
+import { Boton, Ayuda } from '../components/Base'
+import { useSesion, esDueno, nombreRol } from '../lib/sesion'
+import { C } from '../lib/ui'
 
 export default function Configuracion() {
   const { usuario, perfil } = useSesion()
-  const [lista, setLista] = useState([])
-  const [error, setError] = useState(null)
-  const [msg, setMsg] = useState(null)
-  const [nuevo, setNuevo] = useState({ nombre: '', correo: '', rol: 'secretaria', clave: '' })
-
-  // Une perfiles (cuentas creadas) con correos autorizados, por correo
-  const cargar = () => Promise.all([perfiles(), accesosAutorizados().catch(() => [])]).then(([p, a]) => {
-    const m = {}
-    a.forEach((x) => { const k = x.correo.toLowerCase(); m[k] = { correo: x.correo, nombre: x.nombre, rol: x.rol, autorizado: true } })
-    p.forEach((x) => {
-      const k = (x.correo || x.id).toLowerCase()
-      m[k] = { ...(m[k] || {}), perfil: x, nombre: x.nombre || m[k]?.nombre, correo: x.correo || m[k]?.correo, rol: x.rol }
-    })
-    setLista(Object.values(m).sort((x, y) => String(x.nombre).localeCompare(String(y.nombre))))
-  }).catch(setError)
-  useEffect(() => { cargar() }, [])
-
-  const hacer = async (fn, ok) => {
-    setMsg(null)
-    try { await fn(); await cargar(); setMsg(ok) } catch (e) { setMsg(e) }
-  }
-  const cambiarRol = (u, rol) => hacer(() => (u.perfil ? guardarPerfil(u.perfil, { rol }) : autorizarCorreo({ correo: u.correo, nombre: u.nombre, rol })), 'Rol actualizado.')
-  const crearCuenta = (u) => {
-    const clave = pedirClave(`Contraseña inicial para ${u.nombre} (${u.correo})`)
-    if (clave) hacer(() => rpc('crear_usuario', { p_correo: u.correo, p_nombre: u.nombre, p_rol: u.rol, p_clave: clave }), 'Cuenta creada. Ya puede entrar.')
-  }
-  const cambiarClave = (u) => {
-    const clave = pedirClave(`Nueva contraseña para ${u.nombre} (${u.correo})`)
-    if (clave) hacer(() => rpc('cambiar_clave_usuario', { p_correo: u.correo, p_clave: clave }), 'Contraseña cambiada.')
-  }
-  const alternar = (u) => hacer(() => guardarPerfil(u.perfil, { activo: u.perfil.activo === false }), 'Usuario actualizado.')
-  const quitar = (u) => {
-    if (!u.correo) return setMsg(new Error('Este usuario no tiene correo registrado; elimínalo desde Supabase.'))
-    const txt = `Eliminar a ${u.nombre} (${u.correo})\n\nSe borra su cuenta y ya no podrá entrar. Lo que registró (mantenciones, movimientos, etc.) se conserva sin usuario asignado.\n\nEsta acción no se puede deshacer. Escribe ELIMINAR para confirmar.`
-    const r = window.prompt(txt)
-    if (r === null) return
-    if (r.trim().toUpperCase() !== 'ELIMINAR') return setMsg(new Error('No se eliminó: no escribiste ELIMINAR.'))
-    hacer(() => rpc('eliminar_usuario', { p_correo: u.correo }), 'Usuario eliminado.')
-  }
-  const agregar = (e) => {
-    e.preventDefault()
-    if (!nuevo.nombre.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(nuevo.correo.trim())) return setMsg(new Error('Escribe nombre y un correo válido.'))
-    if (lista.some((u) => u.correo?.toLowerCase() === nuevo.correo.trim().toLowerCase())) return setMsg(new Error('Ese correo ya está en la lista.'))
-    if (nuevo.clave.length < 8) return setMsg(new Error('Escribe una contraseña inicial de al menos 8 caracteres.'))
-    hacer(async () => {
-      await rpc('crear_usuario', { p_correo: nuevo.correo.trim(), p_nombre: nuevo.nombre.trim(), p_rol: nuevo.rol, p_clave: nuevo.clave })
-      setNuevo({ nombre: '', correo: '', rol: 'secretaria', clave: '' })
-    }, 'Usuario creado. Ya puede entrar con su correo y la contraseña inicial.')
-  }
-
-  if (!esDueno(perfil)) {
-    return (
-      <div>
-        <h2 style={{ margin: '0 0 16px' }}>Mi perfil</h2>
-        <section className="card" style={{ maxWidth: 520 }}>
-          <h6>Tu sesión</h6>
-          <div style={{ padding: '14px 18px', display: 'grid', gap: 8 }}>
-            <Dato k="Nombre" v={perfil?.nombre || '—'} />
-            <Dato k="Correo" v={usuario?.email || '—'} />
-            <Dato k="Rol" v={nombreRol(perfil?.rol)} />
-          </div>
-        </section>
-      </div>
-    )
-  }
-
+  const navegar = useNavigate()
   return (
-    <div>
-      <h2 style={{ margin: '0 0 4px' }}>Configuración</h2>
-      <p className="text-muted" style={{ margin: '0 0 20px' }}>
-        Los dueños tienen acceso total. Desde acá asignan el rol de cada usuario y deciden qué ve y qué edita cada rol.
-      </p>
-
-      <Aviso error={error} />
-      <Mensaje m={msg} />
-
-      <div className="cols2" style={{ gridTemplateColumns: 'minmax(0, 2.2fr) minmax(0, 1fr)', gap: 24 }}>
-        <section className="card">
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            padding: '12px 18px', background: C.tinte, borderBottom: `2px solid ${C.borde}`,
-          }}>
-            <h6 style={{ margin: 0, color: '#1a3c72' }}>Usuarios del sistema</h6>
-            <span style={{ font: '400 12px var(--font)', color: C.gris }}>
-              {lista.length} acceso{lista.length === 1 ? '' : 's'}
-            </span>
-          </div>
-          <form onSubmit={agregar} style={{
-            display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.4fr) minmax(0,1fr) 150px auto', gap: 8,
-            padding: '12px 18px', borderBottom: `2px solid ${C.borde}`,
-          }}>
-            <input value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} placeholder="Nombre" maxLength={60} style={{ ...sel, minHeight: 40, minWidth: 0 }} />
-            <input value={nuevo.correo} onChange={(e) => setNuevo({ ...nuevo, correo: e.target.value })} placeholder="correo@ejemplo.cl" type="email" maxLength={120} style={{ ...sel, minHeight: 40, minWidth: 0 }} />
-            <input value={nuevo.clave} onChange={(e) => setNuevo({ ...nuevo, clave: e.target.value })} placeholder="Contraseña inicial" type="text" autoComplete="off" maxLength={72} style={{ ...sel, minHeight: 40, minWidth: 0 }} />
-            <select value={nuevo.rol} onChange={(e) => setNuevo({ ...nuevo, rol: e.target.value })} style={{ ...sel, minHeight: 40 }}>
-              {TODOS_ROLES.map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}
-            </select>
-            <button className="btn btn-verde" type="submit" style={{ minHeight: 40 }}>Crear usuario</button>
-          </form>
-          <div className="scroller">
-            <table style={{ minWidth: 780 }}>
-              <thead>
-                <tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th></th></tr>
-              </thead>
-              <tbody>
-                {lista.map((u) => {
-                  const yo = u.perfil?.id === usuario?.id
-                  return (
-                    <tr key={u.correo || u.perfil?.id}>
-                      <td style={{ fontWeight: 600 }}>{u.nombre || '—'}{yo ? ' (tú)' : ''}</td>
-                      <td>{u.correo || '—'}</td>
-                      <td>
-                        {yo ? nombreRol(u.rol) : (
-                          <select value={u.rol} onChange={(e) => cambiarRol(u, e.target.value)} style={sel}>
-                            {TODOS_ROLES.map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}
-                          </select>
-                        )}
-                      </td>
-                      <td>
-                        {yo ? <Badge>Activo</Badge> : !u.perfil ? (
-                          <button className="btn" onClick={() => crearCuenta(u)} title="Crear su cuenta con una contraseña inicial" style={{ minHeight: 34, padding: '4px 10px', color: '#8a5a00', borderColor: C.amarillo }}>Sin cuenta · crear</button>
-                        ) : (
-                          <button className="btn" style={{ minHeight: 34, padding: '4px 10px' }} onClick={() => alternar(u)}>
-                            {u.perfil.activo === false ? 'Inactivo · activar' : 'Activo · desactivar'}
-                          </button>
-                        )}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                          {u.perfil && u.correo && <button className="btn" onClick={() => cambiarClave(u)} style={{ minHeight: 34, padding: '4px 10px' }}>Cambiar clave</button>}
-                          {!yo && <button className="btn" onClick={() => quitar(u)} style={{ minHeight: 34, padding: '4px 10px', color: C.rojo }}>Eliminar</button>}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-                {lista.length === 0 && (
-                  <tr><td colSpan={5} style={{ color: C.gris }}>Todavía no hay usuarios.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div style={{ padding: '10px 18px', font: '400 12px/1.45 var(--font)', color: C.gris }}>
-            Al crear un usuario se le asigna una contraseña inicial; entrégasela y podrá entrar de inmediato. "Sin cuenta · crear": el correo está autorizado pero aún no tiene contraseña.
-          </div>
-        </section>
-
-        <section className="card" style={{ alignSelf: 'start' }}>
-          <h6>Tu sesión</h6>
-          <div style={{ padding: '14px 18px', display: 'grid', gap: 8 }}>
-            <Dato k="Nombre" v={perfil?.nombre || '—'} />
-            <Dato k="Correo" v={usuario?.email || '—'} />
-            <Dato k="Rol" v={nombreRol(perfil?.rol)} />
-          </div>
-        </section>
-      </div>
-
-      <Permisos />
+    <div style={{ display: 'grid', gap: 16, maxWidth: 560 }}>
+      <h2 style={{ margin: 0 }}>Mi perfil</h2>
+      <section className="card">
+        <h6>Tu sesión</h6>
+        <div style={{ padding: '14px 18px', display: 'grid', gap: 10 }}>
+          <Dato k="Nombre" v={perfil?.nombre || '—'} />
+          <Dato k="Usuario" v={perfil?.usuario || '—'} />
+          <Dato k="Correo" v={usuario?.email || '—'} />
+          <Dato k="Rol" v={nombreRol(perfil?.rol)} />
+        </div>
+      </section>
+      {esDueno(perfil)
+        ? (
+          <Ayuda>
+            Las personas, usuarios, roles y permisos se gestionan en Administración.{' '}
+            <Boton tipo="principal" onClick={() => navegar('/administracion')} style={{ minHeight: 32, padding: '4px 12px', marginLeft: 6 }}>Ir a Administración</Boton>
+          </Ayuda>
+        )
+        : <Ayuda>Para cambiar tu contraseña, tu rol o tus datos, pídeselo al dueño.</Ayuda>}
     </div>
   )
 }
 
-const sel = { border: `2px solid ${C.borde}`, font: '400 13px var(--font)', padding: '5px 8px', minHeight: 34, background: '#fff' }
-
-function Mensaje({ m }) {
-  if (!m) return null
-  const ok = typeof m === 'string'
-  return <div style={{ margin: '0 0 14px', font: '600 12px var(--font)', color: ok ? C.verde : C.rojo }}>{ok ? m : String(m.message || m)}</div>
-}
-
-// Qué ve y qué edita cada rol. Los dueños siempre tienen todo.
-function Permisos() {
-  const [p, setP] = useState({})
-  const [msg, setMsg] = useState(null)
-  useEffect(() => {
-    todosPermisos().then((rows) => {
-      const m = {}
-      rows.forEach((r) => { m[r.rol + ':' + r.seccion] = r })
-      setP(m)
-    }).catch(setMsg)
-  }, [])
-
-  const val = (rol, s) => p[rol + ':' + s] || { ver: false, editar: false }
-  const cambiar = async (rol, s, campo, v) => {
-    const actual = val(rol, s)
-    let nuevo = { ...actual, [campo]: v }
-    if (campo === 'ver' && !v) nuevo.editar = false
-    if (campo === 'editar' && v) nuevo.ver = true
-    setP((x) => ({ ...x, [rol + ':' + s]: { rol, seccion: s, ...nuevo } }))
-    setMsg(null)
-    try { await guardarPermiso(rol, s, nuevo.ver, nuevo.editar); setMsg('Guardado. El usuario lo verá al recargar la app.') }
-    catch (e) { setMsg(e); setP((x) => ({ ...x, [rol + ':' + s]: { rol, seccion: s, ...actual } })) }
-  }
-
-  const th = { padding: '9px 12px', font: '700 11px var(--font)', textTransform: 'uppercase', letterSpacing: '.05em', color: '#1a3c72', textAlign: 'left', background: C.tinte, borderBottom: `2px solid ${C.borde}`, whiteSpace: 'nowrap' }
-  const td = { padding: '8px 12px', font: '400 13px var(--font)', borderBottom: `1px solid ${C.fila}` }
-
-  return (
-    <section className="card" style={{ marginTop: 24 }}>
-      <h6>Permisos por rol</h6>
-      <div style={{ padding: '10px 18px 0', font: '400 12px/1.45 var(--font)', color: C.gris }}>
-        Marca qué puede ver y editar cada rol. Editar incluye crear y modificar; eliminar queda solo para los dueños.
-      </div>
-      <div className="scroller" style={{ padding: '12px 18px 16px' }}>
-        <table style={{ minWidth: 1100, width: '100%', borderCollapse: 'collapse', border: `2px solid ${C.borde}` }}>
-          <thead>
-            <tr>
-              <th style={th} rowSpan={2}>Sección</th>
-              <th style={{ ...th, textAlign: 'center' }}>Dueño</th>
-              {ROLES_EDITABLES.map((r) => <th key={r.v} title={r.d} style={{ ...th, textAlign: 'center', borderLeft: `2px solid ${C.borde}` }} colSpan={2}>{r.l}<span style={{ display: 'block', font: '400 10px var(--font)', textTransform: 'none', letterSpacing: 0, color: C.gris }}>{r.d}</span></th>)}
-            </tr>
-            <tr>
-              <th style={{ ...th, textAlign: 'center' }}>Todo</th>
-              {ROLES_EDITABLES.map((r) => [
-                <th key={r.v + 'v'} style={{ ...th, textAlign: 'center', borderLeft: `2px solid ${C.borde}` }}>Ver</th>,
-                <th key={r.v + 'e'} style={{ ...th, textAlign: 'center' }}>Editar</th>,
-              ])}
-            </tr>
-          </thead>
-          <tbody>
-            {SECCIONES.map((s) => (
-              <tr key={s.s}>
-                <td style={{ ...td, fontWeight: 600 }}>{s.l}</td>
-                <td style={{ ...td, textAlign: 'center', color: C.gris }}>✓</td>
-                {ROLES_EDITABLES.map((r) => {
-                  const v = val(r.v, s.s)
-                  return [
-                    <td key={r.v + 'v'} style={{ ...td, textAlign: 'center', borderLeft: `2px solid ${C.borde}` }}>
-                      <Check on={v.ver} onChange={(x) => cambiar(r.v, s.s, 'ver', x)} t={`${r.l} ve ${s.l}`} />
-                    </td>,
-                    <td key={r.v + 'e'} style={{ ...td, textAlign: 'center' }}>
-                      {s.soloVer ? <span style={{ color: C.gris }}>—</span> : <Check on={v.editar} onChange={(x) => cambiar(r.v, s.s, 'editar', x)} t={`${r.l} edita ${s.l}`} />}
-                    </td>,
-                  ]
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div style={{ marginTop: 10 }}><Mensaje m={msg} /></div>
-      </div>
-    </section>
-  )
-}
-
-const Check = ({ on, onChange, t }) => (
-  <input type="checkbox" checked={!!on} title={t} aria-label={t} onChange={(e) => onChange(e.target.checked)}
-    style={{ width: 20, height: 20, accentColor: C.navy, cursor: 'pointer' }} />
-)
-
 function Dato({ k, v }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-      <span style={{
-        font: '400 11px var(--font)', color: C.gris,
-        textTransform: 'uppercase', letterSpacing: '.06em',
-      }}>{k}</span>
-      <span style={{ font: '600 13px var(--font)', textAlign: 'right' }}>{v}</span>
+      <span style={{ font: '400 13px var(--font)', color: C.gris }}>{k}</span>
+      <span style={{ font: '600 14px var(--font)', textAlign: 'right', overflowWrap: 'anywhere' }}>{v}</span>
     </div>
   )
 }

@@ -12,11 +12,18 @@ export default function Login() {
     e.preventDefault()
     setError('')
     setCargando(true)
-    const { error } = await supabase.auth.signInWithPassword({ email: correo.trim(), password: clave })
+    // Se puede entrar con el correo o con el nombre de usuario (ej. ana.perez)
+    let email = correo.trim()
+    if (!email.includes('@')) {
+      const { data } = await supabase.rpc('correo_para_login', { p_usuario: email })
+      if (!data) { setCargando(false); setError('Usuario o contraseña incorrectos.'); return }
+      email = data
+    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password: clave })
     setCargando(false)
     if (error) {
       setError(/invalid/i.test(error.message)
-        ? 'Correo o contraseña incorrectos.'
+        ? 'Usuario o contraseña incorrectos.'
         : 'No se pudo iniciar sesión: ' + error.message)
     }
   }
@@ -42,9 +49,9 @@ export default function Login() {
 
         <div style={{ display: 'grid', gap: 16, padding: 24 }}>
           <label className="campo">
-            <span>Correo</span>
-            <input type="email" required autoComplete="email" value={correo}
-              onChange={(e) => setCorreo(e.target.value)} placeholder="nombre@fosan.cl" />
+            <span>Usuario o correo</span>
+            <input type="text" required autoComplete="username" autoCapitalize="none" value={correo}
+              onChange={(e) => setCorreo(e.target.value)} placeholder="ana.perez o nombre@fosan.cl" />
           </label>
           <label className="campo">
             <span>Contraseña</span>

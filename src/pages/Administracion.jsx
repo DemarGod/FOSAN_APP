@@ -1,10 +1,9 @@
 // Administración (láminas 8.1 a 8.8): Personal y usuarios · Roles y permisos · Catálogos · Historial de cambios.
-// Paquete 6a: Catálogos (8.5, 8.6) e Historial de cambios (8.7, 8.8).
-// Personal y usuarios y Roles y permisos (8.1 a 8.4) se rehacen en el paquete 6b; mientras tanto muestran la configuración actual.
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Modal from '../components/Modal'
-import Configuracion from './Configuracion'
+import AdminPersonal from '../components/AdminPersonal'
+import AdminRoles from '../components/AdminRoles'
 import { Boton, Campo, Tabla, Pestanas, Estado, Ayuda } from '../components/Base'
 import {
   catCategorias, catModelos, catUbicacionesInternas, catUnidades,
@@ -23,7 +22,7 @@ const chico = { minHeight: 34, padding: '6px 12px' }
 
 export default function Administracion() {
   const [params, setParams] = useSearchParams()
-  const tab = PESTANAS.some((p) => p.v === params.get('tab')) ? params.get('tab') : 'catalogos'
+  const tab = PESTANAS.some((p) => p.v === params.get('tab')) ? params.get('tab') : 'personal'
   const irA = (v) => setParams({ tab: v }, { replace: true })
   return (
     <div style={{ display: 'grid', gap: 16 }}>
@@ -36,25 +35,12 @@ export default function Administracion() {
       <section className="card">
         <Pestanas opciones={PESTANAS} valor={tab} onChange={irA} />
         <div style={{ padding: 18 }}>
-          {(tab === 'personal' || tab === 'roles') && <Provisorio tab={tab} />}
+          {tab === 'personal' && <AdminPersonal />}
+          {tab === 'roles' && <AdminRoles />}
           {tab === 'catalogos' && <Catalogos />}
           {tab === 'historial' && <HistorialCambios />}
         </div>
       </section>
-    </div>
-  )
-}
-
-// ── Personal y usuarios / Roles y permisos: configuración actual hasta el paquete 6b ──
-function Provisorio({ tab }) {
-  return (
-    <div style={{ display: 'grid', gap: 14 }}>
-      <Ayuda tono="atencion">
-        {tab === 'personal'
-          ? 'Personal y usuarios (láminas 8.1 a 8.3) se rehace en el siguiente paquete. Mientras tanto, aquí está la configuración actual de usuarios.'
-          : 'Roles y permisos (lámina 8.4) se rehace en el siguiente paquete. Mientras tanto, los permisos por rol están al final de la configuración actual.'}
-      </Ayuda>
-      <Configuracion />
     </div>
   )
 }

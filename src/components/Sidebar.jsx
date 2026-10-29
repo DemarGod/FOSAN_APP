@@ -22,9 +22,9 @@ export const NAV = [
   { to: '/reportes', label: 'Reportes', d: I.chart, s: 'reportes' },
   { to: '/analisis', label: 'Análisis', d: 'M3 3v18h18M7 15l4-4 3 3 5-6', s: 'analisis' },
   // Administración (lámina 8) reúne Personal y usuarios, Roles y permisos, Catálogos e Historial de cambios.
-  // Solo el dueño la ve; el resto de los usuarios mantiene "Mi perfil".
+  // Solo el dueño la ve. "Mi perfil" lo ven todos.
   { to: '/administracion', label: 'Administración', d: I.gear, soloDueno: true },
-  { to: '/configuracion', label: 'Mi perfil', d: I.users, noDueno: true },
+  { to: '/configuracion', label: 'Mi perfil', d: I.users },
 ]
 
 const item = (activo) => ({
@@ -50,7 +50,7 @@ export default function Sidebar({ onCalendario }) {
       </div>
 
       <nav style={{ flex: 1, overflowY: 'auto', padding: '10px 0' }}>
-        {NAV.filter((n) => (!n.s || puedeVer(perfil, n.s)) && !(n.soloDueno && !esDueno(perfil)) && !(n.noDueno && esDueno(perfil))).map((n, i) => {
+        {NAV.filter((n) => (!n.s || puedeVer(perfil, n.s)) && !(n.soloDueno && !esDueno(perfil))).map((n, i) => {
           if (n.grupo) {
             return (
               <div key={n.grupo} style={{

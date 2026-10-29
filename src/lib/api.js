@@ -473,6 +473,62 @@ export const accesosAutorizados = () => rows(supabase.from('accesos_autorizados'
 export const autorizarCorreo = (a) => rows(supabase.from('accesos_autorizados').upsert({ ...a, correo: a.correo.trim().toLowerCase() }).select())
 export const quitarAutorizacion = (correo) => rows(supabase.from('accesos_autorizados').delete().eq('correo', correo).select())
 
+// ── Administración → Personal y usuarios (láminas 8.1 a 8.3) ─────────────
+// Persona = fila de "personal". Si tiene acceso, está unida a su cuenta en "perfiles".
+// Las contraseñas nunca se guardan ni se muestran: las maneja Supabase Auth.
+export const personalLista = () => rows(
+  supabase.from('personal').select('*, perfiles(id, nombre, correo, usuario, rol, activo)').order('nombre')
+)
+export const guardarPersona = async (id, datos, perfilId = null) => {
+  const { data, error } = id
+    ? await supabase.from('personal').update(datos).eq('id', id).select('id').single()
+    : await supabase.from('personal').insert(datos).select('id').single()
+  if (error) throw error.code === '23505' ? new Error('Ya hay una persona registrada con ese RUT.') : error
+  if (perfilId && datos.nombre) await supabase.from('perfiles').update({ nombre: datos.nombre }).eq('id', perfilId)
+  return data
+}
+export const usuarioOcupado = async (usuario, excluirPerfil = null) => {
+  let q = supabase.from('perfiles').select('id').ilike('usuario', usuario.trim())
+  if (excluirPerfil) q = q.neq('id', excluirPerfil)
+  return (await rows(q.limit(1))).length > 0
+}
+// Crea la cuenta (contraseña asignada por el dueño), le pone nombre de usuario y la une a la persona
+export const crearAcceso = async (personaId, { nombre, correo, usuario, rol, clave }) => {
+  const c = correo.trim().toLowerCase()
+  const { error } = await supabase.rpc('crear_usuario', { p_correo: c, p_nombre: nombre, p_rol: rol, p_clave: clave })
+  if (error) throw error
+  const p = await rows(supabase.from('perfiles').select('id').ilike('correo', c).limit(1))
+  if (!p[0]) throw new Error('La cuenta se creó, pero no se encontró su perfil. Recarga la página.')
+  const { error: e1 } = await supabase.from('perfiles').update({ usuario: usuario.trim().toLowerCase() }).eq('id', p[0].id)
+  if (e1) throw e1.code === '23505' ? new Error('Ese nombre de usuario ya existe.') : e1
+  const { error: e2 } = await supabase.from('personal').update({ perfil_id: p[0].id }).eq('id', personaId)
+  if (e2) throw e2
+}
+export const actualizarAcceso = async (perfil, cambios) => {
+  const { error } = await supabase.from('perfiles').update(cambios).eq('id', perfil.id)
+  if (error) throw error.code === '23505' ? new Error('Ese nombre de usuario ya existe.') : error
+  if (cambios.rol && perfil.correo) await supabase.from('accesos_autorizados').update({ rol: cambios.rol }).eq('correo', perfil.correo.toLowerCase())
+}
+export const asignarClave = async (correo, clave) => {
+  const { error } = await supabase.rpc('cambiar_clave_usuario', { p_correo: correo, p_clave: clave })
+  if (error) throw error
+}
+// Solo el dueño, con doble confirmación. La persona queda "Sin acceso" y su historial se conserva.
+export const eliminarCuenta = async (correo) => {
+  const { error } = await supabase.rpc('eliminar_usuario', { p_correo: correo })
+  if (error) throw error
+}
+
+// ── Administración → Roles y permisos (lámina 8.4) ───────────────────────
+// Cada módulo nuevo guarda Consultar / Registrar / Exportar en las secciones actuales que le corresponden.
+export const guardarPermisosRol = async (rol, filas) => {
+  const { error } = await supabase.from('permisos_rol').upsert(
+    filas.map((f) => ({ rol, seccion: f.seccion, ver: f.ver, editar: f.editar, exportar: f.exportar })),
+    { onConflict: 'rol,seccion' },
+  )
+  if (error) throw error
+}
+
 // ── Historial de cambios (solo dueños) ───────────────────────────────────
 export const historial = (desde) => {
   let q = supabase.from('auditoria').select('*').order('fecha', { ascending: false }).limit(1000)
