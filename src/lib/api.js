@@ -607,6 +607,47 @@ export const crearEquipo = async (datos) => {
   return data
 }
 
+// ── Inventario → Ficha del equipo (láminas 3.5 a 3.8) ───────────────────
+export const equipoPorQr = async (token) => {
+  const [e, a] = await Promise.all([
+    one(supabase.from('v_equipos').select('*').eq('qr_token', token)),
+    one(supabase.from('activos').select('id, tipo, fecha_baja, motivo_baja, observacion_baja, foto_url, notas').eq('qr_token', token)),
+  ])
+  if (!a) return null
+  if (!e) return { ...a, esVehiculo: true }
+  const [u, s] = await Promise.all([
+    e.ubicacion_id ? one(supabase.from('ubicaciones').select('direccion, comuna, lat, lng').eq('id', e.ubicacion_id)) : null,
+    e.servicio_id ? one(supabase.from('servicios_cliente').select('codigo, cliente_id').eq('id', e.servicio_id)) : null,
+  ])
+  return { ...e, ...a, ubic: u, servicio: s }
+}
+// Última entrega confirmada del equipo (orden y fecha)
+export const ultimaEntrega = async (activoId) => {
+  const r = await rows(supabase.from('despacho_banos').select('accion, despachos(id, folio, estado, fecha_programada, fecha_realizada)')
+    .eq('activo_id', activoId).eq('accion', 'entrega'))
+  return r.map((x) => x.despachos).filter((d) => d && d.estado === 'hecho')
+    .sort((x, y) => String(y.fecha_realizada || y.fecha_programada).localeCompare(String(x.fecha_realizada || x.fecha_programada)))[0] || null
+}
+export const mantencionesEquipo = (activoId) => rows(
+  supabase.from('mantenciones').select('*, responsable:responsable_id(nombre)').eq('activo_id', activoId).order('fecha_programada', { ascending: false })
+)
+export const personalActivo = () => rows(supabase.from('personal').select('id, nombre, funcion, perfil_id').eq('activo', true).order('nombre'))
+export const actualizarEquipo = async (id, datos) => {
+  const { error } = await supabase.from('activos').update(datos).eq('id', id)
+  if (error) throw error
+}
+export const moverEquipo = async ({ activo, tipo, destino, fecha, responsable, responsableNombre, motivo }) => {
+  const { error } = await supabase.rpc('mover_equipo', {
+    p_activo: activo, p_tipo: tipo, p_destino: destino, p_fecha: fecha,
+    p_responsable: responsable || null, p_responsable_nombre: responsableNombre || null, p_motivo: motivo || null,
+  })
+  if (error) throw error
+}
+export const darDeBaja = async (activo, fecha, motivo, observaciones) => {
+  const { error } = await supabase.rpc('dar_de_baja', { p_activo: activo, p_fecha: fecha, p_motivo: motivo, p_observaciones: observaciones || null })
+  if (error) throw error
+}
+
 // ── Logística: baños disponibles para despachar ──────────────────────────
 export const banosDisponibles = async () => {
   const [lista, ocupados] = await Promise.all([

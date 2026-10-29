@@ -21,7 +21,7 @@ import Mantenciones from './pages/Mantenciones'
 import Ubicaciones from './pages/Ubicaciones'
 import Reportes from './pages/Reportes'
 import Configuracion from './pages/Configuracion'
-import Ficha from './pages/Ficha'
+import FichaEquipo from './pages/FichaEquipo'
 import Historial from './pages/Historial'
 import Administracion from './pages/Administracion'
 import { C } from './lib/ui'
@@ -96,7 +96,7 @@ export default function App() {
               <Route path="/configuracion" element={<Configuracion />} />
               <Route path="/historial" element={esDueno(perfil) ? <Historial /> : <SinAcceso />} />
               <Route path="/administracion" element={esDueno(perfil) ? <Administracion /> : <SinAcceso />} />
-              <Route path="/activo/:token" element={<Ficha />} />
+              <Route path="/activo/:token" element={<FichaEquipo />} />
               <Route path="*" element={<p className="text-muted">Esta página no existe.</p>} />
             </Routes>
           </div>
