@@ -250,6 +250,51 @@ export const serviciosDe = (clienteId) => rows(
   supabase.from('servicios_cliente').select('*, ubicaciones(nombre)').eq('cliente_id', clienteId)
     .order('estado', { ascending: false }).order('fecha_inicio', { ascending: false })
 )
+// ── Servicios del cliente (A, B, C) y equipos externos ───────────────────
+export const categoriasEquipo = () => rows(
+  supabase.from('categorias').select('id, nombre').eq('clase', 'equipo').eq('activo', true).order('nombre')
+)
+export const externosDe = async (clienteId) => {
+  const r = await rows(supabase.from('activos')
+    .select('id, codigo, detalle, codigo_cliente, servicio_id, ubicacion_id, servicios_cliente(estado)')
+    .eq('propiedad', 'cliente').eq('propietario_id', clienteId).neq('estado', 'baja').order('codigo'))
+  return r.map((x) => ({ ...x, servicio_vigente: x.servicios_cliente?.estado === 'vigente' }))
+}
+// El código EXT-### lo pone la base; queda "En operación" y fuera del stock FOSAN
+export const crearExterno = async (datos) => {
+  const { data, error } = await supabase.from('activos')
+    .insert({ ...datos, tipo: 'bano_quimico', propiedad: 'cliente' })
+    .select('id, codigo, detalle, codigo_cliente, servicio_id, ubicacion_id').single()
+  if (error) throw error
+  return { ...data, servicio_vigente: false }
+}
+// Guarda el acuerdo y, en el tipo B, qué equipos externos atiende
+export const guardarServicio = async (clienteId, id, datos, externos = [], externosAntes = []) => {
+  let sid = id
+  if (id) {
+    const { error } = await supabase.from('servicios_cliente').update(datos).eq('id', id)
+    if (error) throw error
+  } else {
+    const { data, error } = await supabase.from('servicios_cliente').insert({ ...datos, cliente_id: clienteId }).select('id').single()
+    if (error) throw error
+    sid = data.id
+  }
+  const quitar = externosAntes.filter((x) => !externos.includes(x))
+  if (quitar.length) {
+    const { error } = await supabase.from('activos').update({ servicio_id: null }).in('id', quitar)
+    if (error) throw error
+  }
+  const poner = externos.filter((x) => !externosAntes.includes(x))
+  if (poner.length) {
+    const { error } = await supabase.from('activos').update({ servicio_id: sid }).in('id', poner)
+    if (error) throw error
+  }
+  return sid
+}
+export const finalizarServicio = async (id, fechaTermino) => {
+  const { error } = await supabase.from('servicios_cliente').update({ estado: 'finalizado', fecha_termino: fechaTermino }).eq('id', id)
+  if (error) throw error
+}
 export const historialCliente = async (clienteId) => {
   const { data, error } = await supabase.rpc('historial_cliente', { p_id: clienteId })
   if (error) throw error

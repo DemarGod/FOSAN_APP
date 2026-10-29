@@ -6,13 +6,14 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Modal from '../components/Modal'
 import Mapa from '../components/Mapa'
 import FormCliente from '../components/FormCliente'
+import ServiciosCliente from '../components/ServiciosCliente'
 import { Boton, Campo, Tabla, Pestanas, Estado, Ayuda } from '../components/Base'
 import {
   clienteFicha, rubroNombre, contactosDe, guardarContacto, ubicacionesDe, guardarUbicacion,
-  usoUbicacion, serviciosDe, historialCliente,
+  usoUbicacion, historialCliente,
 } from '../lib/api'
 import { formatoTel, telValido, correoValido, decimalDe } from '../lib/validar'
-import { useSesion, puedeOperar } from '../lib/sesion'
+import { useSesion, puedeOperar, verFinanzas } from '../lib/sesion'
 import { C, Icon, I, fecha, fechaHora } from '../lib/ui'
 
 const PESTANAS = [
@@ -27,11 +28,6 @@ const COMUNAS_MAULE = [
   'Cauquenes', 'Chanco', 'Pelluhue', 'Curicó', 'Hualañé', 'Licantén', 'Molina', 'Rauco', 'Romeral', 'Sagrada Familia',
   'Teno', 'Vichuquén', 'Linares', 'Colbún', 'Longaví', 'Parral', 'Retiro', 'San Javier', 'Villa Alegre', 'Yerbas Buenas',
 ]
-export const L_TIPO_SERV = {
-  arriendo_limpieza: 'Arriendo con limpieza',
-  limpieza_cliente: 'Limpieza de baños del cliente',
-  limpieza_fosas: 'Limpieza de fosas sépticas',
-}
 const GEAR = I.gear
 const FLECHA = 'M9 5l7 7-7 7'
 const VOLVER = 'M19 12H5M11 6l-6 6 6 6'
@@ -98,7 +94,7 @@ export default function FichaCliente() {
           {tab === 'resumen' && <Resumen c={c} rubro={rubro} irA={irA} />}
           {tab === 'contactos' && <Contactos cliente={c} editable={editable} />}
           {tab === 'ubicaciones' && <Ubicaciones cliente={c} editable={editable} onCambio={recargar} />}
-          {tab === 'servicios' && <Servicios cliente={c} />}
+          {tab === 'servicios' && <ServiciosCliente cliente={c} editable={editable} finanzas={verFinanzas(perfil)} onCambio={recargar} />}
           {tab === 'historial' && <Historial cliente={c} />}
         </div>
       </section>
@@ -458,31 +454,6 @@ function FormUbicacion({ cliente, ubicacion, otras, contactos, editable, onCerra
         {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
       </fieldset>
     </Modal>
-  )
-}
-
-// ── Servicios (2.8, solo lectura por ahora) ───────────────────────────────
-function Servicios({ cliente }) {
-  const [lista, setLista] = useState(null)
-  const [error, setError] = useState(null)
-  useEffect(() => { serviciosDe(cliente.id).then(setLista).catch(setError) }, [cliente.id])
-  return (
-    <div style={{ display: 'grid', gap: 14 }}>
-      {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
-      {lista === null ? <div style={{ color: C.gris }}>Cargando…</div> : (
-        <div className="card">
-          <Tabla filas={lista} vacio="Este cliente aún no tiene servicios." columnas={[
-            { k: 'codigo', label: 'Código', ancho: 90 },
-            { k: 'tipo', label: 'Tipo de servicio', render: (x) => L_TIPO_SERV[x.tipo] || x.tipo },
-            { k: 'ubicacion', label: 'Ubicación', render: (x) => x.ubicaciones?.nombre || '—' },
-            { k: 'inicio', label: 'Inicio', render: (x) => fecha(x.fecha_inicio) },
-            { k: 'termino', label: 'Término', render: (x) => (x.fecha_termino ? fecha(x.fecha_termino) : 'Sin término') },
-            { k: 'estado', label: 'Vigencia', render: (x) => <Estado tono={x.estado === 'vigente' ? 'ok' : 'neutro'}>{x.estado === 'vigente' ? 'Vigente' : 'Finalizado'}</Estado> },
-          ]} />
-        </div>
-      )}
-      <Ayuda>Agregar, editar y finalizar servicios (arriendo con limpieza, limpieza de baños del cliente y fosas) llega en el próximo paquete.</Ayuda>
-    </div>
   )
 }
 
