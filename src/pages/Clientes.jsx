@@ -2,7 +2,7 @@
 // Un registro por cliente (RUT normalizado); sus obras y servicios se cuentan desde
 // ubicaciones y servicios_cliente. Los clientes no se borran: se desactivan con motivo.
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import Modal from '../components/Modal'
 import FormCliente from '../components/FormCliente'
 import { Boton, Campo, Tabla, Estado, Ayuda, Indicador } from '../components/Base'
@@ -17,6 +17,7 @@ const PROHIBIDO = 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM5.6 5.6l12.8 12.8'
 
 export default function Clientes() {
   const [params] = useSearchParams()
+  const navegar = useNavigate()
   const { perfil } = useSesion()
   const editable = puedeOperar(perfil, 'clientes')
   const exporta = esDueno(perfil) || !!perfil?.permisos?.clientes?.exportar
@@ -88,8 +89,9 @@ export default function Clientes() {
     {
       k: 'acciones', label: 'Acciones', alinear: 'right', render: (c) => (
         <div style={{ display: 'inline-flex', gap: 6 }}>
-          <Boton onClick={() => setForm(c.id)} disabled={!editable} style={{ minHeight: 34, padding: '6px 12px' }}>Editar datos</Boton>
+          <Boton onClick={() => navegar(`/clientes/${c.id}`)} style={{ minHeight: 34, padding: '6px 12px' }}>Ver ficha</Boton>
           <Menu opciones={[
+            { l: 'Ver ficha', d: I.ojo, onClick: () => navegar(`/clientes/${c.id}`) },
             { l: 'Editar datos', d: I.lapiz, onClick: () => setForm(c.id), disabled: !editable },
             c.activo
               ? { l: 'Desactivar', d: PROHIBIDO, color: C.rojo, onClick: () => setDesactivar(c), disabled: !editable }
@@ -165,7 +167,7 @@ export default function Clientes() {
         <FormCliente clienteId={form === true ? null : form}
           onCerrar={() => setForm(false)}
           onGuardado={() => { setForm(false); cargar() }}
-          onAbrir={(id) => { setForm(false); cargar(); setTimeout(() => setForm(id), 0) }} />
+          onAbrir={(id) => navegar(`/clientes/${id}`)} />
       )}
       {desactivar && <Desactivar cliente={desactivar} onCerrar={() => setDesactivar(null)} onListo={() => { setDesactivar(null); cargar() }} />}
       {reactivar && <Reactivar cliente={reactivar} onCerrar={() => setReactivar(null)} onListo={() => { setReactivar(null); cargar() }} />}

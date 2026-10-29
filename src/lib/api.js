@@ -192,6 +192,69 @@ export const reactivarCliente = async (id) => {
   const { error } = await supabase.rpc('reactivar_cliente', { p_id: id })
   if (error) throw error
 }
+// ── Ficha del cliente: contactos, ubicaciones, servicios e historial ─────
+export const clienteFicha = async (id) => {
+  const [c, u, s] = await Promise.all([
+    one(supabase.from('clientes').select('*').eq('id', id)),
+    rows(supabase.from('ubicaciones').select('id').eq('cliente_id', id).eq('tipo', 'cliente').eq('activa', true)),
+    rows(supabase.from('servicios_cliente').select('id').eq('cliente_id', id).eq('estado', 'vigente')),
+  ])
+  return c ? { ...c, ubicaciones_activas: u.length, servicios_vigentes: s.length } : null
+}
+export const rubroNombre = async (clave) => {
+  if (!clave) return null
+  const r = await rows(supabase.from('rubros').select('nombre').eq('clave', clave).limit(1))
+  return r[0]?.nombre || clave
+}
+
+export const contactosDe = (clienteId) => rows(
+  supabase.from('cliente_contactos').select('*').eq('cliente_id', clienteId)
+    .order('activo', { ascending: false }).order('principal', { ascending: false }).order('nombre')
+)
+// Solo un principal activo por cliente: si este pasa a principal, los demás dejan de serlo
+export const guardarContacto = async (clienteId, id, datos) => {
+  if (datos.principal && datos.activo !== false) {
+    let q = supabase.from('cliente_contactos').update({ principal: false }).eq('cliente_id', clienteId).eq('principal', true)
+    if (id) q = q.neq('id', id)
+    const { error } = await q
+    if (error) throw error
+  }
+  const { error } = id
+    ? await supabase.from('cliente_contactos').update(datos).eq('id', id)
+    : await supabase.from('cliente_contactos').insert({ ...datos, cliente_id: clienteId })
+  if (error) throw error
+}
+
+export const ubicacionesDe = (clienteId) => rows(
+  supabase.from('ubicaciones')
+    .select('id, nombre, direccion, comuna, lat, lng, activa, indicaciones, descripcion, contacto_id')
+    .eq('cliente_id', clienteId).eq('tipo', 'cliente')
+    .order('activa', { ascending: false }).order('nombre')
+)
+// Lo que impide desactivar una ubicación: baños FOSAN ahí o servicios vigentes
+export const usoUbicacion = async (id) => {
+  const [a, s] = await Promise.all([
+    rows(supabase.from('activos').select('id').eq('ubicacion_id', id).eq('estado', 'en_arriendo')),
+    rows(supabase.from('servicios_cliente').select('id').eq('ubicacion_id', id).eq('estado', 'vigente')),
+  ])
+  return { banos: a.length, servicios: s.length }
+}
+export const guardarUbicacion = async (clienteId, id, datos) => {
+  const { error } = id
+    ? await supabase.from('ubicaciones').update(datos).eq('id', id)
+    : await supabase.from('ubicaciones').insert({ ...datos, tipo: 'cliente', cliente_id: clienteId })
+  if (error) throw error
+}
+
+export const serviciosDe = (clienteId) => rows(
+  supabase.from('servicios_cliente').select('*, ubicaciones(nombre)').eq('cliente_id', clienteId)
+    .order('estado', { ascending: false }).order('fecha_inicio', { ascending: false })
+)
+export const historialCliente = async (clienteId) => {
+  const { data, error } = await supabase.rpc('historial_cliente', { p_id: clienteId })
+  if (error) throw error
+  return data || []
+}
 export const procesarVencidos = () => supabase.rpc('procesar_vencidos').then(() => null, () => null)
 
 export const rubros = () => rows(supabase.from('rubros').select('*').order('nombre'))
