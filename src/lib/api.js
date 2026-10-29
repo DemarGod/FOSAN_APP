@@ -46,12 +46,12 @@ export const vehiculos = () => rows(
 
 export const activoPorQr = (token) => one(
   supabase.from('activos')
-    .select('*, modelos_bano(nombre, tipo), clientes(nombre), ubicaciones(nombre, lat, lng, tipo)')
+    .select('*, modelos_bano(nombre, tipo), clientes!cliente_id(nombre), ubicaciones(nombre, lat, lng, tipo)')
     .eq('qr_token', token)
 )
 export const activoPorCodigo = (codigo) => one(
   supabase.from('activos')
-    .select('*, modelos_bano(nombre, tipo), clientes(nombre), ubicaciones(nombre, lat, lng, tipo)')
+    .select('*, modelos_bano(nombre, tipo), clientes!cliente_id(nombre), ubicaciones(nombre, lat, lng, tipo)')
     .eq('codigo', codigo)
 )
 
@@ -109,7 +109,7 @@ export const crearModelo = async (nombre) => {
 export const buscarGlobal = async (q) => {
   const t = q.replace(/[%,()]/g, ' ').trim()
   const [activos, clientes] = await Promise.all([
-    rows(supabase.from('activos').select('id, codigo, tipo, estado, qr_token, clientes(nombre)').neq('estado', 'baja').ilike('codigo', `%${t}%`).order('codigo').limit(6)),
+    rows(supabase.from('activos').select('id, codigo, tipo, estado, qr_token, clientes!cliente_id(nombre)').neq('estado', 'baja').ilike('codigo', `%${t}%`).order('codigo').limit(6)),
     rows(supabase.from('clientes').select('id, nombre, direccion, comuna').or(`nombre.ilike.%${t}%,direccion.ilike.%${t}%,comuna.ilike.%${t}%`).order('nombre').limit(6)),
   ])
   return { activos, clientes }
@@ -662,7 +662,7 @@ export const banosDisponibles = async () => {
 // Todos los baños con su estado, cliente y si están reservados en un despacho pendiente
 export const banosEstado = async () => {
   const [lista, reservas] = await Promise.all([
-    rows(supabase.from('activos').select('id, codigo, estado, clientes(nombre), modelos_bano(nombre, tipo)')
+    rows(supabase.from('activos').select('id, codigo, estado, clientes!cliente_id(nombre), modelos_bano(nombre, tipo)')
       .eq('tipo', 'bano_quimico').neq('estado', 'baja').order('codigo')),
     rows(supabase.from('despacho_banos').select('activo_id, despachos!inner(folio, estado)')
       .eq('accion', 'entrega').eq('despachos.estado', 'programado')),
