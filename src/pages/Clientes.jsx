@@ -1,183 +1,280 @@
-import { useEffect, useMemo, useState } from 'react'
-import { cargarMes, calcular, mesActual } from '../lib/analisis'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import Listado from '../components/Listado'
+// Clientes · Listado y registro (láminas 2.1 a 2.3).
+// Un registro por cliente (RUT normalizado); sus obras y servicios se cuentan desde
+// ubicaciones y servicios_cliente. Los clientes no se borran: se desactivan con motivo.
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Modal from '../components/Modal'
 import FormCliente from '../components/FormCliente'
-import { clientesResumen, eliminarCliente, procesarVencidos, clientesOperacion } from '../lib/api'
-import { exportarVista } from '../lib/excel'
-import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
-import { C, I, L_VIGENCIA, clp, fecha } from '../lib/ui'
+import { Boton, Campo, Tabla, Estado, Ayuda, Indicador } from '../components/Base'
+import { clientesListado, desactivarCliente, reactivarCliente, procesarVencidos, normalizarRut } from '../lib/api'
+import { exportarTabla } from '../lib/excel'
+import { useSesion, puedeOperar, esDueno } from '../lib/sesion'
+import { C, Icon, I, fecha } from '../lib/ui'
 
-const BASURA = 'M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6'
-const SEGMENTOS = [
-  { v: 'vigentes', l: 'Vigentes', d: I.check },
-  { v: 'vencidos', l: 'Vencidos', d: I.alert },
-  { v: 'todos', l: 'Todos', d: I.users },
-]
+const POR_PAGINA = 20
+const PUNTOS = 'M12 5.5v.1M12 12v.1M12 18.5v.1'
+const PROHIBIDO = 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM5.6 5.6l12.8 12.8'
 
 export default function Clientes() {
-  const navegar = useNavigate()
   const [params] = useSearchParams()
-  const qInicial = params.get('q') || ''
   const { perfil } = useSesion()
   const editable = puedeOperar(perfil, 'clientes')
-  const dueno = puedeEditar(perfil)
-  const finanzas = verFinanzas(perfil)
+  const exporta = esDueno(perfil) || !!perfil?.permisos?.clientes?.exportar
 
   const [datos, setDatos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
-  const [form, setForm] = useState(false)
-  const [seg, setSeg] = useState('vigentes')
-  const [borrar, setBorrar] = useState(null)
-  const [oper, setOper] = useState({})
-  const [rent, setRent] = useState({})
+  const [texto, setTexto] = useState(params.get('q') || '')
+  const [estado, setEstado] = useState('activos')
+  const [filtro, setFiltro] = useState({ texto: params.get('q') || '', estado: 'activos' })
+  const [pagina, setPagina] = useState(1)
+  const [form, setForm] = useState(false)          // true = nuevo · id = editar
+  const [desactivar, setDesactivar] = useState(null)
+  const [reactivar, setReactivar] = useState(null)
 
   const cargar = () => {
     setCargando(true)
     procesarVencidos()
-      .then(clientesResumen).then(setDatos).catch(setError).finally(() => setCargando(false))
-    clientesOperacion().then(setOper).catch(() => {})
-    if (finanzas) cargarMes(mesActual()).then(calcular).then((d) => setRent(Object.fromEntries(d.clientes.map((x) => [x.id, x])))).catch(() => {})
+      .then(clientesListado).then(setDatos).catch(setError).finally(() => setCargando(false))
   }
   useEffect(cargar, [])
 
-  const filas = useMemo(() => datos.map((c) => ({
-    ...c,
-    rubroL: c.rubro_nombre || c.rubro,
-    estadoL: L_VIGENCIA[c.vigencia] || c.vigencia,
-    vigenciaL: !c.fecha_fin_contrato ? 'Indefinido'
-      : c.vigencia === 'vencido'
-        ? 'Venció el ' + fecha(c.fecha_fin_contrato) + (c.retiro_pendiente ? ' · retiro pendiente' : '')
-        : 'Hasta ' + fecha(c.fecha_fin_contrato),
-    valorL: clp(c.valor_mensual),
-    contactoL: c.contacto_nombre || '—',
-    telefonoL: c.telefono || '—',
-    comunaL: c.comuna || '—',
-    ultimaL: oper[c.id]?.ultima ? fecha(oper[c.id].ultima) : '—',
-    proximaL: oper[c.id]?.proxima ? fecha(oper[c.id].proxima) : '—',
-    frecuenciaL: oper[c.id]?.dias?.length ? `${oper[c.id].dias.length} por semana` : '—',
-    serviciosN: oper[c.id]?.servicios ?? 0,
-    cumplimientoL: oper[c.id]?.despachos ? Math.round((oper[c.id].aTiempo / oper[c.id].despachos) * 100) + '%' : '—',
-    costoL: rent[c.id] ? clp(Math.round(rent[c.id].costo)) : '—',
-  })), [datos, oper, rent])
+  const activos = datos.filter((c) => c.activo)
+  const visibles = useMemo(() => {
+    const t = filtro.texto.trim().toLowerCase()
+    const tr = normalizarRut(filtro.texto)
+    return datos.filter((c) => {
+      if (filtro.estado === 'activos' && !c.activo) return false
+      if (filtro.estado === 'inactivos' && c.activo) return false
+      if (!t) return true
+      return (c.nombre || '').toLowerCase().includes(t) || (c.nombre_comercial || '').toLowerCase().includes(t)
+        || (c.codigo || '').toLowerCase().includes(t) || (tr.length >= 3 && normalizarRut(c.rut).includes(tr))
+    })
+  }, [datos, filtro])
+  const paginas = Math.max(1, Math.ceil(visibles.length / POR_PAGINA))
+  const pag = Math.min(pagina, paginas)
+  const enPagina = visibles.slice((pag - 1) * POR_PAGINA, pag * POR_PAGINA)
 
-  const visibles = seg === 'todos' ? filas
-    : seg === 'vencidos' ? filas.filter((f) => f.vigencia === 'vencido')
-      : filas.filter((f) => f.vigencia !== 'vencido')
-  const sinGeo = visibles.filter((f) => !f.georreferenciado).length
+  const aplicar = (e) => { e?.preventDefault(); setFiltro({ texto, estado }); setPagina(1) }
+  const limpiar = () => { setTexto(''); setEstado('activos'); setFiltro({ texto: '', estado: 'activos' }); setPagina(1) }
+  const verInactivos = () => { setEstado('inactivos'); setFiltro({ texto: '', estado: 'inactivos' }); setTexto(''); setPagina(1) }
+
+  const exportar = () => exportarTabla(
+    ['Código', 'RUT', 'Nombre / razón social', 'Nombre comercial', 'Tipo', 'Comuna', 'Teléfono', 'Correo', 'Ubicaciones', 'Servicios vigentes', 'Estado'],
+    visibles.map((c) => [c.codigo, c.rut, c.nombre, c.nombre_comercial, c.tipo_cliente === 'persona' ? 'Persona' : 'Empresa',
+      c.comuna, c.telefono, c.correo, c.ubicaciones, c.servicios_vigentes, c.activo ? 'Activo' : 'Inactivo']),
+    'Clientes',
+  )
+
+  const columnas = [
+    { k: 'codigo', label: 'Código', ancho: 90 },
+    { k: 'rut', label: 'RUT', render: (c) => c.rut || '—' },
+    {
+      k: 'nombre', label: 'Nombre / razón social', render: (c) => (
+        <div>
+          <div style={{ fontWeight: 600 }}>{c.nombre}</div>
+          {c.nombre_comercial && <div className="text-muted" style={{ fontSize: 12 }}>{c.nombre_comercial}</div>}
+        </div>
+      ),
+    },
+    { k: 'comuna', label: 'Comuna', render: (c) => c.comuna || '—' },
+    { k: 'ubicaciones', label: 'Ubicaciones', alinear: 'right' },
+    { k: 'servicios_vigentes', label: 'Servicios vigentes', alinear: 'right' },
+    {
+      k: 'activo', label: 'Estado', render: (c) => c.activo
+        ? <Estado tono="ok">Activo</Estado>
+        : <span title={c.motivo_desactivacion || ''}><Estado tono="neutro">Inactivo</Estado></span>,
+    },
+    {
+      k: 'acciones', label: 'Acciones', alinear: 'right', render: (c) => (
+        <div style={{ display: 'inline-flex', gap: 6 }}>
+          <Boton onClick={() => setForm(c.id)} disabled={!editable} style={{ minHeight: 34, padding: '6px 12px' }}>Editar datos</Boton>
+          <Menu opciones={[
+            { l: 'Editar datos', d: I.lapiz, onClick: () => setForm(c.id), disabled: !editable },
+            c.activo
+              ? { l: 'Desactivar', d: PROHIBIDO, color: C.rojo, onClick: () => setDesactivar(c), disabled: !editable }
+              : { l: 'Reactivar', d: I.check, onClick: () => setReactivar(c), disabled: !editable },
+          ]} />
+        </div>
+      ),
+    },
+  ]
 
   return (
-    <>
-      <Listado
-        key={qInicial}
-        busquedaInicial={qInicial}
-        titulo="Clientes"
-        bajada="Empresas con baños arrendados, su contrato y su facturación mensual."
-        accion={{ label: 'Nuevo cliente', onClick: () => setForm(true), disabled: !editable }}
-        exportar={finanzas ? () => exportarVista('export_clientes', 'Clientes') : undefined}
-        segmentos={{ opciones: SEGMENTOS, valor: seg, onChange: setSeg }}
-        kpis={[
-          { v: filas.length, l: 'Clientes' },
-          { v: filas.filter((f) => f.vigencia !== 'vencido').length, l: 'Activos' },
-          { v: filas.filter((f) => f.vigencia === 'vencido').length, l: 'Vencidos' },
-          { v: filas.filter((f) => f.retiro_pendiente).length, l: 'Retiros pendientes' },
-        ]}
-        cargando={cargando}
-        error={error}
-        unidad="clientes"
-        filtros={[
-          { k: 'rubroL', label: 'Rubro' },
-          { k: 'estadoL', label: 'Estado' },
-          { k: 'comunaL', label: 'Comuna' },
-        ]}
-        buscar={['nombre', 'rut', 'contactoL', 'comunaL', 'telefonoL']}
-        cols={[
-          { k: 'nombre', label: 'Empresa' },
-          { k: 'rut', label: 'RUT', render: (d) => d.rut || '—' },
-          { k: 'rubroL', label: 'Rubro' },
-          { k: 'estadoL', label: 'Estado', badge: true },
-          { k: 'vigenciaL', label: 'Vigencia' },
-          { k: 'banos_activos', label: 'Baños' },
-          { k: 'frecuenciaL', label: 'Limpiezas' },
-          { k: 'ultimaL', label: 'Última visita' },
-          { k: 'proximaL', label: 'Próximo servicio' },
-          { k: 'serviciosN', label: 'Servicios del mes' },
-          { k: 'cumplimientoL', label: 'Cumplimiento' },
-          ...(finanzas ? [
-            { k: 'valorL', label: 'Valor mensual' },
-            { k: 'costoL', label: 'Costos del mes' },
-          ] : []),
-          { k: 'contactoL', label: 'Contacto' },
-          { k: 'telefonoL', label: 'Teléfono' },
-          { k: 'comunaL', label: 'Comuna' },
-        ]}
-        datos={visibles}
-        onFila={(d) => editable && setForm(d.id)}
-        acciones={(d) => [
-          d.georreferenciado
-            ? { t: 'Ver en el mapa', label: 'Ubicado', d: I.pin, color: C.navy, bg: C.tinte, borde: C.borde, onClick: () => navegar('/ubicaciones') }
-            : { t: 'Asignar ubicación', label: 'Ubicar', d: I.pin, color: '#b06000', bg: '#fef7e0', borde: C.amarillo, onClick: () => navegar('/ubicaciones') },
-          { t: 'Editar cliente', d: I.lapiz, color: C.navy, disabled: !editable, onClick: () => setForm(d.id) },
-          { t: 'Eliminar cliente', d: BASURA, color: C.rojo, disabled: !dueno, onClick: () => setBorrar(d) },
-        ]}
-        nota={[
-          'Cumplimiento = despachos finalizados en o antes de la fecha programada.',
-          sinGeo && `${sinGeo} cliente(s) sin georreferencia: se pueden ubicar cargando sus coordenadas.`,
-        ].filter(Boolean).join(' ') || undefined}
-      />
+    <div style={{ display: 'grid', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <h2 style={{ margin: 0 }}>Clientes</h2>
+          <div className="text-muted">Un registro por cliente (RUT). Cada cliente puede tener varias ubicaciones y servicios.</div>
+        </div>
+        {exporta && <Boton icono={I.descarga} onClick={exportar} disabled={!visibles.length}>Exportar</Boton>}
+        <Boton tipo="principal" icono={I.plus} onClick={() => setForm(true)} disabled={!editable}>Nuevo cliente</Boton>
+      </div>
 
-      {form && <FormCliente clienteId={form === true ? null : form} onCerrar={() => setForm(false)} onGuardado={() => { setForm(false); cargar() }} />}
-      {borrar && (
-        <ConfirmarBorrado cliente={borrar} onCerrar={() => setBorrar(null)}
-          onDespachos={() => navegar('/despachos')}
-          onBorrado={() => { setBorrar(null); cargar() }} />
+      <div className="kpis">
+        <Indicador icono={I.users} color={C.verde} rotulo="Clientes activos" valor={cargando ? '…' : activos.length} />
+        <Indicador icono={I.doc} color={C.azul} rotulo="Con servicios vigentes" valor={cargando ? '…' : activos.filter((c) => c.servicios_vigentes > 0).length} />
+        <Indicador icono={PROHIBIDO} color={C.rojo} rotulo="Sin servicios vigentes" valor={cargando ? '…' : activos.filter((c) => !c.servicios_vigentes).length} />
+      </div>
+
+      <section className="card">
+        <form onSubmit={aplicar} style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap', padding: 16, borderBottom: `1px solid ${C.borde}` }}>
+          <Campo etiqueta="Buscar" style={{ flex: '1 1 260px' }}>
+            <input value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Buscar por RUT, nombre o código" />
+          </Campo>
+          <Campo etiqueta="Estado" style={{ flex: '0 1 160px' }}>
+            <select value={estado} onChange={(e) => setEstado(e.target.value)}>
+              <option value="activos">Activos</option>
+              <option value="inactivos">Inactivos</option>
+              <option value="todos">Todos</option>
+            </select>
+          </Campo>
+          <Boton tipo="principal" type="submit">Aplicar</Boton>
+          <Boton onClick={limpiar}>Limpiar filtros</Boton>
+        </form>
+
+        {error && <div style={{ padding: 16 }}><Ayuda tono="error">{String(error.message || error)}</Ayuda></div>}
+        {cargando
+          ? <div style={{ padding: 24, color: C.gris }}>Cargando…</div>
+          : <Tabla columnas={columnas} filas={enPagina} vacio={
+            <span>Sin resultados para estos filtros. <a href="#" onClick={(e) => { e.preventDefault(); limpiar() }}>Limpiar filtros</a></span>
+          } />}
+
+        {!cargando && visibles.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '12px 16px' }}>
+            <span className="text-muted" style={{ flex: 1 }}>
+              {(pag - 1) * POR_PAGINA + 1}–{Math.min(pag * POR_PAGINA, visibles.length)} de {visibles.length}
+            </span>
+            {paginas > 1 && <>
+              <Boton onClick={() => setPagina(pag - 1)} disabled={pag === 1} style={{ minHeight: 34, padding: '6px 12px' }}>‹ Anterior</Boton>
+              {Array.from({ length: paginas }, (_, i) => i + 1).map((n) => (
+                <Boton key={n} tipo={n === pag ? 'principal' : 'secundario'} onClick={() => setPagina(n)} style={{ minHeight: 34, padding: '6px 12px' }}>{n}</Boton>
+              ))}
+              <Boton onClick={() => setPagina(pag + 1)} disabled={pag === paginas} style={{ minHeight: 34, padding: '6px 12px' }}>Siguiente ›</Boton>
+            </>}
+          </div>
+        )}
+      </section>
+
+      <Ayuda>
+        Desactivar conserva el historial: el cliente deja de aparecer para elegir en rutas y despachos nuevos, pero sigue en los que ya existen.
+        {datos.some((c) => !c.activo) && filtro.estado === 'activos' && <> <a href="#" onClick={(e) => { e.preventDefault(); verInactivos() }}>Ver inactivos</a>.</>}
+      </Ayuda>
+
+      {form && (
+        <FormCliente clienteId={form === true ? null : form}
+          onCerrar={() => setForm(false)}
+          onGuardado={() => { setForm(false); cargar() }}
+          onAbrir={(id) => { setForm(false); cargar(); setTimeout(() => setForm(id), 0) }} />
       )}
-    </>
+      {desactivar && <Desactivar cliente={desactivar} onCerrar={() => setDesactivar(null)} onListo={() => { setDesactivar(null); cargar() }} />}
+      {reactivar && <Reactivar cliente={reactivar} onCerrar={() => setReactivar(null)} onListo={() => { setReactivar(null); cargar() }} />}
+    </div>
   )
 }
 
-function ConfirmarBorrado({ cliente, onCerrar, onBorrado, onDespachos }) {
-  const [error, setError] = useState(null)
-  const [borrando, setBorrando] = useState(false)
-  const bloqueado = Number(cliente.banos_activos) > 0
-
-  const confirmar = async () => {
-    setBorrando(true)
-    try { await eliminarCliente(cliente.id); onBorrado() } catch (e) { setError(e); setBorrando(false) }
+// ── Menú ⋮ de cada fila ────────────────────────────────────────────────────
+function Menu({ opciones }) {
+  // Posición fija para que la tabla (con scroll) no recorte el menú
+  const [abierto, setAbierto] = useState(null)   // { top, right } o null
+  const ref = useRef(null)
+  useEffect(() => {
+    if (!abierto) return
+    const fuera = (e) => { if (ref.current && !ref.current.contains(e.target)) setAbierto(null) }
+    const cerrar = () => setAbierto(null)
+    document.addEventListener('mousedown', fuera)
+    window.addEventListener('scroll', cerrar, true)
+    window.addEventListener('resize', cerrar)
+    return () => {
+      document.removeEventListener('mousedown', fuera)
+      window.removeEventListener('scroll', cerrar, true)
+      window.removeEventListener('resize', cerrar)
+    }
+  }, [abierto])
+  const alternar = (e) => {
+    if (abierto) { setAbierto(null); return }
+    const r = e.currentTarget.getBoundingClientRect()
+    const alto = opciones.length * 40 + 10
+    const top = r.bottom + 4 + alto > window.innerHeight ? r.top - 4 - alto : r.bottom + 4
+    setAbierto({ top, right: window.innerWidth - r.right })
   }
-
   return (
-    <Modal titulo={bloqueado ? 'No se puede eliminar' : 'Eliminar cliente'} ancho={480} onCerrar={onCerrar} pie={
-      bloqueado
-        ? <>
-          <button className="btn" onClick={onCerrar}>Cerrar</button>
-          <button className="btn btn-azul" onClick={onDespachos}>Ir a Despachos</button>
-        </>
-        : <>
-          <button className="btn" onClick={onCerrar}>Cancelar</button>
-          <button className="btn" onClick={confirmar} disabled={borrando}
-            style={{ background: C.rojo, color: '#fff', borderColor: C.rojo }}>
-            {borrando ? 'Eliminando…' : 'Eliminar definitivamente'}
-          </button>
-        </>
-    }>
-      <div style={{ padding: 18, display: 'grid', gap: 12, font: '400 13px/1.5 var(--font)' }}>
-        {bloqueado
-          ? <p style={{ margin: 0 }}>
-            <strong>{cliente.nombre}</strong> todavía tiene {cliente.banos_activos} baño(s) asignado(s).
-            Primero registra su retiro en Despachos y márcalo como hecho; después podrás eliminarlo.
-          </p>
-          : <p style={{ margin: 0 }}>
-            Se eliminará <strong>{cliente.nombre}</strong> junto con su historial de servicios y despachos.
-            Esta acción no se puede deshacer.
-          </p>}
-        {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `2px solid ${C.rojo}`, color: '#7c1405' }}>
-          {String(error.message || error)}
-        </div>}
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button type="button" className="btn" aria-label="Más acciones" onClick={alternar}
+        style={{ minHeight: 34, padding: '6px 8px' }}><Icon d={PUNTOS} size={18} w={3} /></button>
+      {abierto && (
+        <div role="menu" style={{
+          position: 'fixed', right: abierto.right, top: abierto.top, zIndex: 1100, minWidth: 180, padding: 4,
+          background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(19,41,75,.14)',
+        }}>
+          {opciones.map((o) => (
+            <button key={o.l} type="button" role="menuitem" disabled={o.disabled}
+              onClick={() => { setAbierto(null); o.onClick() }} style={{
+                display: 'flex', alignItems: 'center', gap: 10, width: '100%', border: 0, background: 'transparent',
+                padding: '9px 10px', borderRadius: 'var(--radio-sm)', font: '400 14px var(--font)', textAlign: 'left',
+                color: o.color || C.tinta, cursor: o.disabled ? 'not-allowed' : 'pointer', opacity: o.disabled ? 0.45 : 1,
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = C.suave }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}>
+              <Icon d={o.d} size={16} color={o.color || C.gris} />{o.l}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Desactivar con motivo ─────────────────────────────────────────────────
+function Desactivar({ cliente, onCerrar, onListo }) {
+  const [motivo, setMotivo] = useState('')
+  const [error, setError] = useState(null)
+  const [guardando, setGuardando] = useState(false)
+  const confirmar = async () => {
+    if (motivo.trim().length < 3) { setError({ message: 'Indica el motivo de la desactivación.' }); return }
+    setGuardando(true)
+    try { await desactivarCliente(cliente.id, motivo.trim()); onListo() } catch (e) { setError(e); setGuardando(false) }
+  }
+  return (
+    <Modal titulo={`Desactivar ${cliente.nombre}`} ancho={500} onCerrar={onCerrar} pie={<>
+      <Boton onClick={onCerrar}>Cancelar</Boton>
+      <Boton tipo="peligro" onClick={confirmar} disabled={guardando}>{guardando ? 'Desactivando…' : 'Desactivar'}</Boton>
+    </>}>
+      <div style={{ padding: 18, display: 'grid', gap: 14 }}>
+        <Ayuda>
+          Se conserva todo su historial. No aparecerá para elegir en rutas ni despachos nuevos.
+          Antes debe tener sus baños retirados y sus servicios finalizados.
+          {cliente.servicios_vigentes > 0 && <> Hoy tiene <b>{cliente.servicios_vigentes} servicio(s) vigente(s)</b>.</>}
+        </Ayuda>
+        <Campo etiqueta="Motivo" obligatorio>
+          <textarea value={motivo} onChange={(e) => { setMotivo(e.target.value); setError(null) }} maxLength={300}
+            placeholder="Ej. Terminó la obra y no tiene servicios pendientes." autoFocus />
+        </Campo>
+        {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
       </div>
     </Modal>
   )
 }
 
+function Reactivar({ cliente, onCerrar, onListo }) {
+  const [error, setError] = useState(null)
+  const [guardando, setGuardando] = useState(false)
+  const confirmar = async () => {
+    setGuardando(true)
+    try { await reactivarCliente(cliente.id); onListo() } catch (e) { setError(e); setGuardando(false) }
+  }
+  return (
+    <Modal titulo={`Reactivar ${cliente.nombre}`} ancho={460} onCerrar={onCerrar} pie={<>
+      <Boton onClick={onCerrar}>Cancelar</Boton>
+      <Boton tipo="principal" onClick={confirmar} disabled={guardando}>{guardando ? 'Reactivando…' : 'Reactivar'}</Boton>
+    </>}>
+      <div style={{ padding: 18, display: 'grid', gap: 12, font: '400 14px/1.5 var(--font)' }}>
+        <span>Volverá a aparecer para elegir en rutas y despachos.</span>
+        {cliente.motivo_desactivacion && (
+          <span className="text-muted">Se desactivó el {fecha(cliente.desactivado_en)}: {cliente.motivo_desactivacion}</span>
+        )}
+        {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
+      </div>
+    </Modal>
+  )
+}

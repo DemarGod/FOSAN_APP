@@ -71,7 +71,7 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
     setLineas((ls) => [...ls, nueva({ cliente_id: id, dias: diasLimpieza(cliente[id]) })])
   }
   const yaLimpia = new Set(lineas.filter((l) => l.tarea === 'limpieza').map((l) => l.cliente_id))
-  const conLimpieza = (datos?.clientes || []).filter((c) => diasLimpieza(c).length && !yaLimpia.has(c.id) && !(semana === (r.lunes || lunes) && enOtras.has(c.id)))
+  const conLimpieza = (datos?.clientes || []).filter((c) => c.activo !== false && diasLimpieza(c).length && !yaLimpia.has(c.id) && !(semana === (r.lunes || lunes) && enOtras.has(c.id)))
   const agregarFrecuentes = () => setLineas((ls) => [...ls, ...conLimpieza.map((c) => nueva({ cliente_id: c.id, dias: diasLimpieza(c) }))])
   const enPlanilla = new Set(lineas.map((l) => l.despacho_id).filter(Boolean))
   const pendientes = (datos?.pendientes || []).filter((d) => !enPlanilla.has(d.id))
@@ -151,7 +151,7 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '10px 18px', borderTop: `2px solid ${C.borde}`, background: C.suave }}>
             <select value="" onChange={(e) => agregarCliente(e.target.value)} style={{ border: `2px solid ${C.borde}`, minHeight: 38, font: '600 12px var(--font)', padding: '0 8px', maxWidth: 260 }}>
               <option value="">+ Agregar cliente…</option>
-              {datos.clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              {datos.clientes.filter((c) => c.activo !== false).map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
             <button className="btn" onClick={agregarFrecuentes} disabled={!conLimpieza.length}>
               Agregar clientes con limpieza sin ruta esta semana ({conLimpieza.length})
