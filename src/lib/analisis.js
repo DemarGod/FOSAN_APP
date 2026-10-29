@@ -66,13 +66,13 @@ export async function cargarMes(mes) {
     opc(supabase.from('ocupacion_diaria').select('fecha, activo_id, estado, cliente_id').gte('fecha', ini).lte('fecha', fin)),
     opc(supabase.from('v_salidas').select('id, fecha, estado').gte('fecha', hoy).lte('fecha', sumarDias(hoy, 14)).eq('estado', 'planificada')),
     opc(supabase.from('movimientos_activo').select('activo_id, fecha').eq('tipo', 'instalacion').order('fecha', { ascending: false })),
-    opc(supabase.from('rutas').select('id, nombre, dias, ruta_paradas(cliente_id, orden, tarea)')),
+    opc(supabase.from('rutas_semana').select('id, nombre, lunes, rutas_semana_lineas(cliente_id, tarea, dias, orden, despacho_id)').gte('lunes', sumarDias(ini, -6)).lte('lunes', fin)),
     opc(supabase.from('ubicaciones').select('id, nombre, lat, lng').eq('tipo', 'bodega')),
     opc(supabase.from('activos').select('id, tipo, estado').in('tipo', ['camion', 'camioneta']).neq('estado', 'baja')),
   ])
   const ids = [...new Set([...salidas.map((s) => s.id), ...futuras.map((s) => s.id)])]
   const paradas = ids.length
-    ? await opc(supabase.from('salida_paradas').select('salida_id, cliente_id, tarea, banos, hecha, despacho_id').in('salida_id', ids))
+    ? await opc(supabase.from('salida_paradas').select('salida_id, cliente_id, tarea, banos, hecha, estado, despacho_id').in('salida_id', ids))
     : []
   return { mes, ini, fin, clientes, banos, salidas, despachos, mant, insumos, receta, par: mapaParametros(pars), movIns, ocup, futuras, paradas, instalaciones, rutas, bodegas, flota }
 }
@@ -84,48 +84,6 @@ export function calcular(d) {
   const par = d.par
   const factor = sup(par, 'factor_recorrido')
 
-<<<<<<< HEAD
-  // ── Costo de cada salida repartido por parada y despacho ────────────────
-  const porCliente = {}
-  const acc = (id) => (porCliente[id] ||= { rutas: 0, insumos: 0, mant: 0, despachos: 0, visitas: 0, estimado: false, registros: [] })
-  const porRuta = {}
-  const kmVeh = {}
-  const idsMes = new Set(d.salidas.map((s) => s.id))
-  let banosLimpiadosMes = 0
-  d.salidas.forEach((s) => {
-    const c = costoSalida(s, d.par)
-    const est = s.km_real == null || c.faltan.length > 0
-    // Las paradas de entrega/retiro ya se cuentan como despacho
-    const par = d.paradas.filter((p) => p.salida_id === s.id && !p.despacho_id && (s.estado === 'cerrada' ? p.hecha : true))
-    const des = d.despachos.filter((x) => x.salida_id === s.id)
-    const peso = (p) => Math.max(1, n(p.banos))
-    const pesoTot = par.reduce((t, p) => t + peso(p), 0) + des.length
-    const cuota = (w) => (pesoTot ? (c.total * w) / pesoTot : 0)
-    const r = (porRuta[s.ruta_id || s.ruta] ||= { ruta: s.ruta, salidas: 0, sinKm: 0, km: 0, costo: 0, visitas: 0, banos: 0, litros: 0, insumos: 0, estimado: false, clientes: {}, registros: [] })
-    const banosSal = par.filter((p) => p.tarea === 'limpieza').reduce((t, p) => t + n(p.banos), 0)
-    if (s.fecha <= hoy) banosLimpiadosMes += banosSal
-    r.salidas++; if (s.km_real == null) r.sinKm++
-    r.km += n(c.km); r.costo += c.total; r.visitas += par.length; r.estimado ||= est
-    r.banos += banosSal; r.litros += c.litrosDiesel; r.insumos += banosSal * costoLimpiezaBano
-    if (s.vehiculo_id) kmVeh[s.vehiculo_id] = n(s.km_anual) || n(d.par.km_anual)
-    r.registros.push({ fecha: s.fecha, detalle: `${s.vehiculo || 'Sin vehículo'} · ${s.km_real == null ? 'sin odómetro' : Math.round(c.km) + ' km'} · ${par.length} visita(s)`, monto: c.total })
-    par.forEach((p) => {
-      const a = acc(p.cliente_id)
-      a.rutas += cuota(peso(p)); a.visitas++; a.estimado ||= est
-      r.clientes[p.cliente_id] = (r.clientes[p.cliente_id] || 0) + 1
-      a.registros.push({ fecha: s.fecha, detalle: `Visita ${p.tarea} · ${s.ruta}${n(p.banos) ? ` · ${p.banos} baño(s)` : ''}`, monto: cuota(peso(p)) })
-      if (p.tarea === 'limpieza') {
-        const ci = n(p.banos) * costoLimpiezaBano
-        a.insumos += ci
-        if (ci) a.registros.push({ fecha: s.fecha, detalle: `Insumos de ${p.banos} limpieza(s)`, monto: ci })
-      }
-    })
-    des.forEach((x) => {
-      const a = acc(x.cliente_id)
-      a.despachos += cuota(1); a.estimado ||= est
-      a.registros.push({ fecha: s.fecha, detalle: `Despacho ${x.folio} (${x.tipo}) en ruta ${s.ruta}`, monto: cuota(1) })
-    })
-=======
   // ── Tarifas unitarias ───────────────────────────────────────────────────
   const k = costoKmVehiculo({}, par)
   const kmVar = k.combustible + k.mantencion           // diésel + desgaste: sube con cada km
@@ -136,7 +94,6 @@ export function calcular(d) {
   const detalleAseo = recetaAseo.map((r) => {
     const i = insPorId[r.insumo_id] || {}
     return { nombre: i.nombre || 'Insumo', cantidad: n(r.cantidad), unidad: i.unidad || '', unitario: n(i.costo_unitario), costo: n(r.cantidad) * n(i.costo_unitario) }
->>>>>>> ea0d2b747eb19e38dcaecf415e907e8d87880209
   })
   const insumosAseo = detalleAseo.reduce((s, x) => s + x.costo, 0)
   const recetaSinCosto = detalleAseo.some((x) => !x.unitario)
@@ -179,41 +136,51 @@ export function calcular(d) {
   const salPorId = Object.fromEntries(d.salidas.map((s) => [s.id, s]))
   d.paradas.forEach((p) => {
     const s = salPorId[p.salida_id]
-    if (!s || s.fecha > hoy || p.tarea !== 'limpieza' || (s.estado === 'cerrada' && !p.hecha)) return
+    if (!s || s.fecha > hoy || p.tarea !== 'limpieza' || p.despacho_id || !(p.estado === 'hecha' || p.hecha)) return
     if (base[p.cliente_id]) base[p.cliente_id].aseosReal += n(p.banos)
   })
 
-  // ── Rutas: km por salida (odómetro si hay; si no, línea recta × factor) ──
+  // ── Rutas semanales: km de cada día (odómetro si hay; si no, línea recta × factor) ──
   const enRuta = new Set()
+  const despEnRuta = new Set()
   const rutasTabla = d.rutas.map((r) => {
-    const paradas = [...(r.ruta_paradas || [])].sort((a, b) => n(a.orden) - n(b.orden))
-    const ids = [...new Set(paradas.map((p) => p.cliente_id).filter((x) => base[x]))]
-    const rec = bodega && paradas.length ? recorrido(bodega, paradas.map((p) => coord(cli[p.cliente_id]))) : null
-    const kmRecto = rec ? rec.km : null
-    const kmEst = kmRecto != null ? kmRecto * factor : null
-    const sal = d.salidas.filter((s) => s.ruta_id === r.id && s.km_real != null && n(s.km) > 0)
-    const kmOdo = sal.length ? sal.reduce((t, s) => t + n(s.km), 0) / sal.length : null
-    const kmSalida = kmOdo ?? kmEst
-    const diasSem = (r.dias || []).length
-    const salidasMes = diasSem * SEM
-    const kmMes = kmSalida != null ? kmSalida * salidasMes : 0
-    // Reparto entre clientes según lo que costaría ir solo a cada uno (distancia desde bodega)
-    const pesos = ids.map((cid) => ({ cid, w: base[cid].ida ?? 0 }))
-    const wTot = pesos.reduce((t, x) => t + x.w, 0)
-    pesos.forEach(({ cid, w }) => {
-      const share = wTot ? w / wTot : 1 / ids.length
-      base[cid].kmRutas += kmMes * share
-      base[cid].rutas.push({ ruta: r.nombre, km: kmMes * share, share })
-      enRuta.add(cid)
-    })
-    const aseosMes = ids.reduce((t, cid) => t + (base[cid].arr + base[cid].propios), 0) * salidasMes
+    const lineas = [...(r.rutas_semana_lineas || [])].sort((a, b) => n(a.orden) - n(b.orden))
+    lineas.forEach((l) => { if (l.despacho_id) despEnRuta.add(l.despacho_id) })
+    let dias = 0, diasOdo = 0, kmMes = 0, kmRectoTot = 0, faltan = 0, aseosMes = 0
+    const clientes = new Set()
+    for (let dia = 1; dia <= 5; dia++) {
+      const fechaDia = sumarDias(r.lunes, dia - 1)
+      if (fechaDia < d.ini || fechaDia > d.fin) continue
+      const stops = lineas.filter((l) => (l.dias || []).includes(dia) && base[l.cliente_id])
+      if (!stops.length) continue
+      dias++
+      const rec = bodega ? recorrido(bodega, stops.map((l) => coord(cli[l.cliente_id]))) : null
+      const sal = d.salidas.find((s) => s.ruta_semana_id === r.id && s.fecha === fechaDia && s.km_real != null && n(s.km) > 0)
+      const km = sal ? n(sal.km) : rec ? rec.km * factor : 0
+      if (sal) diasOdo++
+      if (rec) { kmRectoTot += rec.km; faltan = Math.max(faltan, rec.faltan) }
+      kmMes += km
+      // Reparto del día entre clientes según lo que costaría ir solo a cada uno
+      const ids = [...new Set(stops.map((l) => l.cliente_id))]
+      const wTot = ids.reduce((t, cid) => t + (base[cid].ida ?? 0), 0)
+      ids.forEach((cid) => {
+        const share = wTot ? (base[cid].ida ?? 0) / wTot : 1 / ids.length
+        base[cid].kmRutas += km * share
+        base[cid].rutas.push({ ruta: `${r.nombre} ${fechaDia.slice(8, 10)}/${fechaDia.slice(5, 7)}`, km: km * share, share })
+        enRuta.add(cid); clientes.add(cid)
+      })
+      aseosMes += stops.filter((l) => l.tarea === 'limpieza').reduce((t, l) => t + base[l.cliente_id].arr + base[l.cliente_id].propios, 0)
+    }
+    if (!dias) return null
+    const kmSalida = kmMes / dias
     return {
-      id: r.id, ruta: r.nombre, paradas: ids.length, faltanUbic: rec ? rec.faltan : ids.length, diasSem,
-      kmRecto, kmEst, kmOdo, salidasOdo: sal.length, kmSalida, fuenteKm: kmOdo != null ? 'Odómetro' : kmEst != null ? 'Estimado' : 'Sin datos',
-      salidasMes, kmMes, costoSalida: kmSalida != null ? kmSalida * k.total : null, costoMes: kmMes * k.total,
+      id: r.id, ruta: `${r.nombre} · semana ${r.lunes.slice(8, 10)}/${r.lunes.slice(5, 7)}`, paradas: clientes.size, faltanUbic: faltan, diasSem: dias,
+      kmRecto: bodega ? kmRectoTot / dias : null, kmEst: bodega ? (kmRectoTot / dias) * factor : null, kmOdo: diasOdo ? kmSalida : null, salidasOdo: diasOdo,
+      kmSalida, fuenteKm: diasOdo === dias ? 'Odómetro' : bodega ? 'Estimado' : 'Sin datos',
+      salidasMes: dias, kmMes, costoSalida: kmSalida * k.total, costoMes: kmMes * k.total,
       aseosMes, costoAseo: aseosMes ? (kmMes * k.total) / aseosMes : null,
     }
-  }).sort((a, b) => b.costoMes - a.costoMes)
+  }).filter(Boolean).sort((a, b) => b.costoMes - a.costoMes)
 
   // Clientes con aseos que no están en ninguna ruta: viaje propio ida y vuelta
   Object.entries(base).forEach(([cid, b]) => {
@@ -226,11 +193,13 @@ export function calcular(d) {
   // ── Despachos: cada uno es un viaje bodega → cliente → bodega ───────────
   const despachosTabla = d.despachos.map((x) => {
     const b = base[x.cliente_id]
-    const km = b && b.ida != null ? 2 * b.ida * factor : null
+    const enRutaX = !!x.salida_id || despEnRuta.has(x.id)
+    // Dentro de una ruta semanal sus km ya están en el costo del día; fuera de ruta es un viaje propio
+    const km = enRutaX ? 0 : b && b.ida != null ? 2 * b.ida * factor : null
     if (b && km) { b.kmDesp += km; b.despachos.push({ folio: x.folio, tipo: x.tipo, km }) }
     return {
       id: x.id, folio: x.folio, tipo: x.tipo, estado: x.estado, fecha: x.fecha_programada, cliente: cli[x.cliente_id]?.nombre || '—',
-      enRuta: !!x.salida_id, km, costoVar: km ? km * kmVar : null, costo: km ? km * k.total : null,
+      enRuta: enRutaX, km, costoVar: km ? km * kmVar : null, costo: km ? km * k.total : null,
     }
   })
 

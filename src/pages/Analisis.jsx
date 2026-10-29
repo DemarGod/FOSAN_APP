@@ -368,31 +368,30 @@ function Km({ d }) {
         { c: 'Diésel', v: k.combustible, t: 'Variable' }, { c: 'Neumáticos, aceite, frenos, suspensión, preventiva', v: k.mantencion, t: 'Variable' },
         { c: 'Depreciación del camión', v: k.depreciacion, t: 'Fijo' }, { c: 'Permiso, seguro y revisión', v: k.fijos, t: 'Fijo' }, { c: 'Conductor', v: k.conductor, t: 'Fijo' },
       ]} pie={{ t: '', v: k.total }} cols={[{ k: 'c', l: 'Concepto' }, { k: 't', l: 'Tipo' }, { k: 'v', l: '$/km', der: true, f: (x) => kmL(x.v) }]} />
-      <Sub>Rutas</Sub>
+      <Sub>Rutas semanales del mes</Sub>
       <Tabla filas={d.rutas} min={1060} pie={pieR} cols={[
         { k: 'ruta', l: 'Ruta', f: (x) => <>{x.ruta}<Est on={x.fuenteKm !== 'Odómetro'} /></> },
         { k: 'paradas', l: 'Clientes', der: true },
-        { k: 'diasSem', l: 'Días/sem', der: true },
+        { k: 'diasSem', l: 'Días con viaje', der: true },
         { k: 'kmRecto', l: 'Km línea recta', der: true, f: (x) => (x.kmRecto == null ? '—' : num(x.kmRecto, 1)) },
         { k: 'kmEst', l: `Km estimados (×${num(t.factor, 2)})`, der: true, f: (x) => (x.kmEst == null ? '—' : num(x.kmEst, 1)) },
-        { k: 'kmOdo', l: 'Km odómetro', der: true, f: (x) => (x.kmOdo == null ? <SinDato>Sin odómetro</SinDato> : `${num(x.kmOdo, 1)} (${x.salidasOdo})`) },
-        { k: 'costoSalida', l: 'Costo/salida', der: true, f: (x) => (x.costoSalida == null ? '—' : $(x.costoSalida)) },
-        { k: 'salidasMes', l: 'Salidas/mes', der: true, f: (x) => num(x.salidasMes, 1) },
+        { k: 'kmOdo', l: 'Km odómetro', der: true, f: (x) => (x.kmOdo == null ? <SinDato>Sin odómetro</SinDato> : `${num(x.kmOdo, 1)} (${x.salidasOdo} día/s)`) },
+        { k: 'costoSalida', l: 'Costo/día', der: true, f: (x) => (x.costoSalida == null ? '—' : $(x.costoSalida)) },
         { k: 'kmMes', l: 'Km/mes', der: true, f: (x) => num(x.kmMes) },
         { k: 'costoMes', l: 'Costo/mes', der: true, f: (x) => $(x.costoMes) },
         { k: 'costoAseo', l: 'Transporte/aseo', der: true, f: (x) => (x.costoAseo == null ? '—' : $(x.costoAseo)) },
-      ]} vacio="No hay rutas creadas." />
+      ]} vacio="No hay rutas semanales en este mes." />
       <Sub>Despachos del mes (viaje bodega → cliente → bodega)</Sub>
       <Tabla filas={d.despachos} min={760} cols={[
         { k: 'folio', l: 'Folio' },
         { k: 'fecha', l: 'Fecha', f: (x) => fecha(x.fecha) },
         { k: 'tipo', l: 'Tipo', f: (x) => L_DESP[x.tipo] || x.tipo },
         { k: 'cliente', l: 'Cliente' },
-        { k: 'km', l: 'Km ida y vuelta', der: true, f: (x) => (x.km == null ? <SinDato>Sin ubicación</SinDato> : num(x.km, 1)) },
-        { k: 'costoVar', l: 'Variable', der: true, f: (x) => (x.costoVar == null ? '—' : $(x.costoVar)) },
-        { k: 'costo', l: 'Costo completo', der: true, f: (x) => (x.costo == null ? '—' : $(x.costo)) },
+        { k: 'km', l: 'Km ida y vuelta', der: true, f: (x) => (x.enRuta ? <SinDato>Incluido en ruta</SinDato> : x.km == null ? <SinDato>Sin ubicación</SinDato> : num(x.km, 1)) },
+        { k: 'costoVar', l: 'Variable', der: true, f: (x) => (x.enRuta || x.costoVar == null ? '—' : $(x.costoVar)) },
+        { k: 'costo', l: 'Costo completo', der: true, f: (x) => (x.enRuta || x.costo == null ? '—' : $(x.costo)) },
       ]} vacio="Sin despachos en este mes." />
-      <Nota>Despacho = 2 × distancia bodega–cliente × factor de recorrido × costo por km. Se carga al margen del cliente que lo recibe. Km del mes = km por salida × días por semana × {num(t.semanas, 2)} semanas.</Nota>
+      <Nota>Despacho fuera de ruta = 2 × distancia bodega–cliente × factor de recorrido × costo por km, cargado al cliente que lo recibe. Si el despacho va como parada de una ruta semanal, sus km ya están en el costo de ese día. Cada ruta suma solo los días (lunes a viernes) que caen dentro del mes elegido.</Nota>
     </>
   )
 }
