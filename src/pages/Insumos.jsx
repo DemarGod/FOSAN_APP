@@ -34,9 +34,10 @@ export default function Insumos() {
     return {
       ...i,
       receta: receta?.cantidad ?? null,
+      usoL: i.uso === 'fijo' ? 'Fijo mensual' : 'Por aseo',
       stockL: `${cant(i.stock_actual)} ${i.unidad}`,
       minimoL: `${cant(i.stock_minimo)} ${i.unidad}`,
-      recetaL: receta ? `${cant(receta.cantidad)} ${i.unidad}` : '—',
+      recetaL: i.uso === 'fijo' ? (i.en_uso && i.duracion_meses ? `${cant(i.en_uso)} en uso · dura ${cant(i.duracion_meses)} meses` : 'Falta uso y duración') : receta ? `${cant(receta.cantidad)} ${i.unidad}` : '—',
       costoL: clp(i.costo_unitario),
       valorL: clp(Math.round(Number(i.stock_actual) * Number(i.costo_unitario || 0))),
       estadoL: sin ? 'Sin stock' : bajo ? 'Bajo mínimo' : 'Disponible',
@@ -57,14 +58,15 @@ export default function Insumos() {
         cargando={cargando}
         error={error}
         unidad="insumos"
-        filtros={[{ k: 'estadoL', label: 'Estado' }]}
+        filtros={[{ k: 'estadoL', label: 'Estado' }, { k: 'usoL', label: 'Tipo de costo' }]}
         buscar={['nombre']}
         cols={[
           { k: 'nombre', label: 'Producto' },
           { k: 'stockL', label: 'Disponible' },
           { k: 'minimoL', label: 'Mínimo' },
           { k: 'estadoL', label: 'Estado', badge: true },
-          { k: 'recetaL', label: 'Usa 1 baño limpiado' },
+          { k: 'usoL', label: 'Tipo de costo' },
+          { k: 'recetaL', label: 'Gasto' },
           ...(finanzas ? [{ k: 'costoL', label: 'Costo unitario' }, { k: 'valorL', label: 'Valor en stock' }] : []),
         ]}
         datos={filas}
@@ -89,10 +91,12 @@ function FormInsumo({ insumo, onCerrar, onGuardado }) {
     nombre: e.nombre || '', unidad: e.unidad || 'unidad',
     stock_actual: e.stock_actual ?? '', stock_minimo: e.stock_minimo ?? '',
     costo_unitario: e.costo_unitario ? formatoPesos(e.costo_unitario) : '', receta: e.receta ?? '',
+    uso: e.uso || 'aseo', en_uso: e.en_uso ?? '', duracion_meses: e.duracion_meses ?? '',
   })
   const [error, setError] = useState(null)
   const [guardando, setGuardando] = useState(false)
   const set = (k, f) => (ev) => setV((p) => ({ ...p, [k]: f ? f(ev.target.value) : ev.target.value }))
+  const fijo = v.uso === 'fijo'
 
   const guardar = async () => {
     if (!v.nombre.trim()) { setError('El nombre es obligatorio.'); return }
@@ -102,7 +106,8 @@ function FormInsumo({ insumo, onCerrar, onGuardado }) {
         nombre: v.nombre.trim(), unidad: v.unidad.trim() || 'unidad',
         stock_actual: decimalDe(v.stock_actual) ?? 0, stock_minimo: decimalDe(v.stock_minimo) ?? 0,
         costo_unitario: numeroDe(v.costo_unitario),
-      }, decimalDe(v.receta) || null)
+        uso: v.uso, en_uso: fijo ? decimalDe(v.en_uso) : null, duracion_meses: fijo ? decimalDe(v.duracion_meses) : null,
+      }, fijo ? null : decimalDe(v.receta) || null)
       onGuardado()
     } catch (x) { setError(String(x.message || x)); setGuardando(false) }
   }
@@ -123,12 +128,26 @@ function FormInsumo({ insumo, onCerrar, onGuardado }) {
           <Campo l="Stock actual"><input value={v.stock_actual} onChange={set('stock_actual', dec)} inputMode="decimal" placeholder="120" /></Campo>
           <Campo l="Stock mínimo (alerta)"><input value={v.stock_minimo} onChange={set('stock_minimo', dec)} inputMode="decimal" placeholder="20" /></Campo>
         </div>
+        <Campo l="Tipo de costo">
+          <select value={v.uso} onChange={set('uso')}>
+            <option value="aseo">Por aseo (variable): papel, químico, aromatizante…</option>
+            <option value="fijo">Fijo mensual: zapatos, poleras, guantes, EPP…</option>
+          </select>
+        </Campo>
         <div style={par}>
           <Campo l="Costo unitario"><input value={v.costo_unitario} onChange={set('costo_unitario', formatoPesos)} inputMode="numeric" placeholder="$3.500" /></Campo>
-          <Campo l="Gasto por baño limpiado"><input value={v.receta} onChange={set('receta', dec)} inputMode="decimal" placeholder="Vacío = no se usa" /></Campo>
+          {!fijo && <Campo l="Gasto por aseo (por baño)"><input value={v.receta} onChange={set('receta', dec)} inputMode="decimal" placeholder="Vacío = no se usa" /></Campo>}
         </div>
+        {fijo && (
+          <div style={par}>
+            <Campo l="Unidades en uso"><input value={v.en_uso} onChange={set('en_uso', dec)} inputMode="decimal" placeholder="3 (uno por trabajador)" /></Campo>
+            <Campo l="Dura (meses)"><input value={v.duracion_meses} onChange={set('duracion_meses', dec)} inputMode="decimal" placeholder="6" /></Campo>
+          </div>
+        )}
         <div style={{ padding: '11px 13px', background: C.suave, border: `2px solid ${C.borde}`, font: '400 12px/1.45 var(--font)', color: '#3c4551' }}>
-          Al marcar una limpieza como hecha en Rutas, se descuenta este gasto por cada baño del cliente.
+          {fijo
+            ? 'Costo mensual = unidades en uso × costo unitario ÷ meses que dura. En Análisis se reparte entre los clientes según sus aseos.'
+            : 'Al marcar una limpieza como hecha en Rutas, se descuenta este gasto por cada baño del cliente. En Análisis es el costo de insumos de cada aseo.'}
         </div>
         {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `2px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#7c1405' }}>{String(error?.message || error)}</div>}
       </div>

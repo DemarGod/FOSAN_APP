@@ -15,7 +15,6 @@ import RutasSemana from './pages/RutasSemana'
 import MiRuta from './pages/MiRuta'
 import Analisis from './pages/Analisis'
 import Clientes from './pages/Clientes'
-import Utilidades from './pages/Utilidades'
 import Mantenciones from './pages/Mantenciones'
 import Ubicaciones from './pages/Ubicaciones'
 import Reportes from './pages/Reportes'
@@ -85,7 +84,7 @@ export default function App() {
               <Route path="/despachos" element={<Navigate to="/rutas-semanales" replace />} />
               <Route path="/rutas" element={<Navigate to="/rutas-semanales" replace />} />
               <Route path="/clientes" element={puedeVer(perfil, 'clientes') ? <Clientes /> : <SinAcceso />} />
-              <Route path="/utilidades" element={puedeVer(perfil, 'utilidades') ? <Utilidades /> : <SinAcceso />} />
+              <Route path="/utilidades" element={<Navigate to="/analisis" replace />} />
               <Route path="/mantenciones" element={puedeVer(perfil, 'mantenciones') ? <Mantenciones /> : <SinAcceso />} />
               <Route path="/ubicaciones" element={puedeVer(perfil, 'ubicaciones') ? <Ubicaciones /> : <SinAcceso />} />
               <Route path="/reportes" element={puedeVer(perfil, 'reportes') ? <Reportes /> : <SinAcceso />} />
