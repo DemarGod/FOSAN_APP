@@ -45,6 +45,54 @@ export default function App() {
     return () => sub.subscription.unsubscribe()
   }, [])
 
+  // Cierre automatico por 10 minutos de inactividad
+  useEffect(() => {
+    if (!usuario) return
+
+    const TIEMPO_LIMITE = 10 * 60 * 1000
+    let temporizador
+
+    const reiniciarTemporizador = () => {
+      window.clearTimeout(temporizador)
+
+      temporizador = window.setTimeout(async () => {
+        console.log('Sesion cerrada por inactividad')
+
+        const { error } = await supabase.auth.signOut()
+
+        if (error) {
+          console.error('Error al cerrar sesion:', error.message)
+          reiniciarTemporizador()
+        }
+      }, TIEMPO_LIMITE)
+    }
+
+    const eventosActividad = [
+      'mousedown',
+      'mousemove',
+      'keydown',
+      'scroll',
+      'touchstart',
+      'click'
+    ]
+
+    eventosActividad.forEach((evento) => {
+      window.addEventListener(evento, reiniciarTemporizador, {
+        passive: true
+      })
+    })
+
+    reiniciarTemporizador()
+
+    return () => {
+      window.clearTimeout(temporizador)
+
+      eventosActividad.forEach((evento) => {
+        window.removeEventListener(evento, reiniciarTemporizador)
+      })
+    }
+  }, [usuario])
+
   useEffect(() => {
     if (!usuario) { setPerfil(null); return }
     supabase.from('perfiles').select('*').eq('id', usuario.id).maybeSingle()
