@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Modal from './Modal'
 import BuscarCliente from './BuscarCliente'
+import { RespaldoModal, ConfirmarEjecucion } from './OpRespaldos'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
 import {
   operaciones, banosDeOperacion, banosAsignados, banosDisponibles, crearDespacho, editarOperacion, cancelarOperacion,
@@ -43,6 +44,8 @@ export default function OpProgramacion({ irARutas }) {
   const [detalle, setDetalle] = useState(null)
   const [cancelar, setCancelar] = useState(null)
   const [exportar, setExportar] = useState(false)
+  const [confirmar, setConfirmar] = useState(null)
+  const [respaldo, setRespaldo] = useState(null)
   const cargar = () => { setDatos(null); operaciones(aplicado.desde, aplicado.hasta).then(setDatos).catch(setError) }
   useEffect(() => { cargar() }, [aplicado.desde, aplicado.hasta])
 
@@ -60,7 +63,7 @@ export default function OpProgramacion({ irARutas }) {
   const cuenta = (e) => lista.filter((o) => o.estado_op === e).length
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }))
   const filtrar = (c) => { const n = { ...aplicado, servicio: '', estado: '', patente: '', responsable: '', cliente: '', ...c }; setF(n); setAplicado(n) }
-  const listo = () => { setForm(null); setCancelar(null); setDetalle(null); cargar() }
+  const listo = () => { setForm(null); setCancelar(null); setDetalle(null); setConfirmar(null); cargar() }
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
@@ -130,7 +133,10 @@ export default function OpProgramacion({ irARutas }) {
       </section>
 
       {form && <FormOperacion op={form} onCerrar={() => setForm(null)} onGuardado={listo} />}
-      {detalle && <Detalle o={detalle} editable={editable} onCerrar={() => setDetalle(null)} onEditar={() => { setForm(detalle); setDetalle(null) }} onRuta={() => { setDetalle(null); irARutas() }} />}
+      {detalle && <Detalle o={detalle} editable={editable} onCerrar={() => setDetalle(null)} onEditar={() => { setForm(detalle); setDetalle(null) }} onRuta={() => { setDetalle(null); irARutas() }}
+        onConfirmar={() => { setConfirmar(detalle); setDetalle(null) }} onRespaldo={() => { setRespaldo(detalle); setDetalle(null) }} />}
+      {confirmar && <ConfirmarEjecucion o={confirmar} onCerrar={() => setConfirmar(null)} onListo={listo} />}
+      {respaldo && <RespaldoModal o={respaldo} onCerrar={() => { setRespaldo(null); cargar() }} />}
       {cancelar && <Cancelar o={cancelar} onCerrar={() => setCancelar(null)} onListo={listo} />}
       {exportar && <Exportar todas={lista} filtradas={filas} onCerrar={() => setExportar(false)} />}
     </div>
@@ -358,7 +364,7 @@ function Unidades({ titulo, disponibles, elegidas, setElegidas, error, ayuda }) 
 }
 
 // ── 4.3 Detalle de operación ──────────────────────────────────────────────
-function Detalle({ o, editable, onCerrar, onEditar, onRuta }) {
+function Detalle({ o, editable, onCerrar, onEditar, onRuta, onConfirmar, onRespaldo }) {
   const fila = (l, v) => (
     <div style={{ display: 'grid', gridTemplateColumns: '120px minmax(0,1fr)', gap: 10, padding: '4px 0', font: '400 14px var(--font)' }}>
       <span style={{ color: C.gris }}>{l}</span><span style={{ overflowWrap: 'anywhere' }}>{v || '—'}</span>
@@ -369,6 +375,8 @@ function Detalle({ o, editable, onCerrar, onEditar, onRuta }) {
       {o.estado === 'programado' && editable && <Boton icono={I.lapiz} onClick={onEditar}>Editar programación</Boton>}
       <Boton icono={I.pin} onClick={onRuta}>Ver ruta</Boton>
       <Boton onClick={onCerrar}>Cerrar</Boton>
+      {o.estado === 'programado' && editable && !o.en_ruta && <Boton tipo="principal" icono={I.check} onClick={onConfirmar}>Confirmar ejecución</Boton>}
+      {o.estado === 'hecho' && <Boton tipo="principal" icono={I.doc} onClick={onRespaldo}>Ver respaldo</Boton>}
     </>}>
       <div style={{ padding: 18, display: 'grid', gap: 12 }}>
         <div><Estado tono={TONO_OP[o.estado_op]}>{L_ESTADO_OP[o.estado_op]}</Estado></div>
@@ -390,7 +398,9 @@ function Detalle({ o, editable, onCerrar, onEditar, onRuta }) {
             {o.estado === 'cancelado' && fila('Cancelada', `${o.cancelado_en ? fecha(o.cancelado_en) : ''} · ${o.motivo_cancelacion || ''}`)}
           </div>
         </div>
-        <Ayuda>Realizadas: se consultan resultado, insumos, observaciones y respaldo (paquete 8b). Los movimientos confirmados no se reescriben.</Ayuda>
+        {o.estado === 'hecho' && (o.recibido_por || o.resultado) && <Ayuda>Recibió: {o.recibido_por || '—'}{o.resultado ? ` · ${o.resultado}` : ''}</Ayuda>}
+        {o.estado === 'programado' && o.en_ruta && <Ayuda>Está en una ruta: se confirma desde Mi ruta, con la ejecución del día.</Ayuda>}
+        <Ayuda>Realizadas: se consultan resultado, observaciones y respaldo (constancia, archivos y firma). Los movimientos confirmados no se reescriben.</Ayuda>
       </div>
     </Modal>
   )

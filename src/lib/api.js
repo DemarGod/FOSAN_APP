@@ -711,6 +711,31 @@ export const cancelarOperacion = async (id, motivo) => {
   if (error) throw error
 }
 
+// ── Operaciones → Respaldos y ejecución confirmada (paquete 8b) ─────────
+export const confirmarOperacion = async (id, fecha, recibidoPor, resultado) => {
+  const { error } = await supabase.rpc('confirmar_operacion', { p_id: id, p_fecha: fecha, p_recibido_por: recibidoPor || null, p_resultado: resultado || null })
+  if (error) throw error
+}
+// Sube un archivo o firma a respaldos/<operación>/ y deja su registro (no se borra)
+export const subirRespaldo = async (despachoId, archivo, tipo, { nombre, firmante } = {}) => {
+  const limpio = String(nombre || archivo.name || (tipo === 'firma' ? 'firma.png' : 'archivo')).normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9._-]+/g, '_').slice(-80)
+  const ruta = `respaldos/${despachoId}/${Date.now()}_${limpio}`
+  const { error } = await supabase.storage.from('fosan').upload(ruta, archivo, { contentType: archivo.type || 'application/octet-stream', upsert: false })
+  if (error) throw error
+  const { data: u } = await supabase.auth.getUser()
+  const { error: e2 } = await supabase.from('operacion_respaldos').insert({
+    despacho_id: despachoId, tipo, ruta, nombre: nombre || archivo.name || limpio, firmante: firmante || null, creado_por: u?.user?.id,
+  })
+  if (e2) throw e2
+}
+export const respaldosDe = async (despachoId) => {
+  const r = await rows(supabase.from('operacion_respaldos').select('*, perfiles:creado_por(nombre)').eq('despacho_id', despachoId).order('creado_en'))
+  if (!r.length) return r
+  const { data } = await supabase.storage.from('fosan').createSignedUrls(r.map((x) => x.ruta), 3600)
+  return r.map((x, i) => ({ ...x, url: data?.[i]?.signedUrl || null }))
+}
+
 // ── Logística: baños disponibles para despachar ──────────────────────────
 export const banosDisponibles = async () => {
   const [lista, ocupados] = await Promise.all([

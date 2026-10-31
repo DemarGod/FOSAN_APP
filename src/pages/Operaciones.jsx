@@ -1,7 +1,8 @@
 // Operaciones (lámina 4): Programación · Rutas · Respaldos.
-// Rutas son las Rutas semanales de siempre (sin cambios). Respaldos llega en el paquete 8b.
+// Rutas son las Rutas semanales de siempre (sin cambios). Respaldos: constancia, archivos y firma.
 import { useSearchParams } from 'react-router-dom'
-import { Pestanas, Ayuda } from '../components/Base'
+import { Pestanas } from '../components/Base'
+import OpRespaldos from '../components/OpRespaldos'
 import OpProgramacion from '../components/OpProgramacion'
 import RutasSemana from './RutasSemana'
 
@@ -21,7 +22,7 @@ export default function Operaciones() {
       <Pestanas opciones={PESTANAS} valor={tab} onChange={irA} />
       {tab === 'programacion' && <OpProgramacion irARutas={() => irA('rutas')} />}
       {tab === 'rutas' && <RutasSemana />}
-      {tab === 'respaldos' && <Ayuda>Respaldos (constancia imprimible, archivos subidos y firma de recepción) llega en el paquete 8b.</Ayuda>}
+      {tab === 'respaldos' && <OpRespaldos />}
     </div>
   )
 }
