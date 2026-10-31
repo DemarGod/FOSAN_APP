@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { DRIVE_URL } from './drive'
 
 const rows = async (q) => {
   const { data, error } = await q
@@ -717,23 +718,92 @@ export const confirmarOperacion = async (id, fecha, recibidoPor, resultado) => {
   if (error) throw error
 }
 // Sube un archivo o firma a respaldos/<operación>/ y deja su registro (no se borra)
-export const subirRespaldo = async (despachoId, archivo, tipo, { nombre, firmante } = {}) => {
-  const limpio = String(nombre || archivo.name || (tipo === 'firma' ? 'firma.png' : 'archivo')).normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9._-]+/g, '_').slice(-80)
-  const ruta = `respaldos/${despachoId}/${Date.now()}_${limpio}`
-  const { error } = await supabase.storage.from('fosan').upload(ruta, archivo, { contentType: archivo.type || 'application/octet-stream', upsert: false })
-  if (error) throw error
+// Respaldos de operaciones: los archivos y firmas se guardan en Google Drive (src/lib/drive.js).
+// En Supabase solo queda el registro (ruta = 'drive:<id>'). Los antiguos del almacenamiento siguen visibles.
+const aBase64 = (blob) => new Promise((ok, mal) => {
+  const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = () => mal(r.error); r.readAsDataURL(blob)
+})
+const deBase64 = (b64, tipo) => {
+  const bin = atob(b64); const u = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i)
+  return new Blob([u], { type: tipo || 'application/octet-stream' })
+}
+// Fotos: se achican a máx. 1600 px y JPEG (≈200 KB). Si algo falla, se sube el original.
+const comprimirImagen = async (archivo) => {
+  if (!/^image\/(jpe?g|png|webp|heic|heif)$/i.test(archivo.type || '') || archivo.size < 300 * 1024) return archivo
+  try {
+    const img = await createImageBitmap(archivo)
+    const k = Math.min(1, 1600 / Math.max(img.width, img.height))
+    const cv = document.createElement('canvas'); cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k)
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height)
+    const b = await new Promise((ok) => cv.toBlob(ok, 'image/jpeg', 0.75))
+    if (!b || b.size >= archivo.size) return archivo
+    return new File([b], String(archivo.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' })
+  } catch { return archivo }
+}
+const llamarDrive = async (cuerpo) => {
+  if (!DRIVE_URL) throw new Error('Falta configurar la carpeta de Drive (src/lib/drive.js).')
+  const { data: { session } } = await supabase.auth.getSession()
+  let res
+  try {
+    res = await fetch(DRIVE_URL, { method: 'POST', body: JSON.stringify({ ...cuerpo, token: session?.access_token }) })
+  } catch { throw new Error('No se pudo conectar con Google Drive. Revisa internet e intenta de nuevo.') }
+  const r = await res.json().catch(() => null)
+  if (!r) throw new Error('Google Drive no respondió bien. Revisa la configuración del script.')
+  if (!r.ok) throw new Error('Google Drive: ' + r.error)
+  return r
+}
+export const subirRespaldo = async (despachoId, archivo, tipo, { nombre, firmante, folio } = {}) => {
+  const final = tipo === 'archivo' ? await comprimirImagen(archivo) : archivo
+  const nom = String(nombre && tipo === 'firma' ? nombre : final.name || nombre || (tipo === 'firma' ? 'firma.png' : 'archivo'))
+  const etiqueta = `${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}_${tipo === 'firma' ? 'firma_' : ''}${nom}`
+  const r = await llamarDrive({ accion: 'subir', carpeta: folio || despachoId, nombre: etiqueta, tipo: final.type || 'application/octet-stream', base64: await aBase64(final) })
   const { data: u } = await supabase.auth.getUser()
   const { error: e2 } = await supabase.from('operacion_respaldos').insert({
-    despacho_id: despachoId, tipo, ruta, nombre: nombre || archivo.name || limpio, firmante: firmante || null, creado_por: u?.user?.id,
+    despacho_id: despachoId, tipo, ruta: 'drive:' + r.id, nombre: nom, firmante: firmante || null, creado_por: u?.user?.id,
   })
   if (e2) throw e2
 }
+export const esImagenRespaldo = (r) => r.tipo === 'firma' || /\.(png|jpe?g|webp|gif|heic)$/i.test(r.nombre || r.ruta || '')
+const cacheDrive = {}
+const traerDrive = async (ids) => {
+  const faltan = ids.filter((id) => !cacheDrive[id])
+  if (faltan.length) {
+    const r = await llamarDrive({ accion: 'ver', ids: faltan })
+    for (const a of r.archivos || []) if (a.base64) {
+      cacheDrive[a.id] = { url: URL.createObjectURL(deBase64(a.base64, a.tipo)), dataUrl: `data:${a.tipo};base64,${a.base64}` }
+    }
+  }
+  return ids.map((id) => cacheDrive[id] || null)
+}
 export const respaldosDe = async (despachoId) => {
-  const r = await rows(supabase.from('operacion_respaldos').select('*, perfiles:creado_por(nombre)').eq('despacho_id', despachoId).order('creado_en'))
+  const r = await rows(supabase.from('operacion_respaldos').select('*').eq('despacho_id', despachoId).order('creado_en'))
   if (!r.length) return r
-  const { data } = await supabase.storage.from('fosan').createSignedUrls(r.map((x) => x.ruta), 3600)
-  return r.map((x, i) => ({ ...x, url: data?.[i]?.signedUrl || null }))
+  const ids = [...new Set(r.map((x) => x.creado_por).filter(Boolean))]
+  const enSupabase = r.filter((x) => !x.ruta.startsWith('drive:'))
+  // De Drive se traen al abrir solo imágenes y firmas; los PDF se descargan al hacer clic.
+  const driveIds = r.filter((x) => x.ruta.startsWith('drive:') && esImagenRespaldo(x)).map((x) => x.ruta.slice(6))
+  const [firmadas, nombres, desdeDrive] = await Promise.all([
+    enSupabase.length ? supabase.storage.from('fosan').createSignedUrls(enSupabase.map((x) => x.ruta), 3600).then((q) => q.data || []) : [],
+    ids.length ? supabase.from('perfiles').select('id, nombre').in('id', ids).then((q) => q.data || []) : [],
+    driveIds.length ? traerDrive(driveIds).catch(() => []) : [],
+  ])
+  const quien = Object.fromEntries(nombres.map((p) => [p.id, p.nombre]))
+  const urlSb = Object.fromEntries(enSupabase.map((x, i) => [x.ruta, firmadas[i]?.signedUrl || null]))
+  const urlDr = Object.fromEntries(driveIds.map((id, i) => [id, desdeDrive[i] || null]))
+  return r.map((x) => {
+    const dr = x.ruta.startsWith('drive:') ? urlDr[x.ruta.slice(6)] : null
+    return { ...x, perfiles: { nombre: quien[x.creado_por] || null }, url: dr?.url || urlSb[x.ruta] || null, dataUrl: dr?.dataUrl || null }
+  })
+}
+// Abre un respaldo de Drive (PDF u otro) en una pestaña nueva
+export const abrirRespaldo = async (r) => {
+  const w = window.open('', '_blank')
+  try {
+    const [a] = await traerDrive([r.ruta.slice(6)])
+    if (!a) throw new Error('No se encontró el archivo en Google Drive.')
+    if (w) w.location.href = a.url; else window.location.href = a.url
+  } catch (x) { if (w) w.close(); throw x }
 }
 
 // ── Logística: baños disponibles para despachar ──────────────────────────

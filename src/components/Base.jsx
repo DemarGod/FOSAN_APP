@@ -97,7 +97,31 @@ export function Estado({ tono = 'neutro', children }) {
 }
 
 // ── Recuadro de ayuda (ícono i) ───────────────────────────────────────────
+// Traduce al español los mensajes técnicos más comunes (Supabase / navegador)
+const TRADUCCIONES = [
+  [/Failed to fetch|NetworkError|Load failed/i, 'No hay conexión con el servidor. Revisa internet e intenta de nuevo.'],
+  [/JWT expired|invalid JWT|not authenticated/i, 'Tu sesión expiró. Cierra sesión y vuelve a entrar.'],
+  [/row-level security|permission denied|not authorized|Unauthorized/i, 'No tienes permiso para hacer esto.'],
+  [/duplicate key|already exists|23505/i, 'Ya existe un registro con esos datos.'],
+  [/violates foreign key/i, 'El registro está relacionado con otros datos y no se puede guardar así.'],
+  [/violates not-null|null value in column/i, 'Falta completar un dato obligatorio.'],
+  [/violates check constraint/i, 'Uno de los datos no tiene un valor permitido.'],
+  [/Could not find the function/i, 'Falta actualizar la base de datos (función no encontrada). Avisa al administrador.'],
+  [/Could not find a relationship|schema cache|Could not embed/i, 'Error interno al leer los datos. Avisa al administrador.'],
+  [/Payload too large|exceeded the maximum allowed size|too large/i, 'El archivo es demasiado grande.'],
+  [/invalid input syntax/i, 'Uno de los datos tiene un formato no válido.'],
+  [/Invalid login credentials/i, 'Usuario o contraseña incorrectos.'],
+]
+export function enEspanol(texto) {
+  const t = String(texto ?? '')
+  const hit = TRADUCCIONES.find(([re]) => re.test(t))
+  if (!hit) return t
+  console.warn('Error original:', t)
+  return hit[1]
+}
+
 export function Ayuda({ children, tono = 'info', style }) {
+  if (tono === 'error' && typeof children === 'string') children = enEspanol(children)
   const color = tono === 'error' ? C.rojo : tono === 'atencion' ? C.amarillo : C.azulClaro
   return (
     <div className="ayuda" style={style}>

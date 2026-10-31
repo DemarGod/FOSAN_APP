@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Modal from './Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
-import { operaciones, respaldosDe, subirRespaldo, confirmarOperacion } from '../lib/api'
+import { operaciones, respaldosDe, subirRespaldo, confirmarOperacion, abrirRespaldo, esImagenRespaldo } from '../lib/api'
 import { useSesion } from '../lib/sesion'
 import { hoyISO, sumarDias } from '../lib/costos'
 import { C, I, fecha, fechaHora } from '../lib/ui'
@@ -90,7 +90,7 @@ export function RespaldoModal({ o, onCerrar }) {
     const grandes = [...files].filter((x) => x.size > MAX_MB * 1024 * 1024)
     if (grandes.length) { setError({ message: `Máximo ${MAX_MB} MB por archivo.` }); return }
     setSubiendo(true)
-    try { for (const x of files) await subirRespaldo(o.id, x, 'archivo'); await cargar() } catch (x) { setError(x) }
+    try { for (const x of files) await subirRespaldo(o.id, x, 'archivo', { folio: o.folio }); await cargar() } catch (x) { setError(x) }
     setSubiendo(false)
   }
 
@@ -115,10 +115,11 @@ export function RespaldoModal({ o, onCerrar }) {
           {lista === null ? <span className="text-muted">Cargando…</span> : archivos.length === 0 ? <span className="text-muted">Sin archivos. Puedes subir fotos o la guía de despacho escaneada (imagen o PDF).</span> : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
               {archivos.map((r) => (
-                <a key={r.id} href={r.url || '#'} target="_blank" rel="noreferrer" style={{ display: 'grid', gap: 4, padding: 8, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', textDecoration: 'none', color: C.tinta }}>
-                  {/\.(png|jpe?g|webp|gif)$/i.test(r.ruta) && r.url
+                <a key={r.id} href={r.url || '#'} target="_blank" rel="noreferrer"
+                  onClick={(e) => { if (!r.url && r.ruta.startsWith('drive:')) { e.preventDefault(); abrirRespaldo(r).catch(setError) } }} style={{ display: 'grid', gap: 4, padding: 8, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', textDecoration: 'none', color: C.tinta }}>
+                  {esImagenRespaldo(r) && r.url
                     ? <img src={r.url} alt={r.nombre} style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 'var(--radio-sm)' }} />
-                    : <div style={{ height: 90, display: 'grid', placeItems: 'center', background: C.suave, borderRadius: 'var(--radio-sm)', font: '600 13px var(--font)' }}>PDF</div>}
+                    : <div style={{ height: 90, display: 'grid', placeItems: 'center', background: C.suave, borderRadius: 'var(--radio-sm)', font: '600 13px var(--font)' }}>{esImagenRespaldo(r) ? 'Imagen' : 'PDF'}</div>}
                   <small style={{ overflowWrap: 'anywhere' }}>{r.nombre}</small>
                   <small className="text-muted">{fechaHora(r.creado_en)} · {r.perfiles?.nombre || '—'}</small>
                 </a>
@@ -143,7 +144,7 @@ export function RespaldoModal({ o, onCerrar }) {
         {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
       </div>
       {firmar && <FirmaModal nombreInicial={o.recibido_por || ''} onCerrar={() => setFirmar(false)}
-        onFirmar={async (blob, firmante) => { await subirRespaldo(o.id, blob, 'firma', { nombre: 'firma.png', firmante }); setFirmar(false); cargar() }} />}
+        onFirmar={async (blob, firmante) => { await subirRespaldo(o.id, blob, 'firma', { nombre: 'firma.png', firmante, folio: o.folio }); setFirmar(false); cargar() }} />}
     </Modal>
   )
 }
@@ -221,10 +222,14 @@ export function ConfirmarEjecucion({ o, onCerrar, onListo }) {
     setGuardando(true); setError(null)
     try {
       await confirmarOperacion(o.id, new Date(v.fecha).toISOString(), v.recibido.trim(), v.resultado.trim())
-      if (lienzo) await subirRespaldo(o.id, await aBlob(lienzo), 'firma', { nombre: 'firma.png', firmante: v.recibido.trim() })
-      for (const x of archivos) await subirRespaldo(o.id, x, 'archivo')
-      onListo()
-    } catch (x) { setError(x); setGuardando(false); setPaso(1) }
+    } catch (x) { setError(x); setGuardando(false); setPaso(1); return }
+    try {
+      if (lienzo) await subirRespaldo(o.id, await aBlob(lienzo), 'firma', { nombre: 'firma.png', firmante: v.recibido.trim(), folio: o.folio })
+      for (const x of archivos) await subirRespaldo(o.id, x, 'archivo', { folio: o.folio })
+    } catch (x) {
+      window.alert(`La operación quedó confirmada, pero no se pudo subir el respaldo (${x.message || x}). Súbelo desde la pestaña Respaldos.`)
+    }
+    onListo()
   }
   const efecto = o.tipo === 'entrega' ? 'Los baños quedarán Asignados al cliente en esta ubicación.'
     : o.tipo === 'retiro' ? 'Los baños volverán Disponibles a la bodega.'
@@ -280,7 +285,7 @@ ${fila('Fecha programada', fecha(o.fecha_programada))}${fila('Fecha de ejecució
 ${fila('Recibió en terreno', f?.firmante || o.recibido_por)}${fila('Observaciones', [o.observaciones, o.resultado].filter(Boolean).join(' · ') || null)}
 </table>
 <div class="firma">
-  <div>${f?.url ? `<img src="${esc(f.url)}" alt="Firma">` : '<br><br><br>'}Firma de recepción · ${esc(f?.firmante || o.recibido_por || '')}</div>
+  <div>${(f?.dataUrl || f?.url) ? `<img src="${esc(f.dataUrl || f.url)}" alt="Firma">` : '<br><br><br>'}Firma de recepción · ${esc(f?.firmante || o.recibido_por || '')}</div>
   <div><br><br><br>Responsable FOSAN · ${esc(o.responsable || '')}</div>
 </div>
 <p><small>Emitida el ${esc(fechaHora(new Date().toISOString()))}. Documento generado por el sistema de gestión FOSAN.</small></p>
