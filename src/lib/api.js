@@ -753,14 +753,14 @@ const llamarDrive = async (cuerpo) => {
   if (!r.ok) throw new Error('Google Drive: ' + r.error)
   return r
 }
-export const subirRespaldo = async (despachoId, archivo, tipo, { nombre, firmante, folio } = {}) => {
+export const subirRespaldo = async (despachoId, archivo, tipo, { nombre, firmante, folio, paradaId } = {}) => {
   const final = tipo === 'archivo' ? await comprimirImagen(archivo) : archivo
   const nom = String(nombre && tipo === 'firma' ? nombre : final.name || nombre || (tipo === 'firma' ? 'firma.png' : 'archivo'))
   const etiqueta = `${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}_${tipo === 'firma' ? 'firma_' : ''}${nom}`
   const r = await llamarDrive({ accion: 'subir', carpeta: folio || despachoId, nombre: etiqueta, tipo: final.type || 'application/octet-stream', base64: await aBase64(final) })
   const { data: u } = await supabase.auth.getUser()
   const { error: e2 } = await supabase.from('operacion_respaldos').insert({
-    despacho_id: despachoId, tipo, ruta: 'drive:' + r.id, nombre: nom, firmante: firmante || null, creado_por: u?.user?.id,
+    despacho_id: despachoId || null, parada_id: paradaId || null, tipo, ruta: 'drive:' + r.id, nombre: nom, firmante: firmante || null, creado_por: u?.user?.id,
   })
   if (e2) throw e2
 }

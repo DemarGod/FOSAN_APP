@@ -3,6 +3,8 @@ import Modal from './Modal'
 import { iniciarDia, marcarParadaRuta, cerrarDia, SEMAFORO, L_TAREA, DIAS_RUTA } from '../lib/rutasSemana'
 import { hoyISO } from '../lib/costos'
 import { C, Icon, I } from '../lib/ui'
+import { subirRespaldo } from '../lib/api'
+import { Lienzo, aBlob } from './OpRespaldos'
 
 const num = (x) => String(x ?? '').replace(/\D/g, '').slice(0, 8)
 const miles = (n) => Number(n).toLocaleString('es-CL')
@@ -125,15 +127,19 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
         <button className="btn btn-azul" style={{ minHeight: 46, justifySelf: 'start' }} onClick={() => setCerrar(true)}>Cerrar ruta del día</button>
       )}
 
-      {marcar && <Marcar {...marcar} onCerrar={() => setMarcar(null)} onListo={() => { setMarcar(null); onCambio() }} />}
+      {marcar && <Marcar {...marcar} fecha={v.fecha} onCerrar={() => setMarcar(null)} onListo={() => { setMarcar(null); onCambio() }} />}
       {cerrar && <Cerrar viaje={v} pendientes={cuenta('pendiente')} onCerrar={() => setCerrar(false)} onListo={() => { setCerrar(false); onCambio() }} />}
     </div>
   )
 }
 
 // Confirmar una parada, con observación y aviso de mantención
-function Marcar({ p, estado, onCerrar, onListo }) {
+function Marcar({ p, estado, fecha, onCerrar, onListo }) {
   const [obs, setObs] = useState('')
+  // Respaldo opcional (se guarda en Google Drive): firma de quien recibe y fotos
+  const [firma, setFirma] = useState(null)
+  const [firmante, setFirmante] = useState('')
+  const [fotos, setFotos] = useState([])
   const [mant, setMant] = useState(false)
   const [error, setError] = useState(null)
   const [ocupado, setOcupado] = useState(false)
@@ -141,8 +147,19 @@ function Marcar({ p, estado, onCerrar, onListo }) {
   const retiro = p.tarea === 'retiro' || p.tarea === 'cambio'
   const guardar = async () => {
     if (!ok && !obs.trim()) return setError('Escribe por qué no se pudo.')
+    if (ok && firma && firmante.trim().length < 3) return setError('Escribe el nombre de quien firma.')
+    if (fotos.some((f) => f.size > 10 * 1024 * 1024)) return setError('Máximo 10 MB por foto.')
     setOcupado(true); setError(null)
-    try { await marcarParadaRuta(p.id, estado, obs, mant); onListo() } catch (e) { setError(String(e.message || e)); setOcupado(false) }
+    try { await marcarParadaRuta(p.id, estado, obs, mant) } catch (e) { setError(String(e.message || e)); setOcupado(false); return }
+    // La parada ya quedó marcada; si falla el respaldo, se avisa pero no se deshace
+    const destino = { paradaId: p.id, folio: p.despacho?.folio || `Ruta ${fecha} ${p.clientes?.nombre || ''}`.trim() }
+    try {
+      if (ok && firma) await subirRespaldo(p.despacho_id, await aBlob(firma), 'firma', { ...destino, nombre: 'firma.png', firmante: firmante.trim() })
+      for (const f of fotos) await subirRespaldo(p.despacho_id, f, 'archivo', destino)
+    } catch (e) {
+      window.alert(`La parada quedó marcada, pero no se pudo guardar el respaldo (${e.message || e}). Avisa a administración.`)
+    }
+    onListo()
   }
   return (
     <Modal titulo={`${ok ? 'Realizada' : 'No se pudo'} · ${p.clientes?.nombre || ''}`} ancho={480} onCerrar={onCerrar} pie={
@@ -171,6 +188,17 @@ function Marcar({ p, estado, onCerrar, onListo }) {
             </span>
           </label>
         )}
+        {ok && (
+          <div style={{ display: 'grid', gap: 8 }}>
+            <strong>Firma de quien recibe (opcional)</strong>
+            <input value={firmante} onChange={(e) => setFirmante(e.target.value)} maxLength={80} placeholder="Nombre del encargado" />
+            <Lienzo onCambio={setFirma} />
+          </div>
+        )}
+        <label className="campo">
+          <span>Fotos (opcional){fotos.length ? ` · ${fotos.length} elegida(s)` : ''}</span>
+          <input type="file" accept="image/*,application/pdf" multiple onChange={(e) => setFotos([...e.target.files])} />
+        </label>
         {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `2px solid ${C.rojo}`, color: '#7c1405' }}>{error}</div>}
       </div>
     </Modal>

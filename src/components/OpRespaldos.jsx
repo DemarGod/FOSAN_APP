@@ -175,7 +175,7 @@ export function Lienzo({ onCambio }) {
     </div>
   )
 }
-const aBlob = (canvas) => new Promise((res) => canvas.toBlob((b) => res(b), 'image/png'))
+export const aBlob = (canvas) => new Promise((res) => canvas.toBlob((b) => res(b), 'image/png'))
 
 function FirmaModal({ nombreInicial, onCerrar, onFirmar }) {
   const [lienzo, setLienzo] = useState(null)
