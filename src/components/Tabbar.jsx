@@ -1,18 +1,18 @@
 import { NavLink } from 'react-router-dom'
 import { C, Icon, I } from '../lib/ui'
-import { useSesion, puedeVer } from '../lib/sesion'
+import { useSesion, puedeVer, verMiRuta } from '../lib/sesion'
 
 const TABS = [
   { to: '/', label: 'Inicio', d: I.home, fin: true, s: 'inicio' },
   { to: '/clientes', label: 'Clientes', d: I.users, s: 'clientes' },
-  { to: '/mi-ruta', label: 'Mi ruta', d: I.truck },
+  { to: '/mi-ruta', label: 'Mi ruta', d: I.truck, miRuta: true },
   { to: '/rutas-semanales', label: 'Rutas', d: 'M5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM19 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM7 17h6a3 3 0 0 0 0-6h-2a3 3 0 0 1 0-6h6', s: 'rutas' },
   { to: '/banos', label: 'Baños', d: I.drop, s: 'banos' },
 ]
 
 export default function Tabbar() {
   const { perfil } = useSesion()
-  const tabs = TABS.filter((t) => !t.s || puedeVer(perfil, t.s))
+  const tabs = TABS.filter((t) => (!t.s || puedeVer(perfil, t.s)) && !(t.miRuta && !verMiRuta(perfil)))
   return (
     <nav className="tabbar" style={{
       gridTemplateColumns: `repeat(${tabs.length || 1}, 1fr)`, position: 'fixed', bottom: 0, left: 0, right: 0,

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useSesion } from '../lib/sesion'
-import { miRutaDeLaSemana, diasDeRuta, DIAS_RUTA, SEMAFORO, fechaDia, diaCorto, etiquetaSemana } from '../lib/rutasSemana'
+import { Link } from 'react-router-dom'
+import { useSesion, esDueno, puedeVer } from '../lib/sesion'
+import { miRutaDeLaSemana, diasDeRuta, operadores, DIAS_RUTA, SEMAFORO, fechaDia, diaCorto, etiquetaSemana } from '../lib/rutasSemana'
 import { hoyISO } from '../lib/costos'
 import { C } from '../lib/ui'
 import { Cargando, Aviso } from '../components/Listado'
@@ -9,7 +10,11 @@ import DiaRuta, { Punto } from '../components/DiaRuta'
 // Vista del operador: solo la ruta asignada para la semana en curso
 export default function MiRuta() {
   const { usuario, perfil } = useSesion()
-  const uid = perfil?.id || usuario?.id
+  const dueno = esDueno(perfil)
+  const [ops, setOps] = useState([])
+  const [verComo, setVerComo] = useState('')          // dueño: id del operador que se está mirando
+  useEffect(() => { if (dueno) operadores().then(setOps).catch(() => {}) }, [dueno])
+  const uid = (dueno && verComo) || perfil?.id || usuario?.id
   const hoy = hoyISO()
   const [semana, setSemana] = useState(null)
   const [rutaId, setRutaId] = useState(null)
@@ -18,6 +23,7 @@ export default function MiRuta() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    setSemana(null); setRutaId(null); setDias(null)
     miRutaDeLaSemana(uid, hoy).then((s) => {
       setSemana(s)
       setRutaId(s.rutas[0]?.id || null)
@@ -30,7 +36,25 @@ export default function MiRuta() {
   useEffect(() => { setDias(null); cargar() }, [rutaId])
 
   if (error) return <Aviso error={error} />
-  if (!semana) return <Cargando />
+
+  // Aviso y selector para el dueño
+  const panelDueno = dueno && (
+    <div style={{ display: 'grid', gap: 10, padding: 14, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', background: '#fff' }}>
+      <span style={{ font: '400 13px/1.5 var(--font)' }}>
+        Recuerda: Mi ruta es la pantalla de cada operador. Para revisar y marcar <b>todas</b> las rutas usa{' '}
+        <Link to="/operaciones?tab=rutas" style={{ color: C.azul, fontWeight: 600 }}>Operaciones → Rutas</Link>.
+      </span>
+      <label className="campo" style={{ maxWidth: 360 }}>
+        <span>Ver como operador</span>
+        <select value={verComo} onChange={(e) => setVerComo(e.target.value)}>
+          <option value="">— Elegir operador —</option>
+          {ops.map((o) => <option key={o.id} value={o.id}>{o.nombre}</option>)}
+        </select>
+      </label>
+      {verComo && <span style={{ font: '400 12px var(--font)', color: C.gris }}>Estás viendo exactamente lo que ve este operador. Lo que marques aquí queda registrado en su ruta real.</span>}
+    </div>
+  )
+  if (!semana) return <div style={{ maxWidth: 760, display: 'grid', gap: 16 }}>{panelDueno}<Cargando /></div>
 
   const ruta = semana.rutas.find((r) => r.id === rutaId)
   const viajeDe = (n) => (dias || []).find((v) => v.fecha === fechaDia(semana.lunes, n))
@@ -44,10 +68,15 @@ export default function MiRuta() {
           Semana del {etiquetaSemana(semana.lunes)}{ruta ? ` · ${ruta.nombre} · ${ruta.activos?.codigo || 'sin vehículo'}` : ''}
         </p>
       </div>
+      {panelDueno}
 
       {semana.rutas.length === 0 && (
         <div style={{ padding: 18, border: `2px solid ${C.borde}`, background: '#fff', font: '400 14px/1.5 var(--font)' }}>
-          No tienes una ruta asignada esta semana. Cuando te asignen una, aparecerá aquí.
+          {dueno && !verComo ? 'Elige un operador arriba para ver su ruta de esta semana.'
+            : dueno ? 'Este operador no tiene una ruta asignada esta semana.'
+            : perfil?.rol !== 'operador' && puedeVer(perfil, 'rutas')
+              ? <>Mi ruta es para los operadores. Para revisar las rutas entra a <Link to="/operaciones?tab=rutas" style={{ color: C.azul, fontWeight: 600 }}>Operaciones → Rutas</Link>.</>
+              : 'No tienes una ruta asignada esta semana. Cuando te asignen una, aparecerá aquí.'}
         </div>
       )}
 

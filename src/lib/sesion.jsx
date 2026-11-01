@@ -7,6 +7,8 @@ export const useSesion = () => useContext(SesionCtx)
 // perfil.permisos = { clientes: { ver, editar }, ... } cargado desde permisos_rol
 export const esDueno = (perfil) => perfil?.rol === 'dueno'
 export const puedeEditar = esDueno
+// Mi ruta: la ven los operadores (su ruta) y el dueño (para "ver como operador")
+export const verMiRuta = (perfil) => esDueno(perfil) || perfil?.rol === 'operador'
 export const esSecretaria = (perfil) => perfil?.rol === 'secretaria'
 export const puedeVer = (perfil, sec) => esDueno(perfil) || !!perfil?.permisos?.[sec]?.ver
 export const puedeOperar = (perfil, sec) => {

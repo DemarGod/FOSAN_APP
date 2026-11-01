@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { C, Icon, I } from '../lib/ui'
-import { useSesion, puedeVer, esDueno } from '../lib/sesion'
+import { useSesion, puedeVer, esDueno, verMiRuta } from '../lib/sesion'
 
 const DESPACHO = 'M3 7h11v9H3zM14 10h4l3 3v3h-7zM7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM6 4h5M8.5 1.5 11 4 8.5 6.5'
 const HISTORIAL = 'M12 21a9 9 0 1 0-9-9M3 4v5h5M12 7v5l3 2'
@@ -15,7 +15,7 @@ export const NAV = [
   { to: '/transporte', label: 'Transporte', d: I.truck, s: 'transporte' },
   // Operaciones (lámina 4): Programación · Rutas (las Rutas semanales de siempre) · Respaldos
   { to: '/operaciones', label: 'Operaciones', d: RUTA, s: 'rutas' },
-  { to: '/mi-ruta', label: 'Mi ruta', d: DESPACHO },
+  { to: '/mi-ruta', label: 'Mi ruta', d: DESPACHO, miRuta: true },   // solo operadores y dueño
   { grupo: 'Gestión' },
   { to: '/mantenciones', label: 'Mantenciones', d: I.wrench, s: 'mantenciones' },
   { calendario: true, label: 'Calendario', d: I.cal, s: 'calendario' },
@@ -50,7 +50,7 @@ export default function Sidebar({ onCalendario }) {
       </div>
 
       <nav style={{ flex: 1, overflowY: 'auto', padding: '10px 0' }}>
-        {NAV.filter((n) => (!n.s || [].concat(n.s).some((x) => puedeVer(perfil, x))) && !(n.soloDueno && !esDueno(perfil))).map((n, i) => {
+        {NAV.filter((n) => (!n.s || [].concat(n.s).some((x) => puedeVer(perfil, x))) && !(n.soloDueno && !esDueno(perfil)) && !(n.miRuta && !verMiRuta(perfil))).map((n, i) => {
           if (n.grupo) {
             return (
               <div key={n.grupo} style={{
