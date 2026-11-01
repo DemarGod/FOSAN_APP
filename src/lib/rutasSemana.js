@@ -136,16 +136,20 @@ export const diasDeRuta = async (rutaId) => {
     rows(supabase.from('v_despachos').select('id, folio, banos').in('salida_id', ids)),
   ])
   const clientes = [...new Set(par.map((p) => p.cliente_id))]
-  const arr = clientes.length ? await rows(supabase.from('activos').select('codigo, cliente_id').eq('estado', 'en_arriendo').in('cliente_id', clientes).order('codigo')) : []
-  const cod = {}
-  arr.forEach((a) => { (cod[a.cliente_id] ||= []).push(a.codigo) })
+  const arr = clientes.length ? await rows(supabase.from('activos').select('id, codigo, cliente_id').eq('estado', 'en_arriendo').in('cliente_id', clientes).order('codigo')) : []
+  const cod = {}, uni = {}
+  arr.forEach((a) => { (cod[a.cliente_id] ||= []).push(a.codigo); (uni[a.cliente_id] ||= []).push({ id: a.id, codigo: a.codigo }) })
   const dsp = Object.fromEntries(desp.map((d) => [d.id, d]))
   return viajes.map((v) => ({
     ...v,
-    paradas: par.filter((p) => p.salida_id === v.id).map((p) => ({ ...p, codigos: cod[p.cliente_id] || [], despacho: dsp[p.despacho_id] || null })),
+    paradas: par.filter((p) => p.salida_id === v.id).map((p) => ({ ...p, codigos: cod[p.cliente_id] || [], unidades: uni[p.cliente_id] || [], despacho: dsp[p.despacho_id] || null })),
   }))
 }
 export const iniciarDia = (salidaId, km) => rpc('iniciar_dia', { p_salida: salidaId, p_km: km })
-export const marcarParadaRuta = (paradaId, estado, obs, mantencion) =>
-  rpc('marcar_parada_ruta', { p_parada: paradaId, p_estado: estado, p_obs: obs || null, p_mantencion: !!mantencion })
+// mant (opcional): { banos: [ids de baños con falla], tipo: 'Mantención correctiva', retirado: true/false }
+export const marcarParadaRuta = (paradaId, estado, obs, mant) =>
+  rpc('marcar_parada_ruta', {
+    p_parada: paradaId, p_estado: estado, p_obs: obs || null,
+    p_banos: mant?.banos?.length ? mant.banos : [], p_tipo: mant?.banos?.length ? mant.tipo : null, p_retirado: !!mant?.retirado,
+  })
 export const cerrarDia = (salidaId, km) => rpc('cerrar_dia', { p_salida: salidaId, p_km: km })

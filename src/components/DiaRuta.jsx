@@ -8,6 +8,7 @@ import { Lienzo, aBlob } from './OpRespaldos'
 
 const num = (x) => String(x ?? '').replace(/\D/g, '').slice(0, 8)
 const miles = (n) => Number(n).toLocaleString('es-CL')
+const TIPOS_MANT = ['Mantención correctiva', 'Mantención preventiva', 'Reparación de puerta', 'Cambio de estanque', 'Revisión de bomba', 'Otro']
 const mapa = (dir) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dir)}`
 
 // Un día de una ruta: iniciar con km, marcar paradas con semáforo y cerrar con km
@@ -104,7 +105,9 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
                   </a>
                 )}
                 {p.observacion && <span style={{ font: '400 12px/1.4 var(--font)', color: C.tinta, background: C.suave, padding: '6px 8px' }}>“{p.observacion}”</span>}
-                {p.requiere_mantencion && <span style={{ font: '700 11px var(--font)', color: C.rojo }}>⚠ Requiere mantención</span>}
+                {p.requiere_mantencion && <span style={{ font: '700 11px var(--font)', color: C.rojo }}>
+                  ⚠ Requiere mantención{p.mant_tipo ? ` · ${p.mant_tipo}` : ''}{p.mant_banos ? ` · ${p.mant_banos}` : ''}{p.mant_retirado ? ' · retirado a bodega' : p.mant_banos ? ' · quedó en el cliente' : ''}
+                </span>}
               </span>
               {activo && !fijo && (
                 <span style={{ flex: 'none', display: 'grid', gap: 6 }}>
@@ -141,16 +144,24 @@ function Marcar({ p, estado, fecha, onCerrar, onListo }) {
   const [firmante, setFirmante] = useState('')
   const [fotos, setFotos] = useState([])
   const [mant, setMant] = useState(false)
+  const [malos, setMalos] = useState([])          // ids de los baños con falla
+  const [tipoMant, setTipoMant] = useState(TIPOS_MANT[0])
+  const [otroTipo, setOtroTipo] = useState('')
+  const [retirado, setRetirado] = useState(false)
+  const unidades = p.unidades || []
   const [error, setError] = useState(null)
   const [ocupado, setOcupado] = useState(false)
   const ok = estado === 'hecha'
   const retiro = p.tarea === 'retiro' || p.tarea === 'cambio'
   const guardar = async () => {
     if (!ok && !obs.trim()) return setError('Escribe por qué no se pudo.')
+    if (mant && !malos.length) return setError(unidades.length ? 'Marca cuál o cuáles baños requieren mantención.' : 'Este cliente no tiene baños FOSAN en arriendo para reportar.')
+    const tipoFinal = tipoMant === 'Otro' ? otroTipo.trim() : tipoMant
+    if (mant && !tipoFinal) return setError('Escribe el tipo de mantención.')
     if (ok && firma && firmante.trim().length < 3) return setError('Escribe el nombre de quien firma.')
     if (fotos.some((f) => f.size > 10 * 1024 * 1024)) return setError('Máximo 10 MB por foto.')
     setOcupado(true); setError(null)
-    try { await marcarParadaRuta(p.id, estado, obs, mant) } catch (e) { setError(String(e.message || e)); setOcupado(false); return }
+    try { await marcarParadaRuta(p.id, estado, obs, mant ? { banos: malos, tipo: tipoFinal, retirado: retiro && ok ? true : retirado } : null) } catch (e) { setError(String(e.message || e)); setOcupado(false); return }
     // La parada ya quedó marcada; si falla el respaldo, se avisa pero no se deshace
     const destino = { paradaId: p.id, folio: p.despacho?.folio || `Ruta ${fecha} ${p.clientes?.nombre || ''}`.trim() }
     try {
@@ -183,10 +194,39 @@ function Marcar({ p, estado, fecha, onCerrar, onListo }) {
             <span>
               <strong>Requiere mantención</strong>
               <span style={{ display: 'block', font: '400 12px var(--font)', color: C.gris }}>
-                {retiro && ok ? 'El baño queda En mantención (no disponible) y se agenda su revisión.' : 'Se avisa a administración con tu observación.'}
+                {retiro && ok ? 'El baño queda En mantención (no disponible) y se agenda su revisión.' : 'Se agenda la mantención del baño y se avisa a administración.'}
               </span>
             </span>
           </label>
+        )}
+        {mant && (ok || !retiro) && (
+          <div style={{ display: 'grid', gap: 10, padding: '10px 12px', border: `2px solid ${C.rojo}`, background: '#fff' }}>
+            <span><strong>¿Cuáles baños?</strong>{!unidades.length && <span style={{ color: C.gris }}> · el cliente no tiene baños FOSAN en arriendo</span>}</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {unidades.map((u) => {
+                const sel = malos.includes(u.id)
+                return (
+                  <button key={u.id} type="button" className="btn" onClick={() => setMalos((m) => sel ? m.filter((x) => x !== u.id) : [...m, u.id])}
+                    style={{ minHeight: 36, background: sel ? C.rojo : '#fff', color: sel ? '#fff' : C.tinta, borderColor: sel ? C.rojo : C.borde }}>
+                    {sel ? '✓ ' : ''}{u.codigo}
+                  </button>
+                )
+              })}
+            </div>
+            <label className="campo">
+              <span>Tipo de mantención</span>
+              <select value={tipoMant} onChange={(e) => setTipoMant(e.target.value)}>
+                {TIPOS_MANT.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </label>
+            {tipoMant === 'Otro' && <input value={otroTipo} onChange={(e) => setOtroTipo(e.target.value)} maxLength={60} placeholder="Ej.: Cambio de lavamanos" />}
+            {!(retiro && ok) && (
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
+                <input type="checkbox" checked={retirado} onChange={(e) => setRetirado(e.target.checked)} style={{ width: 18, height: 18 }} />
+                Lo retiré y lo llevo a bodega
+              </label>
+            )}
+          </div>
         )}
         {ok && (
           <div style={{ display: 'grid', gap: 8 }}>
