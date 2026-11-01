@@ -3,6 +3,7 @@
 // Guardar registra el acuerdo: no reserva equipos, no crea entregas ni limpiezas.
 // La base recalcula sola los días de limpieza, baños propios y valor mensual del cliente (script 24).
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Modal from './Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
 import {
@@ -26,6 +27,7 @@ const chico = { minHeight: 34, padding: '6px 12px' }
 const diasL = (arr) => DIAS.filter((d) => (arr || []).includes(d.v)).map((d) => d.l).join(' · ') || '—'
 
 export default function ServiciosCliente({ cliente, editable, finanzas, onCambio }) {
+  const navegar = useNavigate()
   const [lista, setLista] = useState(null)
   const [error, setError] = useState(null)
   const [form, setForm] = useState(null)        // {} nuevo · servicio a editar
@@ -60,7 +62,8 @@ export default function ServiciosCliente({ cliente, editable, finanzas, onCambio
                   <Menu opciones={[
                     { l: 'Ver detalle', d: I.ojo, onClick: () => setDetalle(x) },
                     { l: 'Editar acuerdo', d: I.lapiz, onClick: () => setForm(x), disabled: !editable || x.estado !== 'vigente' },
-                    { l: 'Crear orden', d: I.doc, onClick: () => {}, disabled: true, nota: 'Llega con Operaciones' },
+                    { l: 'Crear orden', d: I.doc, disabled: !editable || x.estado !== 'vigente' || !cliente.activo,
+                      onClick: () => navegar(`/operaciones?tab=programacion&nueva=1&cliente=${cliente.id}&servicio=${x.id}${x.ubicacion_id ? `&ubicacion=${x.ubicacion_id}` : ''}`) },
                     { l: 'Finalizar servicio', d: PROHIBIDO, color: C.rojo, onClick: () => setFinalizar(x), disabled: !editable || x.estado !== 'vigente' },
                   ]} />
                 </div>
@@ -70,7 +73,7 @@ export default function ServiciosCliente({ cliente, editable, finanzas, onCambio
         </div>
       )}
       <Ayuda>
-        Finalizar un servicio no confirma el retiro de equipos. "Crear orden" (abrir Operaciones con cliente, ubicación y servicio cargados) llega con la etapa de Operaciones.
+        Finalizar un servicio no confirma el retiro de equipos. "Crear orden" abre una nueva operación con cliente, ubicación y servicio ya cargados.
       </Ayuda>
 
       {form && <FormServicio cliente={cliente} servicio={form} finanzas={finanzas} onCerrar={() => setForm(null)} onGuardado={listo} />}

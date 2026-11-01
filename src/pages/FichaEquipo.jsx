@@ -9,7 +9,7 @@ import Ficha from './Ficha'
 import { Boton, Campo, Tabla, Pestanas, Estado, Ayuda } from '../components/Base'
 import { L_SITUACION, L_CONDICION, TONO_SITUACION, TONO_CONDICION } from '../components/InvEquipos'
 import {
-  equipoPorQr, ultimaEntrega, movimientosDe, mantencionesEquipo, personalActivo, actualizarEquipo, moverEquipo, darDeBaja,
+  equipoPorQr, ultimaEntrega, ordenesEquipo, movimientosDe, mantencionesEquipo, personalActivo, actualizarEquipo, moverEquipo, darDeBaja,
   catModelos, catUbicacionesInternas, crearMantencion, documentosDe, observacionesDe, agregarObservacion,
 } from '../lib/api'
 import { useSesion, puedeOperar, esDueno } from '../lib/sesion'
@@ -238,7 +238,16 @@ function EditarDatos({ e, onCerrar, onGuardado }) {
 function Asignacion({ e }) {
   const navegar = useNavigate()
   const [entrega, setEntrega] = useState(undefined)
+  const [ordenes, setOrdenes] = useState(null)
   useEffect(() => { ultimaEntrega(e.id).then(setEntrega).catch(() => setEntrega(null)) }, [e.id])
+  useEffect(() => { ordenesEquipo(e.id).then(setOrdenes).catch(() => setOrdenes({})) }, [e.id])
+  const { perfil } = useSesion()
+  const puedeRetiro = e.propiedad === 'empresa' && e.situacion === 'asignado' && !!e.cliente_id && puedeOperar(perfil, 'rutas')
+  const motivoRetiro = e.propiedad !== 'empresa' ? 'Es un equipo del cliente: no se retira con una orden FOSAN.'
+    : e.situacion !== 'asignado' ? 'Solo se retira un equipo asignado a un cliente.'
+      : ordenes?.retiro ? `Ya tiene el retiro ${ordenes.retiro.folio} programado.` : null
+  const solicitarRetiro = () => navegar(`/operaciones?tab=programacion&nueva=1&accion=retiro&cliente=${e.cliente_id}&retirar=${e.id}`
+    + (e.ubicacion_id ? `&ubicacion=${e.ubicacion_id}` : '') + (e.servicio_id ? `&servicio=${e.servicio_id}` : ''))
   const clienteId = e.propiedad === 'cliente' ? e.propietario_id : e.cliente_id
   const clienteNombre = e.propiedad === 'cliente' ? e.propietario : e.cliente
   const fEntrega = entrega?.fecha_realizada || entrega?.fecha_programada
@@ -266,11 +275,13 @@ function Asignacion({ e }) {
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <Boton icono={I.users} onClick={() => navegar(`/clientes/${clienteId}`)} disabled={!clienteId}>Ver cliente</Boton>
         <Boton icono={I.doc} onClick={() => navegar(`/clientes/${e.servicio?.cliente_id}?tab=servicios`)} disabled={!e.servicio}>Ver servicio</Boton>
-        <Boton icono={I.clip} disabled title="Llega con Operaciones (etapa 4)">Ver orden</Boton>
+        <Boton icono={I.clip} onClick={() => navegar(`/operaciones?tab=programacion&folio=${ordenes.ultima.folio}`)} disabled={!ordenes?.ultima}
+          title={ordenes && !ordenes.ultima ? 'Este equipo no tiene órdenes.' : undefined}>Ver orden{ordenes?.ultima ? ` ${ordenes.ultima.folio}` : ''}</Boton>
         <Boton icono={I.pin} onClick={() => window.open(`https://www.google.com/maps?q=${punto.lat},${punto.lng}`, '_blank', 'noopener')} disabled={!punto}>Abrir mapa</Boton>
-        <Boton tipo="principal" disabled title="Llega con Operaciones (etapa 4)">Solicitar retiro</Boton>
+        <Boton tipo="principal" onClick={solicitarRetiro} disabled={!puedeRetiro || !!ordenes?.retiro || ordenes === null}>Solicitar retiro</Boton>
       </div>
-      <Ayuda>Solicitar retiro abre una orden en Operaciones (llega en la etapa 4). Solo su ejecución confirmada actualiza la ubicación; no es seguimiento GPS.</Ayuda>
+      {motivoRetiro && <Ayuda tono="atencion">{motivoRetiro}</Ayuda>}
+      <Ayuda>Solicitar retiro abre una nueva operación de retiro con este equipo ya elegido. Solo su ejecución confirmada actualiza la ubicación; no es seguimiento GPS.</Ayuda>
     </div>
   )
 }

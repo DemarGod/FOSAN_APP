@@ -629,6 +629,17 @@ export const ultimaEntrega = async (activoId) => {
   return r.map((x) => x.despachos).filter((d) => d && d.estado === 'hecho')
     .sort((x, y) => String(y.fecha_realizada || y.fecha_programada).localeCompare(String(x.fecha_realizada || x.fecha_programada)))[0] || null
 }
+// Órdenes (operaciones) de un equipo: la última y si tiene un retiro programado
+export const ordenesEquipo = async (activoId) => {
+  const r = await rows(supabase.from('despacho_banos').select('accion, despachos(id, folio, tipo, estado, fecha_programada, fecha_realizada)').eq('activo_id', activoId))
+  const l = r.filter((x) => x.despachos && x.despachos.estado !== 'cancelado')
+    .sort((x, y) => String(y.despachos.fecha_realizada || y.despachos.fecha_programada).localeCompare(String(x.despachos.fecha_realizada || x.despachos.fecha_programada)))
+  return {
+    ultima: l[0]?.despachos || null,
+    retiro: l.find((x) => x.accion === 'retiro' && x.despachos.estado === 'programado')?.despachos || null,
+  }
+}
+export const operacionPorFolio = (folio) => one(supabase.from('v_operaciones').select('*').eq('folio', folio))
 export const mantencionesEquipo = (activoId) => rows(
   supabase.from('mantenciones').select('*, responsable:responsable_id(nombre)').eq('activo_id', activoId).order('fecha_programada', { ascending: false })
 )

@@ -2,13 +2,14 @@
 // Programar NO ejecuta: no mueve baños ni consume insumos. La ejecución se confirma en Mi ruta (o en la operación, paquete 8b).
 // Cada operación es un despacho; las Rutas semanales la ven en "Por programar" para ubicarla en un día.
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Modal from './Modal'
 import BuscarCliente from './BuscarCliente'
 import { RespaldoModal, ConfirmarEjecucion } from './OpRespaldos'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
 import {
   operaciones, banosDeOperacion, banosAsignados, banosDisponibles, crearDespacho, editarOperacion, cancelarOperacion,
-  ubicacionesDe, serviciosDe, vehiculos, personalActivo,
+  ubicacionesDe, serviciosDe, vehiculos, personalActivo, operacionPorFolio,
 } from '../lib/api'
 import { rutasDeSemana, lunesDe } from '../lib/rutasSemana'
 import { exportarTabla } from '../lib/excel'
@@ -47,6 +48,18 @@ export default function OpProgramacion({ irARutas }) {
   const [confirmar, setConfirmar] = useState(null)
   const [respaldo, setRespaldo] = useState(null)
   const cargar = () => { setDatos(null); operaciones(aplicado.desde, aplicado.hasta).then(setDatos).catch(setError) }
+  // Enlaces desde otras pantallas: ?nueva=1&cliente=&ubicacion=&servicio=&accion=&retirar=  ·  ?folio=D-00001
+  const [params, setParams] = useSearchParams()
+  useEffect(() => {
+    const folio = params.get('folio'), nueva = params.get('nueva')
+    if (!folio && !nueva) return
+    if (nueva && editable) setForm({
+      cliente_id: params.get('cliente') || '', ubicacion_id: params.get('ubicacion') || '', servicio_id: params.get('servicio') || '',
+      tipo: params.get('accion') || undefined, _retirar: params.get('retirar') || null,
+    })
+    if (folio) operacionPorFolio(folio).then((o) => o ? setDetalle(o) : setError({ message: `No se encontró la operación ${folio}.` })).catch(setError)
+    setParams({ tab: 'programacion' }, { replace: true })
+  }, [])
   useEffect(() => { cargar() }, [aplicado.desde, aplicado.hasta])
 
   const lista = datos || []
@@ -218,7 +231,12 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
   }, [v.cliente_id])
   useEffect(() => {
     setAsignados([])
-    if (v.cliente_id) banosAsignados(v.cliente_id, v.ubicacion_id || null).then(setAsignados).catch(() => {})
+    if (v.cliente_id) banosAsignados(v.cliente_id, v.ubicacion_id || null).then((a) => {
+      setAsignados(a)
+      // Desde "Solicitar retiro" de la ficha del equipo: el baño ya queda elegido
+      const pre = op._retirar && a.find((x) => x.id === op._retirar)
+      if (pre) setRetirar((r) => (r.length ? r : [pre]))
+    }).catch(() => {})
   }, [v.cliente_id, v.ubicacion_id])
   useEffect(() => { rutasDeSemana(lunesDe(v.fecha || hoyISO())).then(setRutas).catch(() => setRutas([])) }, [v.fecha])
 
