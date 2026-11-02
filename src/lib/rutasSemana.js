@@ -152,4 +152,11 @@ export const marcarParadaRuta = (paradaId, estado, obs, mant) =>
     p_parada: paradaId, p_estado: estado, p_obs: obs || null,
     p_banos: mant?.banos?.length ? mant.banos : [], p_tipo: mant?.banos?.length ? mant.tipo : null, p_retirado: !!mant?.retirado,
   })
+
+
+// Varios baños con falla, cada uno con su tipo de mantención y si se retiró: [{ id, tipo, retirado }]
+export const marcarParadaRutaVarios = (paradaId, estado, obs, items = []) =>
+  rpc('marcar_parada_ruta2', { p_parada: paradaId, p_estado: estado, p_obs: obs || null, p_mant: items })
+
+
 export const cerrarDia = (salidaId, km) => rpc('cerrar_dia', { p_salida: salidaId, p_km: km })

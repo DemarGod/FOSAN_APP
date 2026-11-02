@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Modal from './Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
-import { operaciones, respaldosDe, subirRespaldo, confirmarOperacion, abrirRespaldo, esImagenRespaldo } from '../lib/api'
+import { operaciones, paradasRealizadas, respaldosDe, subirRespaldo, confirmarOperacion, abrirRespaldo, esImagenRespaldo } from '../lib/api'
 import { useSesion } from '../lib/sesion'
 import { hoyISO, sumarDias } from '../lib/costos'
 import { C, I, fecha, fechaHora } from '../lib/ui'
@@ -22,13 +22,18 @@ export default function OpRespaldos() {
   const [datos, setDatos] = useState(null)
   const [error, setError] = useState(null)
   const [ver, setVer] = useState(null)
-  const cargar = () => { setDatos(null); operaciones(null, null).then((l) => setDatos(l.filter((o) => o.estado === 'hecho'))).catch(setError) }
+  // Operaciones hechas + limpiezas de ruta realizadas (estas no tienen folio de operación)
+  const cargar = () => {
+    setDatos(null)
+    Promise.all([operaciones(null, null), paradasRealizadas().catch(() => [])])
+      .then(([l, p]) => setDatos([...l.filter((o) => o.estado === 'hecho'), ...p])).catch(setError)
+  }
   useEffect(() => { cargar() }, [])
   const filas = useMemo(() => (datos || []).filter((o) => {
     const d = String(o.fecha_realizada || o.fecha_programada).slice(0, 10), t = aplicado.texto.trim().toLowerCase()
     if (aplicado.desde && d < aplicado.desde) return false
     if (aplicado.hasta && d > aplicado.hasta) return false
-    if (t && !o.cliente.toLowerCase().includes(t) && !o.folio.toLowerCase().includes(t)) return false
+    if (t && !String(o.cliente || '').toLowerCase().includes(t) && !String(o.folio || '').toLowerCase().includes(t)) return false
     return true
   }).sort((a, b) => String(b.fecha_realizada).localeCompare(String(a.fecha_realizada))), [datos, aplicado])
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }))
@@ -80,7 +85,7 @@ export function RespaldoModal({ o, onCerrar }) {
   const [error, setError] = useState(null)
   const [subiendo, setSubiendo] = useState(false)
   const input = useRef(null)
-  const cargar = () => respaldosDe(o.id).then(setLista).catch(setError)
+  const cargar = () => respaldosDe(o.parada_id ? { parada: o.parada_id } : o.id).then(setLista).catch(setError)  
   useEffect(() => { cargar() }, [o.id])
   const archivos = (lista || []).filter((r) => r.tipo === 'archivo')
   const firmas = (lista || []).filter((r) => r.tipo === 'firma')
@@ -90,7 +95,7 @@ export function RespaldoModal({ o, onCerrar }) {
     const grandes = [...files].filter((x) => x.size > MAX_MB * 1024 * 1024)
     if (grandes.length) { setError({ message: `Máximo ${MAX_MB} MB por archivo.` }); return }
     setSubiendo(true)
-    try { for (const x of files) await subirRespaldo(o.id, x, 'archivo', { folio: o.folio }); await cargar() } catch (x) { setError(x) }
+    try { for (const x of files) await subirRespaldo(o.parada_id ? null : o.id, x, 'archivo', { folio: o.folio, paradaId: o.parada_id }); await cargar() } catch (x) { setError(x) }
     setSubiendo(false)
   }
 
@@ -144,8 +149,7 @@ export function RespaldoModal({ o, onCerrar }) {
         {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
       </div>
       {firmar && <FirmaModal nombreInicial={o.recibido_por || ''} onCerrar={() => setFirmar(false)}
-        onFirmar={async (blob, firmante) => { await subirRespaldo(o.id, blob, 'firma', { nombre: 'firma.png', firmante, folio: o.folio }); setFirmar(false); cargar() }} />}
-    </Modal>
+        onFirmar={async (blob, firmante) => { await subirRespaldo(o.parada_id ? null : o.id, blob, 'firma', { nombre: 'firma.png', firmante, folio: o.folio, paradaId: o.parada_id }); setFirmar(false); cargar() }} />}    </Modal>
   )
 }
 

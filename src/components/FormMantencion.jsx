@@ -1,40 +1,50 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Modal from './Modal'
 import { activosLista, crearMantencion, tiposMantencion } from '../lib/api'
 import { C, Icon, I, L_CLASE_MANT, L_ESTADO_MANT } from '../lib/ui'
 import { useSesion, esSecretaria } from '../lib/sesion'
 
-const CLASES = Object.keys(L_CLASE_MANT)
 const ESTADOS = ['programada', 'proxima', 'urgente', 'completada']
-const TIPOS = [
-  'Mantención preventiva', 'Mantención correctiva', 'Reparación de puerta',
-  'Cambio de estanque', 'Cambio de aceite', 'Revisión técnica',
-  'Revisión de bomba', 'Cambio de neumáticos',
-]
+const TIPOS_EQUIPO = ['Mantención preventiva', 'Mantención correctiva', 'Reparación de puerta', 'Cambio de estanque', 'Revisión de bomba']
+const TIPOS_FLOTA = ['Mantención preventiva', 'Mantención correctiva', 'Cambio de aceite', 'Revisión técnica', 'Cambio de neumáticos']
 
-export default function FormMantencion({ activoInicial = '', onCerrar, onGuardado }) {
+// La clase de la mantención sale del tipo del activo: ya no se elige a mano.
+export const esFlota = (tipo) => tipo === 'camion' || tipo === 'camioneta'
+export const claseDe = (tipo) => (tipo === 'bano_quimico' ? 'bano' : esFlota(tipo) ? tipo : 'equipo')
+
+// ambito: 'equipos' (Inventario) · 'flota' (Transporte) · sin ambito = se deduce del activo inicial
+export default function FormMantencion({ activoInicial = '', ambito, onCerrar, onGuardado }) {
   const [v, setV] = useState({
-    activo_id: activoInicial, clase: 'bano', tipo: TIPOS[0],
+    activo_id: activoInicial, tipo: 'Mantención preventiva',
     fecha_programada: new Date().toISOString().slice(0, 10),
     responsable_ext: '', costo: '', estado: 'programada', detalle: '',
   })
-  const [activos, setActivos] = useState([])
+  const [todos, setTodos] = useState([])
   const { perfil } = useSesion()
   const sec = esSecretaria(perfil)
-  const [tipos, setTipos] = useState(TIPOS)
+  const [extra, setExtra] = useState([])
   const [otro, setOtro] = useState(null)
   const [error, setError] = useState(null)
   const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
-    activosLista().then(setActivos).catch(setError)
-    tiposMantencion().then((extra) => setTipos([...TIPOS, ...extra.filter((t) => !TIPOS.includes(t)).sort()])).catch(() => {})
+    activosLista().then(setTodos).catch(setError)
   }, [])
+  const inicial = todos.find((a) => a.id === activoInicial)
+  const flota = ambito ? ambito === 'flota' : esFlota(inicial?.tipo)
+  useEffect(() => {
+    tiposMantencion(flota ? ['camion', 'camioneta'] : ['bano', 'equipo']).then(setExtra).catch(() => {})
+  }, [flota])
+  const activos = useMemo(() => todos.filter((a) => esFlota(a.tipo) === flota), [todos, flota])
+  const elegido = todos.find((a) => a.id === v.activo_id)
+  const base = flota ? TIPOS_FLOTA : TIPOS_EQUIPO
+  const [propios, setPropios] = useState([])
+  const tipos = useMemo(() => [...new Set([...base, ...extra.filter((t) => !base.includes(t)).sort(), ...propios])], [base, extra, propios])
   const agregarTipo = () => {
     const t = (otro || '').trim()
     if (!t) return
     const nombre = t.charAt(0).toUpperCase() + t.slice(1)
-    setTipos((p) => (p.includes(nombre) ? p : [...p, nombre]))
+    setPropios((p) => (p.includes(nombre) ? p : [...p, nombre]))
     setV((p) => ({ ...p, tipo: nombre }))
     setOtro(null)
   }
@@ -49,7 +59,7 @@ export default function FormMantencion({ activoInicial = '', onCerrar, onGuardad
     try {
       await crearMantencion({
         activo_id: v.activo_id,
-        clase: v.clase,
+        clase: claseDe(elegido?.tipo),
         tipo: v.tipo,
         fecha_programada: v.fecha_programada,
         fecha_realizada: v.estado === 'completada' ? v.fecha_programada : null,
@@ -63,8 +73,7 @@ export default function FormMantencion({ activoInicial = '', onCerrar, onGuardad
   }
 
   return (
-    <Modal titulo="Nueva mantención" onCerrar={onCerrar} pie={
-      <>
+    <Modal titulo={flota ? 'Nueva mantención de vehículo' : 'Nueva mantención de equipo'} onCerrar={onCerrar} pie={      <>
         <button className="btn" onClick={onCerrar}>Cancelar</button>
         <button className="btn btn-verde" onClick={guardar} disabled={guardando}>
           {guardando ? 'Guardando…' : 'Guardar mantención'}
@@ -73,20 +82,17 @@ export default function FormMantencion({ activoInicial = '', onCerrar, onGuardad
     }>
       <div className="cols2" style={{ gap: 18, padding: 18 }}>
         <div style={{ display: 'grid', gap: 14, alignContent: 'start' }}>
+          
           <label className="campo">
             <span>Activo</span>
-            <select value={v.activo_id} onChange={set('activo_id')}>
-              <option value="">Elegir unidad…</option>
-              {activos.map((a) => <option key={a.id} value={a.id}>{a.codigo}</option>)}
-            </select>
+            <BuscarActivo activos={activos} valor={v.activo_id}
+              onElegir={(id) => setV((p) => ({ ...p, activo_id: id }))} />
           </label>
-
-          <label className="campo">
-            <span>Clase</span>
-            <select value={v.clase} onChange={set('clase')}>
-              {CLASES.map((c) => <option key={c} value={c}>{L_CLASE_MANT[c]}</option>)}
-            </select>
-          </label>
+          {elegido && (
+            <div style={{ marginTop: -8, font: '400 12px var(--font)', color: C.gris }}>
+              Clase: <b>{L_CLASE_MANT[claseDe(elegido.tipo)]}</b> (según el activo)
+            </div>
+          )}
 
           <label className="campo">
             <span>Tipo de mantención</span>
@@ -162,5 +168,58 @@ export default function FormMantencion({ activoInicial = '', onCerrar, onGuardad
         </div>
       </div>
     </Modal>
+  )
+}
+
+
+
+// Buscador de activo por teclado: escribe parte del código, ↑ ↓ para moverte, Enter para elegir.
+function BuscarActivo({ activos, valor, onElegir }) {
+  const [texto, setTexto] = useState('')
+  const [abierto, setAbierto] = useState(false)
+  const [marca, setMarca] = useState(0)
+  const ref = useRef(null)
+  const elegido = activos.find((a) => a.id === valor)
+  const res = useMemo(() => {
+    const t = texto.trim().toLowerCase()
+    return activos.filter((a) => !t || a.codigo.toLowerCase().includes(t)).slice(0, 30)
+  }, [activos, texto])
+  useEffect(() => { setMarca(0) }, [texto])
+  useEffect(() => {
+    if (!abierto) return
+    const fuera = (e) => { if (ref.current && !ref.current.contains(e.target)) setAbierto(false) }
+    document.addEventListener('mousedown', fuera)
+    return () => document.removeEventListener('mousedown', fuera)
+  }, [abierto])
+  const elegir = (a) => { onElegir(a.id); setTexto(''); setAbierto(false) }
+  const tecla = (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setAbierto(true); setMarca((m) => Math.min(m + 1, res.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setMarca((m) => Math.max(m - 1, 0)) }
+    else if (e.key === 'Enter') { e.preventDefault(); if (res[marca]) elegir(res[marca]) }
+    else if (e.key === 'Escape' && abierto) { e.stopPropagation(); setAbierto(false) }
+  }
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <input value={abierto ? texto : elegido ? elegido.codigo : texto}
+        onFocus={() => { setAbierto(true); setTexto('') }}
+        onChange={(e) => { setTexto(e.target.value); setAbierto(true) }}
+        onKeyDown={tecla} placeholder="Escribe el código, ej. BQ-03 o CAM-0" autoComplete="off" />
+      {abierto && (
+        <div role="listbox" style={{
+          position: 'absolute', left: 0, right: 0, top: '100%', zIndex: 5, maxHeight: 240, overflowY: 'auto',
+          background: '#fff', border: `2px solid ${C.borde}`, borderTop: 0,
+        }}>
+          {res.length === 0 && <div style={{ padding: '10px 12px', color: C.gris, font: '400 13px var(--font)' }}>Sin coincidencias.</div>}
+          {res.map((a, i) => (
+            <div key={a.id} role="option" aria-selected={i === marca}
+              onMouseDown={(e) => { e.preventDefault(); elegir(a) }} onMouseEnter={() => setMarca(i)}
+              style={{
+                padding: '9px 12px', cursor: 'pointer', font: '400 13px var(--font)',
+                background: i === marca ? C.tinte : '#fff', fontWeight: a.id === valor ? 700 : 400,
+              }}>{a.codigo}</div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }

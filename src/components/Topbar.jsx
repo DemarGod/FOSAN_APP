@@ -20,11 +20,11 @@ const sinTilde = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f
 const SINONIMOS = {
   '/banos': 'bano banos quimico inventario arriendo arriendos activo activos unidad codigo bodega',
   '/clientes': 'cliente clientes empresa arriendo contrato contratos rut',
-  '/transporte': 'camion camiones camioneta vehiculo vehiculos flota patente transporte inventario',
+  '/transporte': 'camion camiones camioneta vehiculo vehiculos flota patente transporte inventario mantencion mantenciones taller',
   '/despachos': 'despacho despachos entrega entregas retiro retiros cambio',
   '/rutas': 'ruta rutas salida salidas limpieza limpiezas recorrido km',
   '/insumos': 'insumo insumos stock quimico papel',
-  '/mantenciones': 'mantencion mantenciones taller reparacion',
+  '/inventario': 'inventario equipo equipos mantencion mantenciones taller reparacion',
   '/ubicaciones': 'mapa ubicacion ubicaciones faena direccion',
   '/reportes': 'reporte reportes excel informe',
   '/analisis': 'analisis costos rentabilidad margen utilidad aseo equilibrio km',

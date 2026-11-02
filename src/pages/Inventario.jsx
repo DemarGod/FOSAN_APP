@@ -5,11 +5,13 @@ import { Pestanas } from '../components/Base'
 import InvEquipos from '../components/InvEquipos'
 import InvInsumos from '../components/InvInsumos'
 import Ubicaciones from './Ubicaciones'
+import PanelMantenciones from '../components/PanelMantenciones'
 import { useSesion, puedeVer } from '../lib/sesion'
 
 const TODAS = [
   { v: 'equipos', l: 'Equipos', s: 'banos' },
   { v: 'insumos', l: 'Insumos y EPP', s: 'insumos' },
+  { v: 'mantenciones', l: 'Mantenciones', s: 'mantenciones' },
   { v: 'mapa', l: 'Mapa', s: 'ubicaciones' },
 ]
 
@@ -24,6 +26,7 @@ export default function Inventario() {
       <Pestanas opciones={pestanas} valor={tab} onChange={(v) => setParams({ tab: v }, { replace: true })} />
       {tab === 'equipos' && <InvEquipos />}
       {tab === 'insumos' && <InvInsumos />}
+      {tab === 'mantenciones' && <PanelMantenciones ambito="equipos" />}
       {tab === 'mapa' && <Ubicaciones />}
     </div>
   )

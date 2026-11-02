@@ -17,6 +17,8 @@ export const resumenInventario = () => one(supabase.from('v_resumen_inventario')
 export const estadoActivos = () => rows(supabase.from('v_estado_activos').select('*'))
 export const serviciosMes = () => rows(supabase.from('v_servicios_mes').select('*'))
 export const mapaPuntos = () => rows(supabase.from('v_mapa_puntos').select('*').order('activos', { ascending: false }))
+
+
 export const utilidadMensual = () => rows(supabase.from('v_utilidad_mensual').select('*'))
 export const utilidadPorServicio = () => rows(supabase.from('v_utilidad_por_servicio').select('*').order('mes', { ascending: false }))
 export const topClientes = () => rows(supabase.from('v_top_clientes').select('*').limit(5))
@@ -77,8 +79,15 @@ export const eliminarActivos = async (ids) => {
   if (error) throw error
   return data
 }
-export const tiposMantencion = () => rows(supabase.from('mantenciones').select('tipo').limit(500))
-  .then((r) => [...new Set(r.map((x) => x.tipo).filter(Boolean))])
+
+// clases: ['camion','camioneta'] para vehículos o ['bano','equipo'] para equipos (sin clases = todas)
+export const tiposMantencion = (clases) => {
+  let q = supabase.from('mantenciones').select('tipo').limit(500)
+  if (clases) q = q.in('clase', clases)
+  return rows(q).then((r) => [...new Set(r.map((x) => x.tipo).filter(Boolean))])
+}
+
+
 export const crearActivo = async (datos) => {
   const { error } = await supabase.from('activos').insert(datos)
   if (error) throw error
@@ -319,14 +328,26 @@ export const ubicarCliente = async (id, lat, lng) => {
 // ── Mantenciones ──────────────────────────────────────────────────────────
 export const mantenciones = () => rows(
   supabase.from('mantenciones')
-    .select('id, clase, tipo, fecha_programada, fecha_realizada, responsable_ext, costo, estado, detalle, activos(codigo), perfiles:responsable_id(nombre)')
-    .order('fecha_programada', { ascending: false })
+  .select('id, activo_id, clase, tipo, fecha_programada, fecha_realizada, responsable_ext, costo, estado, detalle, activos(codigo, tipo), perfiles:responsable_id(nombre)')
+  .order('fecha_programada', { ascending: false })
 )
 export const mantencionesKpi = () => one(supabase.from('v_mantenciones_kpi').select('*'))
 export const crearMantencion = async (datos) => {
   const { error } = await supabase.from('mantenciones').insert(datos)
   if (error) throw error
 }
+
+// Completar: el trigger cerrar_mantencion devuelve el activo a su estado de trabajo
+export const completarMantencion = async (id, datos) => {
+  const { error } = await supabase.from('mantenciones').update({ ...datos, estado: 'completada' }).eq('id', id)
+  if (error) throw error
+}
+export const anularMantencion = async (id) => {
+  const { error } = await supabase.from('mantenciones').update({ estado: 'anulada' }).eq('id', id)
+  if (error) throw error
+}
+
+
 
 // ── Calendario ────────────────────────────────────────────────────────────
 export const eventosDelMes = (anio, mes) => {
@@ -387,7 +408,7 @@ export const tableroInicio = async () => {
     rows(supabase.from('activos').select('id, codigo, tipo, estado').neq('estado', 'baja')),
     seguro(rows(supabase.from('despachos').select('id, tipo, fecha_programada, vehiculo_id').eq('estado', 'programado'))),
     seguro(rows(supabase.from('salidas').select('id, vehiculo_id, salida_paradas(id)').eq('estado', 'planificada').eq('fecha', hoy).is('salida_paradas.despacho_id', null))),
-    seguro(rows(supabase.from('mantenciones').select('id, fecha_programada, activos!inner(tipo)').in('estado', ['programada', 'proxima', 'urgente']))),
+    seguro(rows(supabase.from('mantenciones').select('id, fecha_programada, activos!inner(codigo, tipo)').in('estado', ['programada', 'proxima', 'urgente']))),
   ])
   const banos = act.filter((x) => x.tipo === 'bano_quimico')
   const flota = act.filter((x) => ['camion', 'camioneta'].includes(x.tipo))
@@ -444,7 +465,8 @@ export const avisosCalculados = async () => {
     texto: `Contrato de ${c.nombre} vence ${cuando(c.fecha_fin_contrato).toLowerCase()}`,
   }))
   man.forEach((m) => lista.push({
-    id: 'man-' + m.id + '-' + m.fecha_programada, fecha: m.fecha_programada, origen: 'Mantenciones', a: '/mantenciones',
+    id: 'man-' + m.id + '-' + m.fecha_programada, fecha: m.fecha_programada, origen: 'Mantenciones',
+    a: ['camion', 'camioneta'].includes(m.activos?.tipo) ? '/transporte?tab=mantenciones' : '/inventario?tab=mantenciones',
     nivel: m.estado === 'urgente' || dias(m.fecha_programada) < 0 ? 'alerta' : 'aviso',
     texto: `${dias(m.fecha_programada) < 0 ? 'Atrasada' : cuando(m.fecha_programada)}: ${m.tipo} · ${m.activos?.codigo || ''}`,
   }))
@@ -787,8 +809,10 @@ const traerDrive = async (ids) => {
   }
   return ids.map((id) => cacheDrive[id] || null)
 }
-export const respaldosDe = async (despachoId) => {
-  const r = await rows(supabase.from('operacion_respaldos').select('*').eq('despacho_id', despachoId).order('creado_en'))
+// id: el del despacho, o { parada: id } para una limpieza de ruta
+export const respaldosDe = async (id) => {
+  const q = supabase.from('operacion_respaldos').select('*')
+  const r = await rows((id?.parada ? q.eq('parada_id', id.parada) : q.eq('despacho_id', id)).order('creado_en'))
   if (!r.length) return r
   const ids = [...new Set(r.map((x) => x.creado_por).filter(Boolean))]
   const enSupabase = r.filter((x) => !x.ruta.startsWith('drive:'))
@@ -807,6 +831,34 @@ export const respaldosDe = async (despachoId) => {
     return { ...x, perfiles: { nombre: quien[x.creado_por] || null }, url: dr?.url || urlSb[x.ruta] || null, dataUrl: dr?.dataUrl || null }
   })
 }
+
+
+// Limpiezas de ruta realizadas (paradas sin despacho): se muestran en Respaldos junto a las operaciones
+export const paradasRealizadas = async () => {
+  const par = await rows(supabase.from('salida_paradas')
+    .select('id, salida_id, tarea, banos, hecha_en, observacion, clientes(nombre, rut, direccion, comuna)')
+    .eq('estado', 'hecha').is('despacho_id', null).order('hecha_en', { ascending: false }).limit(3000))
+  if (!par.length) return []
+  const sal = [...new Set(par.map((p) => p.salida_id))]
+  const ids = par.map((p) => p.id)
+  const [viajes, resp] = await Promise.all([
+    rows(supabase.from('v_salidas').select('id, fecha, ruta, vehiculo').in('id', sal)),
+    rows(supabase.from('operacion_respaldos').select('parada_id, tipo, firmante').in('parada_id', ids)),
+  ])
+  const v = Object.fromEntries(viajes.map((x) => [x.id, x]))
+  return par.map((p) => {
+    const r = resp.filter((x) => x.parada_id === p.id), s = v[p.salida_id] || {}
+    const firmas = r.filter((x) => x.tipo === 'firma')
+    return {
+      id: 'parada-' + p.id, parada_id: p.id, estado: 'hecho', tipo: p.tarea, folio: `Ruta ${s.ruta || ''}`.trim(),
+      cliente: p.clientes?.nombre || '—', rut: p.clientes?.rut, ubicacion: [p.clientes?.direccion, p.clientes?.comuna].filter(Boolean).join(', ') || null,
+      fecha_programada: s.fecha, fecha_realizada: p.hecha_en, unidades: p.banos ? `${p.banos} baño(s)` : null, patente: s.vehiculo,
+      observaciones: p.observacion, archivos: r.length - firmas.length, firmas: firmas.length, recibido_por: firmas[firmas.length - 1]?.firmante || null,
+    }
+  })
+}
+
+
 // Abre un respaldo de Drive (PDF u otro) en una pestaña nueva
 export const abrirRespaldo = async (r) => {
   const w = window.open('', '_blank')

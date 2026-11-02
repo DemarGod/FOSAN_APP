@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Modal from './Modal'
-import { iniciarDia, marcarParadaRuta, cerrarDia, SEMAFORO, L_TAREA, DIAS_RUTA } from '../lib/rutasSemana'
+import { iniciarDia, marcarParadaRuta, marcarParadaRutaVarios, cerrarDia, SEMAFORO, L_TAREA, DIAS_RUTA } from '../lib/rutasSemana'
 import { hoyISO } from '../lib/costos'
 import { C, Icon, I } from '../lib/ui'
 import { subirRespaldo } from '../lib/api'
@@ -106,7 +106,7 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
                 )}
                 {p.observacion && <span style={{ font: '400 12px/1.4 var(--font)', color: C.tinta, background: C.suave, padding: '6px 8px' }}>“{p.observacion}”</span>}
                 {p.requiere_mantencion && <span style={{ font: '700 11px var(--font)', color: C.rojo }}>
-                  ⚠ Requiere mantención{p.mant_tipo ? ` · ${p.mant_tipo}` : ''}{p.mant_banos ? ` · ${p.mant_banos}` : ''}{p.mant_retirado ? ' · retirado a bodega' : p.mant_banos ? ' · quedó en el cliente' : ''}
+                  ⚠ Requiere mantención{p.mant_tipo?.includes(': ') ? ` · ${p.mant_tipo}` : <>{p.mant_tipo ? ` · ${p.mant_tipo}` : ''}{p.mant_banos ? ` · ${p.mant_banos}` : ''}{p.mant_retirado ? ' · retirado a bodega' : p.mant_banos ? ' · quedó en el cliente' : ''}</>}
                 </span>}
               </span>
               {activo && !fijo && (
@@ -144,10 +144,14 @@ function Marcar({ p, estado, fecha, onCerrar, onListo }) {
   const [firmante, setFirmante] = useState('')
   const [fotos, setFotos] = useState([])
   const [mant, setMant] = useState(false)
-  const [malos, setMalos] = useState([])          // ids de los baños con falla
-  const [tipoMant, setTipoMant] = useState(TIPOS_MANT[0])
-  const [otroTipo, setOtroTipo] = useState('')
-  const [retirado, setRetirado] = useState(false)
+  // Baños con falla: { [id]: { tipo, otro, retirado } } — cada baño con su propia mantención
+  const [malos, setMalos] = useState({})
+  const elegidos = Object.keys(malos)
+  const alternarMalo = (id) => setMalos((m) => {
+    if (m[id]) { const n = { ...m }; delete n[id]; return n }
+    return { ...m, [id]: { tipo: TIPOS_MANT[0], otro: '', retirado: false } }
+  })
+  const cambiarMalo = (id, c) => setMalos((m) => ({ ...m, [id]: { ...m[id], ...c } }))
   const unidades = p.unidades || []
   const [error, setError] = useState(null)
   const [ocupado, setOcupado] = useState(false)
@@ -155,14 +159,19 @@ function Marcar({ p, estado, fecha, onCerrar, onListo }) {
   const retiro = p.tarea === 'retiro' || p.tarea === 'cambio'
   const guardar = async () => {
     if (!ok && !obs.trim()) return setError('Escribe por qué no se pudo.')
-    if (mant && !malos.length) return setError(unidades.length ? 'Marca cuál o cuáles baños requieren mantención.' : 'Este cliente no tiene baños FOSAN en arriendo para reportar.')
-    const tipoFinal = tipoMant === 'Otro' ? otroTipo.trim() : tipoMant
-    if (mant && !tipoFinal) return setError('Escribe el tipo de mantención.')
+      if (mant && !elegidos.length) return setError(unidades.length ? 'Marca cuál o cuáles baños requieren mantención.' : 'Este cliente no tiene baños FOSAN en arriendo para reportar.')
+    const items = mant ? elegidos.map((id) => ({
+      id, tipo: malos[id].tipo === 'Otro' ? malos[id].otro.trim() : malos[id].tipo, retirado: retiro && ok ? true : malos[id].retirado,
+    })) : []
+    const sinTipo = items.find((x) => !x.tipo)
+    if (sinTipo) return setError(`Escribe el tipo de mantención de ${unidades.find((u) => u.id === sinTipo.id)?.codigo || 'un baño'}.`)
+
+
+
     if (ok && firma && firmante.trim().length < 3) return setError('Escribe el nombre de quien firma.')
     if (fotos.some((f) => f.size > 10 * 1024 * 1024)) return setError('Máximo 10 MB por foto.')
     setOcupado(true); setError(null)
-    try { await marcarParadaRuta(p.id, estado, obs, mant ? { banos: malos, tipo: tipoFinal, retirado: retiro && ok ? true : retirado } : null) } catch (e) { setError(String(e.message || e)); setOcupado(false); return }
-    // La parada ya quedó marcada; si falla el respaldo, se avisa pero no se deshace
+    try { await marcarParadaRutaVarios(p.id, estado, obs, items) } catch (e) { setError(String(e.message || e)); setOcupado(false); return }    // La parada ya quedó marcada; si falla el respaldo, se avisa pero no se deshace
     const destino = { paradaId: p.id, folio: p.despacho?.folio || `Ruta ${fecha} ${p.clientes?.nombre || ''}`.trim() }
     try {
       if (ok && firma) await subirRespaldo(p.despacho_id, await aBlob(firma), 'firma', { ...destino, nombre: 'firma.png', firmante: firmante.trim() })
@@ -202,30 +211,36 @@ function Marcar({ p, estado, fecha, onCerrar, onListo }) {
         {mant && (ok || !retiro) && (
           <div style={{ display: 'grid', gap: 10, padding: '10px 12px', border: `2px solid ${C.rojo}`, background: '#fff' }}>
             <span><strong>¿Cuáles baños?</strong>{!unidades.length && <span style={{ color: C.gris }}> · el cliente no tiene baños FOSAN en arriendo</span>}</span>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {unidades.map((u) => {
-                const sel = malos.includes(u.id)
+                const sel = !!malos[u.id]
                 return (
-                  <button key={u.id} type="button" className="btn" onClick={() => setMalos((m) => sel ? m.filter((x) => x !== u.id) : [...m, u.id])}
+                  <button key={u.id} type="button" className="btn" onClick={() => alternarMalo(u.id)}
                     style={{ minHeight: 36, background: sel ? C.rojo : '#fff', color: sel ? '#fff' : C.tinta, borderColor: sel ? C.rojo : C.borde }}>
                     {sel ? '✓ ' : ''}{u.codigo}
                   </button>
                 )
               })}
             </div>
-            <label className="campo">
-              <span>Tipo de mantención</span>
-              <select value={tipoMant} onChange={(e) => setTipoMant(e.target.value)}>
-                {TIPOS_MANT.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </label>
-            {tipoMant === 'Otro' && <input value={otroTipo} onChange={(e) => setOtroTipo(e.target.value)} maxLength={60} placeholder="Ej.: Cambio de lavamanos" />}
-            {!(retiro && ok) && (
-              <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
-                <input type="checkbox" checked={retirado} onChange={(e) => setRetirado(e.target.checked)} style={{ width: 18, height: 18 }} />
-                Lo retiré y lo llevo a bodega
-              </label>
-            )}
+            {/* Una ficha por baño elegido: cada uno puede tener una mantención distinta */}
+            {unidades.filter((u) => malos[u.id]).map((u) => {
+              const m = malos[u.id]
+              return (
+                <div key={u.id} style={{ display: 'grid', gap: 8, padding: '8px 10px', borderLeft: `4px solid ${C.rojo}`, background: '#fdf3f2' }}>
+                  <strong>{u.codigo}</strong>
+                  <select value={m.tipo} onChange={(e) => cambiarMalo(u.id, { tipo: e.target.value })} aria-label={`Tipo de mantención de ${u.codigo}`}>
+                    {TIPOS_MANT.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  {m.tipo === 'Otro' && <input value={m.otro} onChange={(e) => cambiarMalo(u.id, { otro: e.target.value })} maxLength={60} placeholder="Ej.: Cambio de lavamanos" />}
+                  {!(retiro && ok) && (
+                    <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={m.retirado} onChange={(e) => cambiarMalo(u.id, { retirado: e.target.checked })} style={{ width: 18, height: 18 }} />
+                      Lo retiré y lo llevo a bodega
+                    </label>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
         {ok && (

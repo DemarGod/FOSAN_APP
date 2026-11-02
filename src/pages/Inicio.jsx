@@ -106,20 +106,20 @@ export default function Inicio({ onCalendario }) {
           { v: v(op.hoy), l: 'Servicios programados hoy', s: 'Despachos y limpiezas en ruta', a: '/rutas', color: C.azul },
           { v: v(op.atrasados), l: 'Servicios atrasados', a: '/despachos', color: C.rojo, vColor: op.atrasados ? C.rojo : undefined },
           { v: v(op.retiros), l: 'Retiros pendientes', a: '/despachos', color: C.amarillo },
-          { v: v(op.mantenciones), l: 'Mantenciones próximas', s: 'Próximos 7 días', a: '/mantenciones', color: C.navy },
+          { v: v(op.mantenciones), l: 'Mantenciones próximas', s: 'Próximos 7 días', a: '/inventario?tab=mantenciones', color: C.navy },
         ]} />
 
         <Grupo titulo="Baños químicos" onClick={navegar} items={[
           { v: v(b.total), l: 'Total', a: '/banos', color: C.navy },
           { v: v(b.disponibles), l: 'Disponibles', a: '/banos', color: C.azul },
           { v: v(b.arrendados), l: 'Arrendados', a: '/banos', color: C.verde },
-          { v: v(b.fuera), l: 'Fuera de servicio', s: 'En mantención o dañados', a: '/mantenciones', color: C.rojo },
+          { v: v(b.fuera), l: 'Fuera de servicio', s: 'En mantención o dañados', a: '/inventario?tab=mantenciones', color: C.rojo },
         ]} />
 
         <Grupo titulo="Transporte" onClick={navegar} items={[
           { v: v(tr.disponibles), l: 'Vehículos disponibles', a: '/transporte', color: C.azul },
           { v: v(tr.operando), l: 'Vehículos en operación', s: 'Con ruta o despacho hoy', a: '/rutas', color: C.verde },
-          { v: v(tr.mantPendientes), l: 'Mantenciones pendientes', s: t && tr.taller ? `${tr.taller} vehículo(s) en taller` : null, a: '/mantenciones', color: C.amarillo },
+          { v: v(tr.mantPendientes), l: 'Mantenciones pendientes', s: t && tr.taller ? `${tr.taller} vehículo(s) en taller` : null, a: '/transporte?tab=mantenciones', color: C.amarillo },
         ]} />
 
         <div className="cols2" style={{ gap: 20 }}>

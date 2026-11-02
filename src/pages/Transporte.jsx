@@ -1,16 +1,37 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import Listado from '../components/Listado'
+import { Pestanas } from '../components/Base'
+import PanelMantenciones from '../components/PanelMantenciones'
 import FormVehiculo from '../components/FormVehiculo'
 import FormMantencion from '../components/FormMantencion'
 import { vehiculos, parametros } from '../lib/api'
 import { TIPOS_VEHICULO, costoKmVehiculo, mapaParametros } from '../lib/costos'
-import { useSesion, puedeEditar, puedeOperar, verFinanzas } from '../lib/sesion'
+import { useSesion, puedeEditar, puedeOperar, puedeVer, verFinanzas } from '../lib/sesion'
 import { C, I, L_ESTADO_ACTIVO, clp } from '../lib/ui'
 
 const miles = (n, u) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('es-CL') + (u ? ' ' + u : ''))
 
+// Transporte: Vehículos · Mantenciones (solo camiones y camionetas)
 export default function Transporte() {
+  const { perfil } = useSesion()
+  const [params, setParams] = useSearchParams()
+  const pestanas = [
+    { v: 'vehiculos', l: 'Vehículos' },
+    ...(puedeVer(perfil, 'mantenciones') ? [{ v: 'mantenciones', l: 'Mantenciones' }] : []),
+  ]
+  const tab = pestanas.some((p) => p.v === params.get('tab')) ? params.get('tab') : 'vehiculos'
+  return (
+    <div style={{ display: 'grid', gap: 16 }}>
+      <h2 style={{ margin: 0 }}>Transporte</h2>
+      <Pestanas opciones={pestanas} valor={tab} onChange={(v) => setParams({ tab: v }, { replace: true })} />
+      {tab === 'vehiculos' && <Vehiculos />}
+      {tab === 'mantenciones' && <PanelMantenciones ambito="flota" />}
+    </div>
+  )
+}
+
+function Vehiculos() {
   const navegar = useNavigate()
   const { perfil } = useSesion()
   const editable = puedeEditar(perfil)
@@ -93,7 +114,7 @@ export default function Transporte() {
           onCerrar={() => setForm(null)} onGuardado={() => { setForm(null); cargar() }} />
       )}
       {form?.mantencion && (
-        <FormMantencion activoInicial={form.mantencion}
+        <FormMantencion activoInicial={form.mantencion} ambito ="flota"
           onCerrar={() => setForm(null)} onGuardado={() => { setForm(null); cargar() }} />
       )}
     </>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Modal from './Modal'
 import SelectorBanos from './SelectorBanos'
+import BuscarCliente from './BuscarCliente'
 import { Campo } from './FormCliente'
 import { Chip } from './DiaRuta'
 import { vehiculos, banosDisponibles } from '../lib/api'
@@ -13,6 +14,12 @@ import { C } from '../lib/ui'
 let clave = 0
 const nueva = (x) => ({ k: ++clave, tarea: 'limpieza', dias: [], banos: [], despacho_id: null, nota: '', ...x })
 const diasLimpieza = (c) => (c?.dias_limpieza || []).filter((d) => d >= 1 && d <= 5).sort()
+// Qué tareas tienen sentido para el cliente: sin baños en arriendo no hay retiro; sin baños (ni propios ni por entregar) no hay limpieza
+const tareasDe = (c, conEntrega) => {
+  const arr = c?.arriendos?.length || 0, propios = Number(c?.banos_propios) || 0
+  return ['limpieza', 'entrega', 'retiro'].filter((t) =>
+    t === 'entrega' || (t === 'retiro' && arr > 0) || (t === 'limpieza' && (arr > 0 || propios > 0 || conEntrega)))
+}
 
 // Planilla semanal: una fila por cliente, con los días de lunes a viernes en que se visita
 // enOtras: clientes que ya se limpian en otra ruta de la misma semana
@@ -65,11 +72,14 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
     tarea, banos: [], dias: tarea === 'limpieza' ? diasLimpieza(cliente[l.cliente_id]) : l.dias.slice(0, 1),
   })
 
-  // Agregar filas
   const agregarCliente = (id) => {
     if (!id) return
-    setLineas((ls) => [...ls, nueva({ cliente_id: id, dias: diasLimpieza(cliente[id]) })])
+    const c = cliente[id]
+    // Cliente sin baños: la fila parte como Entrega (después se puede agregar su limpieza)
+    if (!tareasDe(c, false).includes('limpieza')) return setLineas((ls) => [...ls, nueva({ cliente_id: id, tarea: 'entrega', dias: [] })])
+    setLineas((ls) => [...ls, nueva({ cliente_id: id, dias: diasLimpieza(c) })])
   }
+
   const yaLimpia = new Set(lineas.filter((l) => l.tarea === 'limpieza').map((l) => l.cliente_id))
   const conLimpieza = (datos?.clientes || []).filter((c) => c.activo !== false && diasLimpieza(c).length && !yaLimpia.has(c.id) && !(semana === (r.lunes || lunes) && enOtras.has(c.id)))
   const agregarFrecuentes = () => setLineas((ls) => [...ls, ...conLimpieza.map((c) => nueva({ cliente_id: c.id, dias: diasLimpieza(c) }))])
@@ -149,10 +159,9 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
 
           {/* Barra para agregar filas */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '10px 18px', borderTop: `2px solid ${C.borde}`, background: C.suave }}>
-            <select value="" onChange={(e) => agregarCliente(e.target.value)} style={{ border: `2px solid ${C.borde}`, minHeight: 38, font: '600 12px var(--font)', padding: '0 8px', maxWidth: 260 }}>
-              <option value="">+ Agregar cliente…</option>
-              {datos.clientes.filter((c) => c.activo !== false).map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-            </select>
+            <div style={{ flex: '0 1 340px', minWidth: 240 }}>
+              <BuscarCliente valor="" onElegir={(c) => agregarCliente(c.id)} />
+            </div>
             <button className="btn" onClick={agregarFrecuentes} disabled={!conLimpieza.length}>
               Agregar clientes con limpieza sin ruta esta semana ({conLimpieza.length})
             </button>
@@ -193,6 +202,7 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
                   const codigos = c.arriendos?.map((a) => a.codigo).join(', ')
                   const propios = c.banos_propios ? `Baño propio${c.banos_propios > 1 ? ' ×' + c.banos_propios : ''}` : ''
                   const fija = l.dias.some((d) => bloq.has(d))
+                  const opciones = tareasDe(c, lineas.some((x) => x.cliente_id === l.cliente_id && x.tarea === 'entrega'))
                   return (
                     <tr key={l.k} style={{ background: l.tarea === 'limpieza' ? '#fff' : '#f6f8fc' }}>
                       <td style={{ ...td, color: C.gris, fontWeight: 700 }}>{i + 1}</td>
@@ -200,7 +210,7 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
                       <td style={td}>
                         {desp || fija ? <Chip tarea={l.tarea} /> : (
                           <select value={l.tarea} onChange={(e) => cambiarTarea(l, e.target.value)} style={{ border: `1px solid ${C.borde}`, font: '600 12px var(--font)', padding: 4 }}>
-                            <option value="limpieza">Limpieza</option><option value="entrega">Entrega</option><option value="retiro">Retiro</option>
+                            {[...new Set([...opciones, l.tarea])].map((t) => <option key={t} value={t}>{L_TAREA[t]}</option>)}
                           </select>
                         )}
                       </td>
