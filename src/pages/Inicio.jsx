@@ -7,8 +7,9 @@ import { useNavigate } from 'react-router-dom'
 import Modal from '../components/Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda, Pestanas } from '../components/Base'
 import { TarjetaGrafico, Barras, BarrasH, Dona, SERIE } from '../components/Graficos'
+import Mapa, { Leyenda as LeyendaMapa } from '../components/Mapa'
 import { useSesion, puedeOperar, puedeVer, esDueno, verFinanzas } from '../lib/sesion'
-import { inicioDatos, actividadPeriodo, avisosCalculados, inicioGraficos } from '../lib/api'
+import { inicioDatos, actividadPeriodo, avisosCalculados, inicioGraficos, mapaPuntos } from '../lib/api'
 import { hoyISO } from '../lib/costos'
 import { C, Icon, I, fecha, fechaHora, clp } from '../lib/ui'
 
@@ -47,6 +48,11 @@ export default function Inicio({ onCalendario }) {
   const veActividad = esDueno(perfil)
   const finanzas = verFinanzas(perfil)
   const [g, setG] = useState(null)
+  // Mapa de ubicaciones de los baños (ocupa 2 columnas en pantallas anchas)
+  const [puntos, setPuntos] = useState(null)
+  const [ancho, setAncho] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
+  useEffect(() => { mapaPuntos().then(setPuntos).catch(() => setPuntos([])) }, [])
+  useEffect(() => { const f = () => setAncho(window.innerWidth); window.addEventListener('resize', f); return () => window.removeEventListener('resize', f) }, [])
   useEffect(() => { inicioGraficos(finanzas).then(setG).catch(() => setG({ ops: [], equipos: [], mant: [], flota: [], fin: [], clientesActivos: null })) }, [])
 
   useEffect(() => {
@@ -176,6 +182,18 @@ export default function Inicio({ onCalendario }) {
             <Boton icono={I.cal} onClick={onCalendario} style={{ flex: 1 }}>Ver calendario</Boton>
           </div>
         </TarjetaGrafico>
+
+        {puedeVer(perfil, 'ubicaciones') && (
+          <div style={{ gridColumn: ancho >= 1100 ? 'span 2' : 'auto', minWidth: 0, display: 'grid' }}>
+            <TarjetaGrafico titulo="Ubicación de los baños" sub={puntos ? `${puntos.length} ubicación(es) con equipos` : 'Cargando…'}
+              accion={<button type="button" onClick={() => navegar('/inventario?tab=mapa')} style={{ border: 0, background: 'transparent', color: C.azul, cursor: 'pointer', font: '600 12px var(--font)', whiteSpace: 'nowrap' }}>Ver mapa completo</button>}>
+              <div style={{ borderRadius: 'var(--radio-md)', overflow: 'hidden', border: `1px solid ${C.borde}` }}>
+                <Mapa puntos={puntos || []} alto={300} />
+              </div>
+              <LeyendaMapa />
+            </TarjetaGrafico>
+          </div>
+        )}
       </div>
       {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
 
