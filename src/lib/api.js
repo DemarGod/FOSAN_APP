@@ -348,6 +348,20 @@ export const mantenciones = () => rows(
   .select('id, activo_id, clase, tipo, fecha_programada, fecha_realizada, responsable_ext, costo, estado, detalle, activos(codigo, tipo), perfiles:responsable_id(nombre)')
   .order('fecha_programada', { ascending: false })
 )
+// ── Mantenimiento (lámina 6) ──────────────────────────────────────────────
+export const mantenimiento = () => rows(supabase.from('v_mantenimiento').select('*').order('fecha_programada', { ascending: false }).limit(3000))
+const rpcM = async (fn, args) => { const { data, error } = await supabase.rpc(fn, args); if (error) throw error; return data }
+export const programarMantencion = (d) => rpcM('programar_mantencion', {
+  p_activo: d.activo_id, p_tipo: d.tipo, p_fecha: d.fecha, p_responsable: d.responsable, p_trabajo: d.trabajo, p_obs: d.observaciones || null, p_bloquea: !!d.bloquea,
+})
+export const editarMantencion = (id, d) => rpcM('editar_mantencion', {
+  p_id: id, p_tipo: d.tipo, p_fecha: d.fecha, p_responsable: d.responsable, p_trabajo: d.trabajo, p_obs: d.observaciones || null,
+})
+export const iniciarMantencion = (id) => rpcM('iniciar_mantencion', { p_id: id })
+export const registrarResultadoMantencion = (id, d) => rpcM('registrar_resultado_mantencion', {
+  p_id: id, p_fecha: d.fecha, p_resultado: d.resultado, p_trabajo: d.trabajo, p_condicion: d.condicion, p_obs: d.observaciones || null, p_costo: d.costo ?? null,
+})
+export const cancelarMantencion = (id, motivo) => rpcM('cancelar_mantencion', { p_id: id, p_motivo: motivo })
 export const mantencionesKpi = () => one(supabase.from('v_mantenciones_kpi').select('*'))
 export const crearMantencion = async (datos) => {
   const { error } = await supabase.from('mantenciones').insert(datos)
