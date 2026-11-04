@@ -42,10 +42,11 @@ export const marcarLeidas = async () => {
 export const inventario = () => rows(supabase.from('v_inventario').select('*').order('codigo'))
 export const banosKpi = () => one(supabase.from('v_banos_kpi').select('*'))
 
+// Ojo: desde el script 33, activos y ubicaciones tienen 2 relaciones (ubicacion_id y ubicaciones.vehiculo_id): usar ubicaciones!ubicacion_id(...)
 // Por defecto solo vehículos activos (los desactivados no se eligen en rutas ni operaciones)
 export const vehiculos = (todos = false) => rows(
   supabase.from('vehiculos')
-    .select('*, activos(id, codigo, tipo, estado, qr_token, ubicaciones(nombre))')
+    .select('*, activos(id, codigo, tipo, estado, qr_token, ubicaciones!ubicacion_id(nombre))')
 ).then((l) => (todos ? l : l.filter((v) => v.activos?.estado !== 'baja')))
 
 // ── Flota (lámina 5) ──────────────────────────────────────────────────────
@@ -65,12 +66,12 @@ export const ubicacionesInsumo = () => rows(
 
 export const activoPorQr = (token) => one(
   supabase.from('activos')
-    .select('*, modelos_bano(nombre, tipo), clientes!cliente_id(nombre), ubicaciones(nombre, lat, lng, tipo)')
+    .select('*, modelos_bano(nombre, tipo), clientes!cliente_id(nombre), ubicaciones!ubicacion_id(nombre, lat, lng, tipo)')
     .eq('qr_token', token)
 )
 export const activoPorCodigo = (codigo) => one(
   supabase.from('activos')
-    .select('*, modelos_bano(nombre, tipo), clientes!cliente_id(nombre), ubicaciones(nombre, lat, lng, tipo)')
+    .select('*, modelos_bano(nombre, tipo), clientes!cliente_id(nombre), ubicaciones!ubicacion_id(nombre, lat, lng, tipo)')
     .eq('codigo', codigo)
 )
 
