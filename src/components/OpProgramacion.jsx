@@ -51,8 +51,10 @@ export default function OpProgramacion({ irARutas }) {
   // Enlaces desde otras pantallas: ?nueva=1&cliente=&ubicacion=&servicio=&accion=&retirar=  ·  ?folio=D-00001
   const [params, setParams] = useSearchParams()
   useEffect(() => {
-    const folio = params.get('folio'), nueva = params.get('nueva')
-    if (!folio && !nueva) return
+    const folio = params.get('folio'), nueva = params.get('nueva'), estado = params.get('estado')
+    if (!folio && !nueva && !estado) return
+    // Desde Inicio: ?estado=pendiente (atrasadas de cualquier fecha) o programada
+    if (estado) { const n = { ...VACIO, desde: estado === 'pendiente' ? '' : VACIO.desde, hasta: estado === 'pendiente' ? '' : VACIO.hasta, estado }; setF(n); setAplicado(n) }
     if (nueva && editable) setForm({
       cliente_id: params.get('cliente') || '', ubicacion_id: params.get('ubicacion') || '', servicio_id: params.get('servicio') || '',
       tipo: params.get('accion') || undefined, _retirar: params.get('retirar') || null,

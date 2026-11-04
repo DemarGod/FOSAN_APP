@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Modal from '../components/Modal'
 import Mapa from '../components/Mapa'
-import Ficha from './Ficha'
+import FichaVehiculo from './FichaVehiculo'
 import { Boton, Campo, Tabla, Pestanas, Estado, Ayuda } from '../components/Base'
 import { L_SITUACION, L_CONDICION, TONO_SITUACION, TONO_CONDICION } from '../components/InvEquipos'
 import {
@@ -50,7 +50,7 @@ export default function FichaEquipo() {
   useEffect(() => { equipoPorQr(token).then(setE).catch((x) => { setError(x); setE(null) }) }, [token, version])
 
   if (e === undefined) return <div style={{ padding: 24, color: C.gris }}>Cargando ficha…</div>
-  if (e?.esVehiculo) return <Ficha />
+  if (e?.esVehiculo) return <FichaVehiculo token={token} />   // vehículos: ficha de Flota
   if (!e) {
     return (
       <div style={{ display: 'grid', gap: 12, maxWidth: 560 }}>

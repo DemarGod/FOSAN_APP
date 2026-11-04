@@ -583,6 +583,32 @@ export const guardarPermisosRol = async (rol, filas) => {
   if (error) throw error
 }
 
+// ── Inicio (lámina 1): indicadores, trabajos del período y actividad reciente ──
+export const inicioDatos = async (desde, hasta) => {
+  const hoy = new Date().toISOString().slice(0, 10)
+  const seguro = (p, v = []) => p.then((r) => r, () => v)
+  const contar = (q) => q.then(({ count, error }) => (error ? null : count), () => null)
+  const [disponibles, atrasados, mant, ops, paradas] = await Promise.all([
+    contar(supabase.from('v_equipos').select('id', { count: 'exact', head: true }).eq('propiedad', 'empresa').eq('situacion', 'disponible').eq('condicion', 'operativo')),
+    contar(supabase.from('despachos').select('id', { count: 'exact', head: true }).eq('estado', 'programado').lt('fecha_programada', hoy)),
+    contar(supabase.from('v_mantenimiento').select('id', { count: 'exact', head: true }).in('estado_m', ['programado', 'en_curso'])),
+    seguro(rows(supabase.from('v_operaciones').select('*').gte('fecha_programada', desde).lte('fecha_programada', hasta).neq('estado', 'cancelado').order('fecha_programada'))),
+    // Limpiezas de ruta del período (las entregas/retiros de ruta ya vienen como operaciones)
+    seguro(rows(supabase.from('salida_paradas')
+      .select('id, tarea, estado, despacho_id, clientes(nombre, direccion), salidas!inner(fecha, ruta_semana_id)')
+      .gte('salidas.fecha', desde).lte('salidas.fecha', hasta).is('despacho_id', null))),
+  ])
+  // Nombre de la ruta semanal de cada parada
+  const ids = [...new Set(paradas.map((p) => p.salidas?.ruta_semana_id).filter(Boolean))]
+  const rutas = ids.length ? await seguro(rows(supabase.from('rutas_semana').select('id, nombre').in('id', ids))) : []
+  const nom = Object.fromEntries(rutas.map((r) => [r.id, r.nombre]))
+  paradas.forEach((p) => { if (p.salidas) p.salidas.rutas_semana = { nombre: nom[p.salidas.ruta_semana_id] || null } })
+  return { disponibles, atrasados, mant, ops, paradas }
+}
+export const actividadPeriodo = (desde, hasta) => rows(
+  supabase.from('auditoria').select('*').gte('fecha', desde).lte('fecha', hasta + 'T23:59:59').order('fecha', { ascending: false }).limit(200)
+)
+
 // ── Historial de cambios (solo dueños) ───────────────────────────────────
 export const historial = (desde) => {
   let q = supabase.from('auditoria').select('*').order('fecha', { ascending: false }).limit(1000)

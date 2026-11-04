@@ -152,7 +152,7 @@ function Listado() {
 }
 
 // ── 5.3 Cambiar disponibilidad ────────────────────────────────────────────
-function CambiarDisponibilidad({ v, onCerrar, onListo }) {
+export function CambiarDisponibilidad({ v, onCerrar, onListo }) {
   const actual = v.estado_activo === 'mantencion' || v.estado_activo === 'fuera_de_servicio' ? v.estado_activo : 'disponible'
   const [val, setVal] = useState({ estado: actual === 'disponible' ? 'mantencion' : 'disponible', fecha: hoyISO(), motivo: '' })
   const [error, setError] = useState(null)
@@ -187,7 +187,7 @@ function CambiarDisponibilidad({ v, onCerrar, onListo }) {
 }
 
 // ── Desactivar vehículo (no se borra) ─────────────────────────────────────
-function Desactivar({ v, onCerrar, onListo }) {
+export function Desactivar({ v, onCerrar, onListo }) {
   const [motivo, setMotivo] = useState('')
   const [paso, setPaso] = useState(1)
   const [error, setError] = useState(null)
