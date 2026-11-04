@@ -151,7 +151,7 @@ export default function App() {
               <Route path="*" element={<p className="text-muted">Esta página no existe.</p>} />
             </Routes>
           </div>
-          <Tabbar />
+          <Tabbar onCalendario={() => setCal(true)} />
         </main>
       </div>
       {cal && <Calendario puedeEditar={puedeOperar(perfil, 'calendario')} onCerrar={() => { setCal(false); setCalVersion((n) => n + 1) }} />}

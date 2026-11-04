@@ -133,7 +133,7 @@ tbody tr:hover { background: var(--suave); }
 
 @media (max-width: 900px) {
   .shell { grid-template-columns: minmax(0, 1fr); }
-  .sidebar { display: none; }
+  .sidebar { display: none !important; }   /* el menú lateral tiene display en línea: sin !important no se oculta */
   .tabbar { display: grid; }
   .sbtab { display: block; }
   .desk-only { display: none !important; }

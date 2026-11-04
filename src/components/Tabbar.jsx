@@ -1,35 +1,80 @@
-import { NavLink } from 'react-router-dom'
+// Barra inferior para pantallas angostas (celular o ventana minimizada, menos de 900 px).
+// 4 accesos directos + "Menú", que abre todos los módulos del menú lateral según permisos.
+import { useEffect, useState } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import { C, Icon, I } from '../lib/ui'
-import { useSesion, puedeVer, verMiRuta } from '../lib/sesion'
+import { useSesion, puedeVer, esDueno, verMiRuta } from '../lib/sesion'
+import { NAV } from './Sidebar'
 
+const RUTA = 'M5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM19 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM7 17h6a3 3 0 0 0 0-6h-2a3 3 0 0 1 0-6h6'
+const MENU = 'M4 6h16M4 12h16M4 18h16'
 const TABS = [
   { to: '/', label: 'Inicio', d: I.home, fin: true, s: 'inicio' },
   { to: '/clientes', label: 'Clientes', d: I.users, s: 'clientes' },
+  { to: '/operaciones', label: 'Operaciones', d: RUTA, s: 'rutas' },
   { to: '/mi-ruta', label: 'Mi ruta', d: I.truck, miRuta: true },
-  { to: '/rutas-semanales', label: 'Rutas', d: 'M5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM19 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM7 17h6a3 3 0 0 0 0-6h-2a3 3 0 0 1 0-6h6', s: 'rutas' },
-  { to: '/banos', label: 'Baños', d: I.drop, s: 'banos' },
 ]
+const permitido = (perfil, n) => (!n.s || [].concat(n.s).some((x) => puedeVer(perfil, x)))
+  && !(n.soloDueno && !esDueno(perfil)) && !(n.miRuta && !verMiRuta(perfil))
 
-export default function Tabbar() {
+export default function Tabbar({ onCalendario }) {
   const { perfil } = useSesion()
-  const tabs = TABS.filter((t) => (!t.s || puedeVer(perfil, t.s)) && !(t.miRuta && !verMiRuta(perfil)))
+  const { pathname } = useLocation()
+  const [abierto, setAbierto] = useState(false)
+  useEffect(() => { setAbierto(false) }, [pathname])
+  const tabs = TABS.filter((t) => permitido(perfil, t))
+  // Grupos del menú lateral, sin grupos vacíos
+  const items = NAV.filter((n) => n.grupo || permitido(perfil, n))
+    .filter((n, i, l) => !n.grupo || (l[i + 1] && !l[i + 1].grupo))
+  const estilo = (activo) => ({
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, minHeight: 58,
+    textDecoration: 'none', border: 0, cursor: 'pointer', background: activo ? C.tinte : '#fff',
+    color: activo ? '#1a3c72' : '#3c4551', font: '400 10px var(--font)',
+  })
   return (
-    <nav className="tabbar" style={{
-      gridTemplateColumns: `repeat(${tabs.length || 1}, 1fr)`, position: 'fixed', bottom: 0, left: 0, right: 0,
-      background: '#fff', borderTop: `2px solid ${C.borde}`, zIndex: 20,
-    }}>
-      {tabs.map((t) => (
-        <NavLink key={t.to} to={t.to} end={t.fin} style={({ isActive }) => ({
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          gap: 4, minHeight: 58, textDecoration: 'none',
-          background: isActive ? C.tinte : '#fff',
-          color: isActive ? '#1a3c72' : '#3c4551',
-          font: '400 10px var(--font)',
-        })}>
-          <Icon d={t.d} size={19} w={1.7} />
-          <span>{t.label}</span>
-        </NavLink>
-      ))}
-    </nav>
+    <>
+      {abierto && (
+        <div className="tabbar" onClick={() => setAbierto(false)} style={{ position: 'fixed', inset: 0, zIndex: 30, background: 'rgba(19,41,75,.45)' }}>
+          <nav onClick={(e) => e.stopPropagation()} style={{
+            position: 'absolute', left: 0, right: 0, bottom: 60, maxHeight: '75vh', overflowY: 'auto',
+            background: '#13294b', borderRadius: '12px 12px 0 0', padding: '8px 0 12px',
+          }}>
+            {items.map((n) => n.grupo ? (
+              <div key={n.grupo} style={{ padding: '12px 20px 4px', font: '700 10px var(--font)', textTransform: 'uppercase', letterSpacing: '.08em', color: '#8fa3c2' }}>{n.grupo}</div>
+            ) : n.calendario ? (
+              <button key="cal" type="button" onClick={() => { setAbierto(false); onCalendario?.() }} style={item(false)}>
+                <Icon d={n.d} size={18} w={1.7} /><span>{n.label}</span>
+              </button>
+            ) : (
+              <NavLink key={n.to} to={n.to} end={n.fin} style={({ isActive }) => item(isActive)}>
+                <Icon d={n.d} size={18} w={1.7} /><span>{n.label}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+      )}
+      <nav className="tabbar" style={{
+        gridTemplateColumns: `repeat(${tabs.length + 1}, 1fr)`, position: 'fixed', bottom: 0, left: 0, right: 0,
+        background: '#fff', borderTop: `1px solid ${C.borde}`, zIndex: 31,
+      }}>
+        {tabs.map((t) => (
+          <NavLink key={t.to} to={t.to} end={t.fin} style={({ isActive }) => estilo(isActive && !abierto)}>
+            <Icon d={t.d} size={19} w={1.7} />
+            <span>{t.label}</span>
+          </NavLink>
+        ))}
+        <button type="button" onClick={() => setAbierto((x) => !x)} style={estilo(abierto)} aria-expanded={abierto}>
+          <Icon d={MENU} size={19} w={1.7} />
+          <span>Menú</span>
+        </button>
+      </nav>
+    </>
   )
 }
+
+const item = (activo) => ({
+  width: 'calc(100% - 16px)', margin: '2px 8px', display: 'flex', alignItems: 'center', gap: 12,
+  padding: '12px 14px', boxSizing: 'border-box', border: 0, cursor: 'pointer', textAlign: 'left',
+  background: activo ? '#2f6fdd' : 'transparent', color: activo ? '#fff' : '#c9d4e5',
+  font: `${activo ? 600 : 400} 15px/1.2 var(--font)`, textDecoration: 'none', borderRadius: 6,
+})
