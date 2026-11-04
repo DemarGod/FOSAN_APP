@@ -11,12 +11,15 @@ export const NAV = [
   { to: '/clientes', label: 'Clientes', d: I.users, s: 'clientes' },
   { grupo: 'Logística' },
   // Inventario (lámina 3): Equipos · Insumos y EPP · Mapa
-  { to: '/inventario', label: 'Inventario', d: I.box, s: ['banos', 'insumos', 'ubicaciones', 'mantenciones'] },
-  { to: '/transporte', label: 'Transporte', d: I.truck, s: 'transporte' },
+  { to: '/inventario', label: 'Inventario', d: I.box, s: ['banos', 'insumos', 'ubicaciones'] },
+  // Flota (lámina 5): vehículos por patente
+  { to: '/flota', label: 'Flota', d: I.truck, s: 'transporte' },
   // Operaciones (lámina 4): Programación · Rutas (las Rutas semanales de siempre) · Respaldos
   { to: '/operaciones', label: 'Operaciones', d: RUTA, s: 'rutas' },
   { to: '/mi-ruta', label: 'Mi ruta', d: DESPACHO, miRuta: true },   // solo operadores y dueño
   { grupo: 'Gestión' },
+  // Mantenimiento (lámina 6): equipos y vehículos
+  { to: '/mantenimiento', label: 'Mantenimiento', d: I.wrench, s: 'mantenciones' },
   { calendario: true, label: 'Calendario', d: I.cal, s: 'calendario' },
   { to: '/reportes', label: 'Reportes', d: I.chart, s: 'reportes' },
   { to: '/analisis', label: 'Análisis', d: 'M3 3v18h18M7 15l4-4 3 3 5-6', s: 'analisis' },

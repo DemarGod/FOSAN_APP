@@ -6,7 +6,7 @@ import Modal from './Modal'
 import { Boton, Campo, Tabla, Pestanas, Estado, Ayuda } from './Base'
 import {
   insumosInventario, movimientosInsumoDe, siguienteCodigoInsumo, serviciosVigentes, registrarMovInsumo, guardarInsumo,
-  catCategorias, catUnidades, catUbicacionesInternas, personalActivo,
+  catCategorias, catUnidades, ubicacionesInsumo as catUbicacionesInternas, personalActivo,
 } from '../lib/api'
 import { exportarTabla } from '../lib/excel'
 import { useSesion, puedeOperar, esDueno, verFinanzas } from '../lib/sesion'

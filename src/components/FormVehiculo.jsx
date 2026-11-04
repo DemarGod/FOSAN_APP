@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import Modal from './Modal'
 import { Campo } from './FormCliente'
 import { guardarVehiculo } from '../lib/api'
-import { TIPOS_VEHICULO } from '../lib/costos'
+import { TIPOS_VEHICULO, hoyISO } from '../lib/costos'
+import { useSesion, verFinanzas } from '../lib/sesion'
 import { formatoPesos, numeroDe, decimalDe, limpiarCodigo, codigoValido } from '../lib/validar'
 import { C } from '../lib/ui'
 
@@ -14,6 +15,12 @@ const pesos = (x) => (x === null || x === undefined ? '' : formatoPesos(x))
 // Ficha técnica del vehículo: solo lo necesario para estimar desgaste y costo por uso.
 export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
   const e = vehiculo || {}
+  const nuevo = !e.activo_id
+  const { perfil } = useSesion()
+  const finanzas = verFinanzas(perfil)     // costos y rendimientos: solo con "Ver montos"
+  const [extra, setExtra] = useState({
+    fecha_registro: e.fecha_registro || hoyISO(), observaciones: e.observaciones || '', estado: 'disponible',
+  })
   const [v, setV] = useState({
     codigo: e.activos?.codigo || '', tipo_vehiculo: e.tipo_vehiculo || 'camion_limpiafosas',
     patente: e.patente || '', marca: e.marca || '', modelo: e.modelo || '', anio: e.anio ?? '',
@@ -31,6 +38,10 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
 
   const guardar = async () => {
     if (!codigoValido(v.codigo)) { setError('Código inválido: entre 2 y 10 letras o números, más guiones (ej. CAM-05).'); return }
+    const pat = v.patente.toUpperCase().replace(/[^A-Z0-9]/g, '')
+    if (!/^[A-Z0-9]{5,8}$/.test(pat)) { setError('Indica la patente (5 a 8 letras o números, ej. ABCD12).'); return }
+    if (nuevo && v.kilometraje === '') { setError('Indica el odómetro inicial (km).'); return }
+    if (!extra.fecha_registro || extra.fecha_registro > hoyISO()) { setError('La fecha de registro no puede ser futura.'); return }
     const anio = numeroDe(v.anio)
     if (anio && (anio < 1980 || anio > ANIO_MAX)) { setError(`Año entre 1980 y ${ANIO_MAX}.`); return }
     const rv = decimalDe(v.rend_vacio), rc = decimalDe(v.rend_cargado)
@@ -41,9 +52,11 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
         codigo: v.codigo.trim().toUpperCase(),
         tipo: v.tipo_vehiculo === 'camioneta' ? 'camioneta' : 'camion',
         detalle: TIPOS_VEHICULO[v.tipo_vehiculo],
+        ...(nuevo ? { estado: extra.estado } : {}),
       }, {
+        fecha_registro: extra.fecha_registro, observaciones: extra.observaciones.trim() || null,
         tipo_vehiculo: v.tipo_vehiculo,
-        patente: v.patente.trim().toUpperCase() || null,
+        patente: pat,
         marca: v.marca.trim() || null, modelo: v.modelo.trim() || null, anio,
         capacidad_kg: numeroDe(v.capacidad_kg), capacidad_banos: numeroDe(v.capacidad_banos),
         capacidad_litros: limpiafosas ? numeroDe(v.capacidad_litros) : null,
@@ -73,7 +86,7 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
           <Titulo>Vehículo</Titulo>
           <div style={par}>
             <Campo l="Código"><input value={v.codigo} onChange={set('codigo', limpiarCodigo)} placeholder="CAM-05" /></Campo>
-            <Campo l="Patente (opcional)"><input value={v.patente} onChange={set('patente')} maxLength={8} placeholder="ABCD12" /></Campo>
+            <Campo l="Patente *"><input value={v.patente} onChange={set('patente')} maxLength={10} placeholder="ABCD12" /></Campo>
           </div>
           <Campo l="Tipo">
             <select value={v.tipo_vehiculo} onChange={set('tipo_vehiculo')}>
@@ -86,7 +99,7 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
           </div>
           <div style={par}>
             <Campo l="Año"><input value={v.anio} onChange={set('anio', (x) => num(x).slice(0, 4))} inputMode="numeric" placeholder="2019" /></Campo>
-            <Campo l="Kilometraje actual"><input value={v.kilometraje} onChange={set('kilometraje', num)} inputMode="numeric" placeholder="184500" /></Campo>
+            <Campo l={nuevo ? 'Odómetro inicial (km) *' : 'Odómetro (km)'}><input value={v.kilometraje} onChange={set('kilometraje', num)} inputMode="numeric" placeholder="184500" /></Campo>
           </div>
           <Titulo>Capacidad</Titulo>
           <div style={par}>
@@ -96,9 +109,24 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
           {limpiafosas && (
             <Campo l="Estanque de residuos (L)"><input value={v.capacidad_litros} onChange={set('capacidad_litros', num)} inputMode="numeric" placeholder="4000" /></Campo>
           )}
+          <Titulo>Registro</Titulo>
+          <div style={par}>
+            <Campo l="Fecha de registro *"><input type="date" value={extra.fecha_registro} max={hoyISO()} onChange={(ev) => setExtra((p) => ({ ...p, fecha_registro: ev.target.value }))} /></Campo>
+            {nuevo && (
+              <Campo l="Estado inicial *">
+                <select value={extra.estado} onChange={(ev) => setExtra((p) => ({ ...p, estado: ev.target.value }))}>
+                  <option value="disponible">Disponible</option>
+                  <option value="mantencion">En mantenimiento</option>
+                  <option value="fuera_de_servicio">Fuera de servicio</option>
+                </select>
+              </Campo>
+            )}
+          </div>
+          <Campo l="Observaciones"><textarea value={extra.observaciones} onChange={(ev) => setExtra((p) => ({ ...p, observaciones: ev.target.value }))} maxLength={500} style={{ minHeight: 60 }} placeholder="Vehículo incorporado en buen estado." /></Campo>
         </div>
 
         <div style={{ display: 'grid', gap: 14, alignContent: 'start' }}>
+          {finanzas ? <>
           <Titulo>Consumo</Titulo>
           <div style={par}>
             <Campo l="Rendimiento vacío (km/L)"><input value={v.rend_vacio} onChange={set('rend_vacio', dec)} inputMode="decimal" placeholder="7,5" /></Campo>
@@ -121,6 +149,11 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
             Con estos datos cada ruta calcula su costo: diésel según los km y el peso que lleva,
             más desgaste y costos fijos por kilómetro. Los campos vacíos cuentan como cero.
           </div>
+          </> : (
+            <div style={{ padding: '11px 13px', background: C.suave, border: `1px solid ${C.borde}`, font: '400 12px/1.45 var(--font)', color: '#3c4551' }}>
+              Patente única: se guarda en mayúsculas y sin guiones ni espacios. Rendimiento y costos los completa quien tiene permiso "Ver montos".
+            </div>
+          )}
           {error && (
             <div style={{ padding: '11px 13px', background: '#fce8e6', border: `2px solid ${C.rojo}`, font: '400 12px/1.45 var(--font)', color: '#7c1405' }}>
               {String(error?.message || error)}

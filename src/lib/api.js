@@ -42,9 +42,25 @@ export const marcarLeidas = async () => {
 export const inventario = () => rows(supabase.from('v_inventario').select('*').order('codigo'))
 export const banosKpi = () => one(supabase.from('v_banos_kpi').select('*'))
 
-export const vehiculos = () => rows(
+// Por defecto solo vehículos activos (los desactivados no se eligen en rutas ni operaciones)
+export const vehiculos = (todos = false) => rows(
   supabase.from('vehiculos')
     .select('*, activos(id, codigo, tipo, estado, qr_token, ubicaciones(nombre))')
+).then((l) => (todos ? l : l.filter((v) => v.activos?.estado !== 'baja')))
+
+// ── Flota (lámina 5) ──────────────────────────────────────────────────────
+export const flota = () => rows(supabase.from('v_flota').select('*'))
+export const cambiarDisponibilidadVehiculo = async (id, estado, fecha, motivo) => {
+  const { error } = await supabase.rpc('cambiar_disponibilidad_vehiculo', { p_id: id, p_estado: estado, p_fecha: fecha, p_motivo: motivo })
+  if (error) throw error
+}
+export const desactivarVehiculo = async (id, motivo) => {
+  const { error } = await supabase.rpc('desactivar_vehiculo', { p_id: id, p_motivo: motivo })
+  if (error) throw error
+}
+// Ubicaciones donde se guardan insumos: bodegas, talleres y vehículos (insumos a bordo)
+export const ubicacionesInsumo = () => rows(
+  supabase.from('ubicaciones').select('id, nombre, tipo, descripcion, activa').in('tipo', ['bodega', 'taller', 'vehiculo']).order('tipo').order('nombre')
 )
 
 export const activoPorQr = (token) => one(
@@ -95,7 +111,7 @@ export const crearActivo = async (datos) => {
 
 // ── Catálogos para los formularios ────────────────────────────────────────
 export const modelos = () => rows(supabase.from('modelos_bano').select('*').order('nombre'))
-export const ubicaciones = () => rows(supabase.from('ubicaciones').select('id, nombre, tipo, lat, lng').eq('activa', true).order('nombre'))
+export const ubicaciones = () => rows(supabase.from('ubicaciones').select('id, nombre, tipo, lat, lng').eq('activa', true).neq('tipo', 'vehiculo').order('nombre'))
 // Solo clientes activos: los desactivados no se eligen en despachos ni equipos nuevos
 export const clientesLista = () => rows(supabase.from('clientes').select('id, nombre, direccion').eq('activo', true).order('nombre'))
 // Clientes para armar rutas: con días de limpieza, comuna y baños (arrendados + propios)
@@ -466,7 +482,7 @@ export const avisosCalculados = async () => {
   }))
   man.forEach((m) => lista.push({
     id: 'man-' + m.id + '-' + m.fecha_programada, fecha: m.fecha_programada, origen: 'Mantenciones',
-    a: ['camion', 'camioneta'].includes(m.activos?.tipo) ? '/transporte?tab=mantenciones' : '/inventario?tab=mantenciones',
+    a: ['camion', 'camioneta'].includes(m.activos?.tipo) ? '/mantenimiento?tab=vehiculos' : '/mantenimiento?tab=equipos',
     nivel: m.estado === 'urgente' || dias(m.fecha_programada) < 0 ? 'alerta' : 'aviso',
     texto: `${dias(m.fecha_programada) < 0 ? 'Atrasada' : cuando(m.fecha_programada)}: ${m.tipo} · ${m.activos?.codigo || ''}`,
   }))
