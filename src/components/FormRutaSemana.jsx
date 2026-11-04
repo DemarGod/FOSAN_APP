@@ -122,14 +122,14 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
     } catch (e) { setError(String(e.message || e)); setOcupado(false) }
   }
 
-  const th = { padding: '8px 6px', font: '700 10px var(--font)', textTransform: 'uppercase', letterSpacing: '.05em', color: C.gris, textAlign: 'left', whiteSpace: 'nowrap', background: C.suave, borderBottom: `2px solid ${C.borde}` }
+  const th = { padding: '8px 6px', font: '700 10px var(--font)', textTransform: 'uppercase', letterSpacing: '.05em', color: C.gris, textAlign: 'left', whiteSpace: 'nowrap', background: C.suave, borderBottom: `1px solid ${C.borde}` }
   const td = { padding: '6px', borderBottom: `1px solid ${C.fila}`, font: '400 12px var(--font)', verticalAlign: 'middle' }
 
   return (
     <Modal titulo={r.id ? `Planilla · ${r.nombre}` : 'Nueva ruta semanal'} ancho={1180} onCerrar={onCerrar} pie={
       <>
         <button className="btn" onClick={onCerrar}>Cancelar</button>
-        <button className="btn btn-verde" onClick={guardar} disabled={ocupado || !datos}>{ocupado ? 'Guardando…' : 'Guardar ruta'}</button>
+        <button className="btn btn-azul" onClick={guardar} disabled={ocupado || !datos}>{ocupado ? 'Guardando…' : 'Guardar ruta'}</button>
       </>
     }>
       {!datos ? <div style={{ padding: 18, color: C.gris }}>{error ? String(error.message || error) : 'Cargando…'}</div> : (
@@ -158,7 +158,7 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
           </div>
 
           {/* Barra para agregar filas */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '10px 18px', borderTop: `2px solid ${C.borde}`, background: C.suave }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '10px 18px', borderTop: `1px solid ${C.borde}`, background: C.suave }}>
           <div style={{ flex: '0 1 340px', minWidth: 240 }}>
               <BuscarCliente valor="" onElegir={(c) => agregarCliente(c.id)} />
             </div>
@@ -182,7 +182,7 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
           )}
 
           {/* Planilla */}
-          <div style={{ overflowX: 'auto', borderTop: `2px solid ${C.borde}` }}>
+          <div style={{ overflowX: 'auto', borderTop: `1px solid ${C.borde}` }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1000 }}>
               <thead>
                 <tr>
@@ -209,7 +209,7 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
                       <td style={{ ...td, fontWeight: 700, maxWidth: 200 }}>{c.nombre || '—'}</td>
                       <td style={td}>
                         {desp || fija ? <Chip tarea={l.tarea} /> : (
-                          <select value={l.tarea} onChange={(e) => cambiarTarea(l, e.target.value)} style={{ border: `1px solid ${C.borde}`, font: '600 12px var(--font)', padding: 4 }}>
+                          <select value={l.tarea} onChange={(e) => cambiarTarea(l, e.target.value)} style={{ border: `1px solid ${C.borde}`, font: '600 12px var(--font)', padding: 4, borderRadius: 'var(--radio-md)' }}>
                             {[...new Set([...opciones, l.tarea])].map((t) => <option key={t} value={t}>{L_TAREA[t]}</option>)}
                           </select>
                         )}
@@ -223,7 +223,7 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
                           <td key={d.v} style={{ ...td, textAlign: 'center', padding: 2 }}>
                             <button type="button" onClick={() => alternarDia(l, d.v)} disabled={b} aria-label={`${d.largo} ${on ? 'marcado' : ''}`} style={{
                               width: 30, height: 30, cursor: b ? 'not-allowed' : 'pointer', font: '700 12px var(--font)',
-                              border: `2px solid ${on ? C.navy : C.borde}`, background: on ? C.navy : '#fff', color: on ? '#fff' : C.borde,
+                              border: `1px solid ${on ? C.navy : C.borde}`, background: on ? C.navy : '#fff', color: on ? '#fff' : C.borde,
                               borderRadius: l.tarea === 'limpieza' ? 0 : '50%', opacity: b ? 0.5 : 1,
                             }}>{on ? '✓' : ''}</button>
                           </td>
@@ -261,13 +261,13 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
           <div style={{ padding: '8px 18px', font: '400 11px/1.5 var(--font)', color: C.gris }}>
             Limpiezas: marca todos los días en que se visita. Entregas y retiros: un solo día (círculo). El orden de las filas es el orden de las paradas.
           </div>
-          {error && <div style={{ margin: '0 18px 14px', padding: '10px 12px', background: '#fce8e6', border: `2px solid ${C.rojo}`, font: '400 13px var(--font)', color: '#7c1405' }}>{error}</div>}
+          {error && <div style={{ margin: '0 18px 14px', padding: '10px 12px', background: '#fce8e6', border: `1px solid ${C.rojo}`, font: '400 13px var(--font)', color: '#7c1405', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
         </>
       )}
 
       {elegir && (
         <Modal titulo={`${L_TAREA[elegir.l.tarea]} · ${cliente[elegir.l.cliente_id]?.nombre || ''}`} ancho={520} onCerrar={() => setElegir(null)}
-          pie={<button className="btn btn-verde" onClick={() => setElegir(null)}>Listo</button>}>
+          pie={<button className="btn btn-azul" onClick={() => setElegir(null)}>Listo</button>}>
           <div style={{ padding: 18 }}>
             <SelectorBanos banos={elegir.banos} elegidos={lineas.find((x) => x.k === elegir.l.k)?.banos || []}
               onChange={(b) => cambiar(elegir.l.k, { banos: b })}

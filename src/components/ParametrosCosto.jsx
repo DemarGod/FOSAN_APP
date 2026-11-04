@@ -83,7 +83,7 @@ function Costos({ editable }) {
 
   return (
     <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 0 }}>
-      <div style={{ padding: '14px 18px', display: 'grid', gap: 12, alignContent: 'start', borderRight: `2px solid ${C.borde}` }}>
+      <div style={{ padding: '14px 18px', display: 'grid', gap: 12, alignContent: 'start', borderRight: `1px solid ${C.borde}` }}>
         {SECCIONES.map((s) => {
           const filas = s.claves.map((c) => porClave[c]).filter(Boolean)
           if (!filas.length) return null
@@ -134,7 +134,7 @@ function Costos({ editable }) {
       <div style={{ padding: '14px 18px', display: 'grid', gap: 16, alignContent: 'start' }}>
         <div style={{ display: 'grid', gap: 8 }}>
           <Titulo>Costo por km del camión</Titulo>
-          <div style={{ border: `2px solid ${C.borde}` }}>
+          <div style={{ border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)' }}>
             {SECCIONES.filter((s) => s.km).flatMap((s) => s.km(k)).map(([l, v]) => <Fila key={l} k={l} v={kmL(v)} />)}
             <Fila k="Total" v={kmL(k.total) + '/km'} fuerte />
           </div>
@@ -147,7 +147,7 @@ function Costos({ editable }) {
             <Mini etiqueta="Kilómetros" valor={sim.km} onCambio={(v) => setSim((s) => ({ ...s, km: v }))} />
             <Mini etiqueta="Baños atendidos" valor={sim.banos} onCambio={(v) => setSim((s) => ({ ...s, banos: v }))} />
           </div>
-          <div style={{ border: `2px solid ${C.borde}` }}>
+          <div style={{ border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)' }}>
             <Fila k={`Camión · ${fmt(km)} km × ${kmL(k.total)}`} v={clp(Math.round(viajeVeh))} />
             <Fila k={`Baños · ${fmt(banos)} × ${clp(Math.round(serv.total + limpieza))}`} v={clp(Math.round(viajeBanos))} />
             <Fila k="Costo del viaje" v={clp(Math.round(viaje))} fuerte />
@@ -161,7 +161,7 @@ function Costos({ editable }) {
 }
 
 const Titulo = ({ children, derecha }) => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, font: '700 11px var(--font)', textTransform: 'uppercase', letterSpacing: '.06em', color: C.gris, paddingTop: 8, borderTop: `2px solid ${C.borde}` }}>
+  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, font: '700 11px var(--font)', textTransform: 'uppercase', letterSpacing: '.06em', color: C.gris, paddingTop: 8, borderTop: `1px solid ${C.borde}` }}>
     <span>{children}</span>{derecha && <span style={{ color: C.navy }}>{derecha}</span>}
   </div>
 )
@@ -177,7 +177,7 @@ function Mini({ etiqueta, valor, onCambio }) {
     <label style={{ display: 'grid', gap: 4 }}>
       <span style={{ font: '400 12px var(--font)', color: C.gris }}>{etiqueta}</span>
       <input value={valor} inputMode="decimal" onChange={(e) => onCambio(e.target.value.replace(/[^0-9.,]/g, '').slice(0, 7))}
-        style={{ border: `2px solid ${C.borde}`, outline: 'none', padding: '8px', font: '600 13px var(--font)', textAlign: 'right', minWidth: 0 }} />
+        style={{ border: `1px solid ${C.borde}`, outline: 'none', padding: '8px', font: '600 13px var(--font)', textAlign: 'right', minWidth: 0, borderRadius: 'var(--radio-md)' }} />
     </label>
   )
 }
@@ -188,7 +188,7 @@ function Numero({ etiqueta, unidad, valor, editable, onGuardar }) {
   return (
     <label style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 120px 44px', gap: 8, alignItems: 'center' }}>
       <span style={{ font: '400 13px var(--font)' }}>{etiqueta}</span>
-      <span style={{ display: 'flex', alignItems: 'center', border: `2px solid ${C.borde}`, background: '#fff' }}>
+      <span style={{ display: 'flex', alignItems: 'center', border: `1px solid ${C.borde}`, background: '#fff', borderRadius: 'var(--radio-md)' }}>
         <input value={t} disabled={!editable} inputMode="decimal" placeholder="—"
           onChange={(e) => setT(e.target.value.replace(/[^0-9.,]/g, '').slice(0, 12))}
           onBlur={() => t !== original && onGuardar(t)}

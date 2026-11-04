@@ -10,9 +10,8 @@ export function Aviso({ error }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
-      background: '#fce8e6', border: `2px solid ${C.rojo}`, margin: '0 0 16px',
-      font: '400 12px/1.45 var(--font)', color: '#7c1405',
-    }}>
+      background: '#fce8e6', border: `1px solid ${C.rojo}`, margin: '0 0 16px',
+      font: '400 12px/1.45 var(--font)', color: '#7c1405', borderRadius: 'var(--radio-md)' }}>
       <Icon d={I.alert} size={17} color={C.rojo} />
       <span>{String(error.message || error)}</span>
     </div>
@@ -35,8 +34,7 @@ export function Kpis({ items = [] }) {
   return (
     <div className="kpis" style={{
       gridTemplateColumns: `repeat(auto-fit, minmax(130px, 1fr))`, gap: 2,
-      background: C.borde, border: `2px solid ${C.borde}`, margin: '18px 0',
-    }}>
+      background: C.borde, border: `1px solid ${C.borde}`, margin: '18px 0', borderRadius: 'var(--radio-md)' }}>
       {items.map((k) => {
         const ic = iconoKpi(k.l)
         return (
@@ -117,7 +115,7 @@ export default function Listado({
             </button>
           )}
           {accion && (
-            <button className="btn btn-verde" onClick={accion.onClick} disabled={accion.disabled}
+            <button className="btn btn-azul" onClick={accion.onClick} disabled={accion.disabled}
               title={accion.disabled ? 'Tu usuario es de solo lectura' : ''}>
               {accion.label}
             </button>
@@ -127,9 +125,8 @@ export default function Listado({
 
       {segmentos && (
         <div style={{
-          display: 'flex', gap: 2, marginTop: 16, border: `2px solid ${C.borde}`,
-          width: 'fit-content', maxWidth: '100%', flexWrap: 'wrap',
-        }}>
+          display: 'flex', gap: 2, marginTop: 16, border: `1px solid ${C.borde}`,
+          width: 'fit-content', maxWidth: '100%', flexWrap: 'wrap', borderRadius: 'var(--radio-md)' }}>
           {segmentos.opciones.map((s) => {
             const on = segmentos.valor === s.v
             return (
@@ -154,10 +151,9 @@ export default function Listado({
           <select key={ft.k} value={f[ft.k] || ''}
             onChange={(e) => { setF((p) => ({ ...p, [ft.k]: e.target.value })); setPag(0) }}
             style={{
-              border: `2px solid ${C.borde}`, background: '#fff', color: C.navy,
+              border: `1px solid ${C.borde}`, background: '#fff', color: C.navy,
               font: '600 13px var(--font)', padding: '9px 12px', minHeight: 42,
-              cursor: 'pointer', outline: 'none',
-            }}>
+              cursor: 'pointer', outline: 'none', borderRadius: 'var(--radio-sm)' }}>
             <option value="">{ft.label}: todos</option>
             {(opciones[ft.k] || []).map((o) => (
               <option key={o} value={o}>{ft.etiqueta ? ft.etiqueta(o) : o}</option>
@@ -166,8 +162,7 @@ export default function Listado({
         ))}
         <div style={{
           flex: 1, minWidth: 220, display: 'flex', alignItems: 'center', gap: 9,
-          border: `2px solid ${C.borde}`, background: '#fff', padding: '0 12px', minHeight: 42,
-        }}>
+          border: `1px solid ${C.borde}`, background: '#fff', padding: '0 12px', minHeight: 42, borderRadius: 'var(--radio-sm)' }}>
           <Icon d={I.busca} size={16} color={C.gris} />
           <input value={q} onChange={(e) => { setQ(e.target.value); setPag(0) }}
             placeholder="Buscar en esta tabla"
@@ -176,7 +171,7 @@ export default function Listado({
       </div>
 
       {barraSeleccion}
-      <div className="scroller" style={{ border: `2px solid ${C.borde}`, background: '#fff' }}>
+      <div className="scroller" style={{ border: `1px solid ${C.borde}`, background: '#fff', borderRadius: 'var(--radio-md)' }}>
         <table style={{ minWidth: 640 }}>
           <thead>
             <tr>
@@ -217,12 +212,11 @@ export default function Listado({
                           onClick={(e) => { e.stopPropagation(); a.onClick() }}
                           style={{
                             height: 34, minWidth: 34, padding: a.label ? '0 10px' : 0,
-                            border: `2px solid ${a.borde || C.borde}`, background: a.bg || '#fff',
+                            border: `1px solid ${a.borde || C.borde}`, background: a.bg || '#fff',
                             color: a.color || C.navy, cursor: a.disabled ? 'not-allowed' : 'pointer',
                             opacity: a.disabled ? .45 : 1,
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                            font: '600 11px var(--font)', whiteSpace: 'nowrap',
-                          }}>
+                            font: '600 11px var(--font)', whiteSpace: 'nowrap', borderRadius: 'var(--radio-md)' }}>
                           <Icon d={a.d} size={16} />
                           {a.label && <span>{a.label}</span>}
                         </button>

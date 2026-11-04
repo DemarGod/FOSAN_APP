@@ -87,7 +87,7 @@ export default function ResumenFinanciero() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button className="btn btn-verde" onClick={libro} disabled={generando}>
+          <button className="btn btn-azul" onClick={libro} disabled={generando}>
             <Icon d={I.descarga} size={16} />
             <span>{generando ? 'Generando…' : 'Descargar libro completo'}</span>
           </button>
@@ -98,7 +98,7 @@ export default function ResumenFinanciero() {
 
       <div className="kpis" style={{ marginTop: 4 }}>
         {kpis.map((k) => (
-          <div key={k.l} style={{ background: '#fff', border: `2px solid ${C.borde}`, borderTop: `4px solid ${k.color}`, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div key={k.l} style={{ background: '#fff', border: `1px solid ${C.borde}`, borderTop: `4px solid ${k.color}`, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, borderRadius: 'var(--radio-md)' }}>
             <span style={{ width: 38, height: 38, flex: 'none', background: k.tint, color: k.color, display: 'grid', placeItems: 'center' }}>
               <Icon d={k.d} size={20} />
             </span>
@@ -161,7 +161,7 @@ export default function ResumenFinanciero() {
       <section className="card" style={{ marginTop: 24 }}>
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
-          padding: '14px 18px', background: C.tinte, borderBottom: `2px solid ${C.borde}`,
+          padding: '14px 18px', background: C.tinte, borderBottom: `1px solid ${C.borde}`,
         }}>
           <h6 style={{ margin: 0, color: '#1a3c72' }}>Evolución de utilidad</h6>
           <span style={{ font: '400 12px var(--font)', color: C.gris }}>Últimos {seisMeses.length} mes(es)</span>

@@ -109,17 +109,17 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
   return (
     <Modal titulo="Importar inventario desde Excel (temporal)" ancho={900} onCerrar={resultado ? onImportado : onCerrar} pie={
       resultado
-        ? <button className="btn btn-verde" onClick={onImportado}>Listo</button>
+        ? <button className="btn btn-azul" onClick={onImportado}>Listo</button>
         : <>
           <button className="btn" onClick={onCerrar}>Cancelar</button>
-          <button className="btn btn-verde" onClick={importar} disabled={!ok.length || !!estado}>
+          <button className="btn btn-azul" onClick={importar} disabled={!ok.length || !!estado}>
             {estado || `Importar ${ok.length} baño(s)`}
           </button>
         </>
     }>
       <div style={{ padding: 18, display: 'grid', gap: 14 }}>
         {resultado ? (
-          <div style={{ display: 'grid', gap: 8, padding: 16, background: '#e6f4ea', border: `2px solid ${C.verde}`, font: '400 13px/1.6 var(--font)', color: '#1e6b34' }}>
+          <div style={{ display: 'grid', gap: 8, padding: 16, background: '#e6f4ea', border: `1px solid ${C.verde}`, font: '400 13px/1.6 var(--font)', color: '#1e6b34', borderRadius: 'var(--radio-md)' }}>
             <strong style={{ font: '700 15px var(--font)' }}>Importación terminada</strong>
             <span>{resultado.creados} baño(s) nuevos · {resultado.actualizados} actualizados · {resultado.omitidos} omitidos por error</span>
             <span>Se crearon {resultado.modelos} modelo(s), {resultado.clientes} cliente(s) y {resultado.ubicaciones} ubicación(es).</span>
@@ -150,7 +150,7 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
                 </div>
 
                 {crearan && (crearan.modelos.length + crearan.clientes.length + crearan.ubicaciones.length) > 0 && (
-                  <div style={{ display: 'grid', gap: 6, padding: '10px 12px', background: C.suave, border: `2px solid ${C.borde}` }}>
+                  <div style={{ display: 'grid', gap: 6, padding: '10px 12px', background: C.suave, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)' }}>
                     <div style={{ font: '600 12px var(--font)' }}>Se crearán automáticamente. Revisa que no haya nombres repetidos escritos distinto:</div>
                     <Lista t="Modelos" l={crearan.modelos} />
                     <Lista t="Clientes" l={crearan.clientes} />
@@ -158,7 +158,7 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
                   </div>
                 )}
 
-                <div className="scroller" style={{ border: `2px solid ${C.borde}`, maxHeight: 300, overflowY: 'auto' }}>
+                <div className="scroller" style={{ border: `1px solid ${C.borde}`, maxHeight: 300, overflowY: 'auto', borderRadius: 'var(--radio-md)' }}>
                   <table style={{ minWidth: 760 }}>
                     <thead><tr><th>Fila</th><th>Código</th><th>Modelo</th><th>Color</th><th>Estado</th><th>Cliente</th><th>Ubicación</th><th>Observación</th></tr></thead>
                     <tbody>
@@ -179,7 +179,7 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
             )}
           </>
         )}
-        {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `2px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#7c1405' }}>{error}</div>}
+        {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `1px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#7c1405', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
       </div>
     </Modal>
   )

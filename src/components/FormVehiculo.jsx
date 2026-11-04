@@ -76,7 +76,7 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
     <Modal titulo={e.activo_id ? 'Editar vehículo' : 'Agregar vehículo'} ancho={900} onCerrar={onCerrar} pie={
       <>
         <button className="btn" onClick={onCerrar}>Cancelar</button>
-        <button className="btn btn-verde" onClick={guardar} disabled={guardando}>
+        <button className="btn btn-azul" onClick={guardar} disabled={guardando}>
           {guardando ? 'Guardando…' : 'Guardar vehículo'}
         </button>
       </>
@@ -143,19 +143,18 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
             <Campo l="Km recorridos al año"><input value={v.km_anual} onChange={set('km_anual', num)} inputMode="numeric" placeholder="40000" /></Campo>
           </div>
           <div style={{
-            padding: '11px 13px', background: C.suave, border: `2px solid ${C.borde}`,
-            font: '400 12px/1.45 var(--font)', color: '#3c4551',
-          }}>
+            padding: '11px 13px', background: C.suave, border: `1px solid ${C.borde}`,
+            font: '400 12px/1.45 var(--font)', color: '#3c4551', borderRadius: 'var(--radio-md)' }}>
             Con estos datos cada ruta calcula su costo: diésel según los km y el peso que lleva,
             más desgaste y costos fijos por kilómetro. Los campos vacíos cuentan como cero.
           </div>
           </> : (
-            <div style={{ padding: '11px 13px', background: C.suave, border: `1px solid ${C.borde}`, font: '400 12px/1.45 var(--font)', color: '#3c4551' }}>
+            <div style={{ padding: '11px 13px', background: C.suave, border: `1px solid ${C.borde}`, font: '400 12px/1.45 var(--font)', color: '#3c4551', borderRadius: 'var(--radio-md)' }}>
               Patente única: se guarda en mayúsculas y sin guiones ni espacios. Rendimiento y costos los completa quien tiene permiso "Ver montos".
             </div>
           )}
           {error && (
-            <div style={{ padding: '11px 13px', background: '#fce8e6', border: `2px solid ${C.rojo}`, font: '400 12px/1.45 var(--font)', color: '#7c1405' }}>
+            <div style={{ padding: '11px 13px', background: '#fce8e6', border: `1px solid ${C.rojo}`, font: '400 12px/1.45 var(--font)', color: '#7c1405', borderRadius: 'var(--radio-md)' }}>
               {String(error?.message || error)}
             </div>
           )}
@@ -167,5 +166,5 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
 
 const par = { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }
 const Titulo = ({ children }) => (
-  <div style={{ font: '700 12px var(--font)', color: '#1a3c72', borderBottom: `2px solid ${C.borde}`, paddingBottom: 6 }}>{children}</div>
+  <div style={{ font: '700 12px var(--font)', color: '#1a3c72', borderBottom: `1px solid ${C.borde}`, paddingBottom: 6 }}>{children}</div>
 )

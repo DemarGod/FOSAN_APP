@@ -55,7 +55,7 @@ export default function RutasSemana() {
           </p>
         </div>
         {planifica && (
-          <button className="btn btn-verde" onClick={() => setForm({})} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <button className="btn btn-azul" onClick={() => setForm({})} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <Icon d={I.plus} size={16} />Nueva ruta
           </button>
         )}
@@ -79,7 +79,7 @@ export default function RutasSemana() {
       <Aviso error={error} />
 
       {pendientes.length > 0 && (
-        <div style={{ border: `2px solid ${C.amarillo}`, background: '#fffaf0', padding: '12px 14px', marginBottom: 16, display: 'grid', gap: 6 }}>
+        <div style={{ border: `1px solid ${C.amarillo}`, background: '#fffaf0', padding: '12px 14px', marginBottom: 16, display: 'grid', gap: 6, borderRadius: 'var(--radio-md)' }}>
           <strong style={{ font: '700 13px var(--font)', color: C.navy }}>{pendientes.length} entrega(s) o retiro(s) sin ruta</strong>
           {pendientes.slice(0, 6).map((d) => (
             <span key={d.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', font: '400 12px var(--font)' }}>
@@ -90,7 +90,7 @@ export default function RutasSemana() {
       )}
 
       {!rutas ? <Cargando /> : rutas.length === 0 ? (
-        <div style={{ padding: 22, border: `2px solid ${C.borde}`, background: '#fff', font: '400 14px/1.5 var(--font)' }}>
+        <div style={{ padding: 22, border: `1px solid ${C.borde}`, background: '#fff', font: '400 14px/1.5 var(--font)', borderRadius: 'var(--radio-md)' }}>
           No hay rutas para esta semana.{planifica && ' Crea una nueva o copia la de la semana anterior.'}
           {planifica && <div style={{ marginTop: 12 }}><button className="btn" onClick={() => setLunes(sumarDias(lunes, -7))}>Ver semana anterior</button></div>}
         </div>
@@ -101,8 +101,8 @@ export default function RutasSemana() {
             const kmR = dias.reduce((s, v) => s + Number(v.km_real || 0), 0)
             const comenzada = dias.some((v) => v.iniciada_en || v.estado !== 'planificada')
             return (
-              <div key={r.id} style={{ border: `2px solid ${C.borde}`, background: '#fff' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: `2px solid ${C.borde}` }}>
+              <div key={r.id} style={{ border: `1px solid ${C.borde}`, background: '#fff', borderRadius: 'var(--radio-md)' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: `1px solid ${C.borde}` }}>
                   <span style={{ flex: '1 1 220px' }}>
                     <strong style={{ display: 'block', font: '700 16px var(--font)', color: C.navy }}>{r.nombre}</strong>
                     <span style={{ font: '400 12px var(--font)', color: C.gris }}>

@@ -35,11 +35,10 @@ export default function Login() {
     }}>
       <form onSubmit={entrar} style={{
         width: 'min(420px, 100%)', background: '#fff',
-        border: `2px solid ${C.navy}`,
-      }}>
+        border: `1px solid ${C.navy}`, borderRadius: 'var(--radio-md)' }}>
         <div style={{
           padding: '22px 24px', background: C.tinte,
-          borderBottom: `2px solid ${C.borde}`,
+          borderBottom: `1px solid ${C.borde}`,
         }}>
           <div style={{ font: '800 32px/1 var(--font)', letterSpacing: '-.02em', color: C.navy }}>FOSAN</div>
           <div style={{ font: '400 13px var(--font)', color: '#3c4551', marginTop: 6 }}>
@@ -62,15 +61,14 @@ export default function Login() {
           {error && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10, padding: '11px 13px',
-              background: '#fce8e6', border: `2px solid ${C.rojo}`,
-              font: '400 12px/1.45 var(--font)', color: '#7c1405',
-            }}>
+              background: '#fce8e6', border: `1px solid ${C.rojo}`,
+              font: '400 12px/1.45 var(--font)', color: '#7c1405', borderRadius: 'var(--radio-md)' }}>
               <Icon d={I.alert} size={17} color={C.rojo} />
               <span>{error}</span>
             </div>
           )}
 
-          <button type="submit" className="btn btn-verde" disabled={cargando}
+          <button type="submit" className="btn btn-azul" disabled={cargando}
             style={{ justifyContent: 'center', width: '100%' }}>
             {cargando ? 'Entrando…' : 'Entrar'}
           </button>

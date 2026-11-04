@@ -59,12 +59,12 @@ export default function Analisis() {
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, font: '600 12px var(--font)', color: C.gris }}>
             Mes
             <input type="month" value={mes} onChange={(e) => e.target.value && setMes(e.target.value)}
-              style={{ border: `2px solid ${C.borde}`, font: '600 13px var(--font)', color: C.navy, padding: '9px 12px', minHeight: 42 }} />
+              style={{ border: `1px solid ${C.borde}`, font: '600 13px var(--font)', color: C.navy, padding: '9px 12px', minHeight: 42, borderRadius: 'var(--radio-sm)' }} />
           </label>
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 2, marginTop: 16, border: `2px solid ${C.borde}`, width: 'fit-content', maxWidth: '100%', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 2, marginTop: 16, border: `1px solid ${C.borde}`, width: 'fit-content', maxWidth: '100%', flexWrap: 'wrap', borderRadius: 'var(--radio-md)' }}>
         {VISTAS.map((x) => (
           <button key={x.v} onClick={() => setVista(x.v)} style={{
             border: 0, background: vista === x.v ? C.tinte : '#fff', color: vista === x.v ? '#1a3c72' : '#3c4551',
@@ -131,14 +131,14 @@ function Calidad({ r, vista }) {
   const avisos = (por[vista] || []).filter(Boolean)
   if (!avisos.length) return null
   return (
-    <div style={{ margin: '16px 0 0', padding: '10px 14px', background: '#fef7e0', border: `2px solid ${C.amarillo}`, font: '400 12px/1.5 var(--font)', color: '#5c4400', display: 'grid', gap: 4 }}>
+    <div style={{ margin: '16px 0 0', padding: '10px 14px', background: '#fef7e0', border: `1px solid ${C.amarillo}`, font: '400 12px/1.5 var(--font)', color: '#5c4400', display: 'grid', gap: 4, borderRadius: 'var(--radio-md)' }}>
       <strong>Datos que faltan para que esta vista sea exacta</strong>
       {avisos.map((a, i) => <span key={i}>· {a}</span>)}
     </div>
   )
 }
 
-const Est = ({ on }) => (on ? <span title="Incluye kilómetros o datos estimados" style={{ marginLeft: 6, padding: '1px 5px', font: '700 9px var(--font)', letterSpacing: '.06em', textTransform: 'uppercase', background: '#fef7e0', color: '#8a5a00', border: `1px solid ${C.amarillo}` }}>est.</span> : null)
+const Est = ({ on }) => (on ? <span title="Incluye kilómetros o datos estimados" style={{ marginLeft: 6, padding: '1px 5px', font: '700 9px var(--font)', letterSpacing: '.06em', textTransform: 'uppercase', background: '#fef7e0', color: '#8a5a00', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)' }}>est.</span> : null)
 const SinDato = ({ children = 'Sin contrato' }) => <span style={{ font: '600 11px var(--font)', color: C.gris }}>{children}</span>
 const Margen = ({ p }) => (p === null || p === undefined ? <SinDato>—</SinDato>
   : <span style={{ fontWeight: 700, color: p < 0.2 ? '#b3261e' : '#1e6b34', background: p < 0.2 ? '#fce8e6' : undefined, padding: p < 0.2 ? '2px 6px' : 0 }}>{pct(p)}</span>)
@@ -146,7 +146,7 @@ const Plata = ({ v }) => (v === null || v === undefined ? <SinDato>—</SinDato>
 
 function Tabla({ cols, filas, onFila, vacio = 'Sin datos para este mes.', min = 640, pie }) {
   return (
-    <div className="scroller" style={{ border: `2px solid ${C.borde}`, background: '#fff' }}>
+    <div className="scroller" style={{ border: `1px solid ${C.borde}`, background: '#fff', borderRadius: 'var(--radio-md)' }}>
       <table style={{ minWidth: min }}>
         <thead><tr>{cols.map((c) => <th key={c.k} style={{ textAlign: c.der ? 'right' : 'left' }}>{c.l}</th>)}</tr></thead>
         <tbody>
@@ -158,7 +158,7 @@ function Tabla({ cols, filas, onFila, vacio = 'Sin datos para este mes.', min = 
           ))}
           {pie && filas.length > 0 && (
             <tr style={{ background: C.suave }}>
-              {cols.map((c, ci) => <td key={c.k} style={{ whiteSpace: 'nowrap', textAlign: c.der ? 'right' : 'left', fontWeight: 700, borderTop: `2px solid ${C.borde}` }}>{ci === 0 ? 'Total' : c.f ? c.f(pie) : pie[c.k] ?? ''}</td>)}
+              {cols.map((c, ci) => <td key={c.k} style={{ whiteSpace: 'nowrap', textAlign: c.der ? 'right' : 'left', fontWeight: 700, borderTop: `1px solid ${C.borde}` }}>{ci === 0 ? 'Total' : c.f ? c.f(pie) : pie[c.k] ?? ''}</td>)}
             </tr>
           )}
         </tbody>
@@ -169,7 +169,7 @@ function Tabla({ cols, filas, onFila, vacio = 'Sin datos para este mes.', min = 
 
 const Nota = ({ children }) => <p style={{ margin: '10px 2px 0', font: '400 12px/1.5 var(--font)', color: C.gris }}>{children}</p>
 const Caja = ({ titulo, children }) => (
-  <div style={{ padding: '14px 16px', border: `2px solid ${C.borde}`, background: C.suave, font: '400 13px/1.55 var(--font)', margin: '16px 0' }}>
+  <div style={{ padding: '14px 16px', border: `1px solid ${C.borde}`, background: C.suave, font: '400 13px/1.55 var(--font)', margin: '16px 0', borderRadius: 'var(--radio-md)' }}>
     {titulo && <strong style={{ display: 'block', marginBottom: 4 }}>{titulo}</strong>}
     {children}
   </div>
@@ -249,7 +249,7 @@ function Aseo({ d }) {
       ]} vacio="Ningún cliente tiene aseos por semana configurados." />
       <Sub>Por baño</Sub>
       <div style={{ marginBottom: 12 }}>
-        <select value={filtro} onChange={(e) => setFiltro(e.target.value)} style={{ border: `2px solid ${C.borde}`, font: '600 13px var(--font)', color: C.navy, padding: '9px 12px', minHeight: 42 }}>
+        <select value={filtro} onChange={(e) => setFiltro(e.target.value)} style={{ border: `1px solid ${C.borde}`, font: '600 13px var(--font)', color: C.navy, padding: '9px 12px', minHeight: 42, borderRadius: 'var(--radio-sm)' }}>
           <option value="">Estado: todos ({d.banos.length})</option>
           {Object.entries(L_ESTADO).filter(([k]) => k !== 'baja').map(([k, l]) => {
             const c = d.banos.filter((b) => b.estado === k).length
@@ -289,7 +289,7 @@ function GraficoEquilibrio({ e }) {
   const ticks = [0, 0.25, 0.5, 0.75, 1]
   const etq = (v) => (porAseo ? num(v) : '$' + num(v / 1e6, 1) + 'M')
   return (
-    <div style={{ border: `2px solid ${C.borde}`, background: '#fff', padding: '14px 12px 10px', margin: '16px 0' }}>
+    <div style={{ border: `1px solid ${C.borde}`, background: '#fff', padding: '14px 12px 10px', margin: '16px 0', borderRadius: 'var(--radio-md)' }}>
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', maxWidth: W, display: 'block' }}>
         {ticks.map((f) => (
           <g key={f}>
@@ -470,7 +470,7 @@ function Tendencia({ t }) {
   const max = Math.max(1, ...t.map((x) => Math.max(x.ingreso, x.costo)))
   return (
     <>
-      <div style={{ border: `2px solid ${C.borde}`, background: '#fff', padding: '18px 16px 10px', margin: '18px 0 14px' }}>
+      <div style={{ border: `1px solid ${C.borde}`, background: '#fff', padding: '18px 16px 10px', margin: '18px 0 14px', borderRadius: 'var(--radio-md)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${t.length}, minmax(0, 120px))`, gap: 12, alignItems: 'end', height: 180 }}>
           {t.map((x) => (
             <div key={x.mes} title={`${mesLargo(x.mes)}: contratos ${$(x.ingreso)} · costos ${$(x.costo)}`} style={{ display: 'flex', gap: 2, alignItems: 'end', height: '100%' }}>

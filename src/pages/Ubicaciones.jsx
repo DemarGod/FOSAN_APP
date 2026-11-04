@@ -77,7 +77,7 @@ export default function Ubicaciones() {
       <Aviso error={error} />
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: 2, border: `2px solid ${C.borde}`, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 2, border: `1px solid ${C.borde}`, flexWrap: 'wrap', borderRadius: 'var(--radio-md)' }}>
           {FILTROS.map((f) => {
             const on = filtro === f
             return (
@@ -91,9 +91,8 @@ export default function Ubicaciones() {
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, font: '600 12px var(--font)', color: C.gris }}>
           Limpiezas del día
           <select value={dia} onChange={(e) => setDia(Number(e.target.value))} style={{
-            border: `2px solid ${C.borde}`, background: '#fff', color: C.navy, font: '600 13px var(--font)',
-            padding: '9px 12px', minHeight: 42,
-          }}>
+            border: `1px solid ${C.borde}`, background: '#fff', color: C.navy, font: '600 13px var(--font)',
+            padding: '9px 12px', minHeight: 42, borderRadius: 'var(--radio-sm)' }}>
             {DIAS.map((d) => <option key={d.v} value={d.v}>{d.l}{d.v === hoyDow() ? ' (hoy)' : ''}</option>)}
           </select>
         </label>
@@ -123,7 +122,7 @@ export default function Ubicaciones() {
 function Lista({ visibles, sel, setSel, color, limpiaHoy, sinGeo, editable }) {
   return (
     <section className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: '14px 18px', background: C.tinte, borderBottom: `2px solid ${C.borde}` }}>
+      <div style={{ padding: '14px 18px', background: C.tinte, borderBottom: `1px solid ${C.borde}` }}>
         <div style={{ font: '800 24px/1 var(--font)', color: '#1a3c72' }}>{visibles.length}</div>
         <div style={{ font: '400 11px var(--font)', color: '#3c4551', marginTop: 4 }}>
           puntos en esta vista · toca uno para centrarlo
@@ -156,7 +155,7 @@ function Lista({ visibles, sel, setSel, color, limpiaHoy, sinGeo, editable }) {
         {visibles.length === 0 && <div style={{ padding: 18 }} className="text-muted">No hay puntos en esta vista.</div>}
       </div>
       {sinGeo.length > 0 && (
-        <div style={{ padding: '12px 18px', borderTop: `2px solid ${C.borde}`, font: '400 11px/1.5 var(--font)', color: C.gris }}>
+        <div style={{ padding: '12px 18px', borderTop: `1px solid ${C.borde}`, font: '400 11px/1.5 var(--font)', color: C.gris }}>
           Sin ubicar: {sinGeo.slice(0, 6).map((c) => c.nombre).join(', ')}{sinGeo.length > 6 ? '…' : ''}.
           {editable ? ' Haz clic en el mapa o busca su dirección para ubicarlos.' : ''}
         </div>
@@ -209,7 +208,7 @@ function NuevoPunto({ punto, clientes, onCancelar, onGuardado }) {
         <div style={{ font: '400 12px var(--font)', color: C.gris }}>
           {coord(punto.lat)}, {coord(punto.lng)} · puedes hacer clic en otro lugar para moverlo
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, background: C.borde, border: `2px solid ${C.borde}` }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, background: C.borde, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)' }}>
           {[['cliente', 'Cliente existente'], ['nuevo', 'Nueva ubicación']].map(([v, l]) => (
             <button key={v} onClick={() => setModo(v)} style={{
               border: 0, minHeight: 42, cursor: 'pointer', font: '600 13px var(--font)', textAlign: 'left', padding: '0 12px',
@@ -235,10 +234,10 @@ function NuevoPunto({ punto, clientes, onCancelar, onGuardado }) {
           </>
         )}
         <Campo l="Dirección"><input value={direccion} onChange={(e) => setDireccion(e.target.value)} maxLength={160} placeholder="Se completa sola al hacer clic" /></Campo>
-        {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `2px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#7c1405' }}>{error}</div>}
+        {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `1px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#7c1405', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button className="btn" onClick={onCancelar}>Cancelar</button>
-          <button className="btn btn-verde" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar ubicación'}</button>
+          <button className="btn btn-azul" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar ubicación'}</button>
         </div>
       </div>
     </section>
@@ -261,7 +260,7 @@ function Buscador({ onElegir }) {
   }
   return (
     <form onSubmit={buscar} style={{ position: 'relative', flex: 1, minWidth: 240 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 9, border: `2px solid ${C.borde}`, background: '#fff', padding: '0 12px', minHeight: 42 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, border: `1px solid ${C.borde}`, background: '#fff', padding: '0 12px', minHeight: 42, borderRadius: 'var(--radio-sm)' }}>
         <Icon d={I.busca} size={16} color={C.gris} />
         <input value={q} onChange={(e) => { setQ(e.target.value); setRes([]) }} placeholder="Buscar dirección (ej. 1 Sur 1200, Talca)"
           style={{ flex: 1, minWidth: 0, border: 0, outline: 'none', background: 'transparent', font: '400 13px var(--font)' }} />
@@ -270,7 +269,7 @@ function Buscador({ onElegir }) {
         </button>
       </div>
       {res.length > 0 && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, background: '#fff', border: `2px solid ${C.borde}`, borderTop: 0 }}>
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, background: '#fff', border: `1px solid ${C.borde}`, borderTop: 0, borderRadius: 'var(--radio-md)' }}>
           {res.map((r) => (
             <button key={r.place_id} type="button" onClick={() => { onElegir({ lat: Number(r.lat), lng: Number(r.lon), direccion: r.display_name.split(',').slice(0, 3).join(',') }); setRes([]) }}
               style={{ display: 'block', width: '100%', textAlign: 'left', border: 0, borderBottom: `1px solid ${C.fila}`, background: '#fff', padding: '10px 12px', font: '400 12px/1.4 var(--font)', cursor: 'pointer' }}>

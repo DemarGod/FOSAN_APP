@@ -71,7 +71,7 @@ export default function MiRuta() {
       {panelDueno}
 
       {semana.rutas.length === 0 && (
-        <div style={{ padding: 18, border: `2px solid ${C.borde}`, background: '#fff', font: '400 14px/1.5 var(--font)' }}>
+        <div style={{ padding: 18, border: `1px solid ${C.borde}`, background: '#fff', font: '400 14px/1.5 var(--font)', borderRadius: 'var(--radio-md)' }}>
           {dueno && !verComo ? 'Elige un operador arriba para ver su ruta de esta semana.'
             : dueno ? 'Este operador no tiene una ruta asignada esta semana.'
             : perfil?.rol !== 'operador' && puedeVer(perfil, 'rutas')
@@ -89,14 +89,14 @@ export default function MiRuta() {
       )}
 
       {ruta?.notas && (
-        <div style={{ padding: '10px 12px', background: C.suave, border: `2px solid ${C.borde}`, font: '400 13px/1.45 var(--font)' }}>{ruta.notas}</div>
+        <div style={{ padding: '10px 12px', background: C.suave, border: `1px solid ${C.borde}`, font: '400 13px/1.45 var(--font)', borderRadius: 'var(--radio-sm)' }}>{ruta.notas}</div>
       )}
 
       {ruta && !dias && <Cargando />}
       {ruta && dias && (
         <>
           {/* Días de la semana con su semáforo */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 2, background: C.borde, border: `2px solid ${C.borde}` }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 2, background: C.borde, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)' }}>
             {DIAS_RUTA.map((d) => {
               const v = viajeDe(d.v)
               const f = fechaDia(semana.lunes, d.v)
@@ -124,7 +124,7 @@ export default function MiRuta() {
 
           {viaje
             ? <DiaRuta key={viaje.id} viaje={viaje} editable={viaje.fecha <= hoy} onCambio={cargar} />
-            : <div style={{ padding: 18, border: `2px solid ${C.borde}`, background: '#fff', font: '400 13px var(--font)', color: C.gris }}>Este día no tiene paradas.</div>}
+            : <div style={{ padding: 18, border: `1px solid ${C.borde}`, background: '#fff', font: '400 13px var(--font)', color: C.gris, borderRadius: 'var(--radio-md)' }}>Este día no tiene paradas.</div>}
         </>
       )}
     </div>

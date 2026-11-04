@@ -43,7 +43,7 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
   return (
     <div style={{ display: 'grid', gap: 14 }}>
       {/* Estado del día y kilometraje */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, padding: '12px 14px', border: `2px solid ${C.borde}`, background: '#fff' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, padding: '12px 14px', border: `1px solid ${C.borde}`, background: '#fff', borderRadius: 'var(--radio-md)' }}>
         <span style={{ flex: '1 1 180px' }}>
           <strong style={{ display: 'block', font: '700 15px var(--font)', color: C.navy }}>{nombreDia} {v.fecha.slice(8, 10)}/{v.fecha.slice(5, 7)}</strong>
           <span style={{ font: '400 12px var(--font)', color: C.gris }}>
@@ -58,20 +58,20 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
       </div>
 
       {editable && !iniciado && !futuro && (
-        <div style={{ display: 'grid', gap: 10, padding: 14, border: `2px solid ${C.azul}`, background: C.tinte }}>
+        <div style={{ display: 'grid', gap: 10, padding: 14, border: `1px solid ${C.azul}`, background: C.tinte, borderRadius: 'var(--radio-md)' }}>
           <strong style={{ font: '700 14px var(--font)', color: C.navy }}>Antes de salir, ingresa el kilometraje del vehículo</strong>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <input value={km} onChange={(e) => setKm(num(e.target.value))} inputMode="numeric" placeholder={v.kilometraje ? `Último: ${miles(v.kilometraje)} km` : 'Km del odómetro'}
-              style={{ flex: '1 1 160px', border: `2px solid ${C.borde}`, font: '600 15px var(--font)', padding: '10px 12px', minHeight: 46 }} />
-            <button className="btn btn-verde" onClick={iniciar} disabled={ocupado} style={{ minHeight: 46 }}>Iniciar ruta del día</button>
+              style={{ flex: '1 1 160px', border: `1px solid ${C.borde}`, font: '600 15px var(--font)', padding: '10px 12px', minHeight: 46, borderRadius: 'var(--radio-sm)' }} />
+            <button className="btn btn-azul" onClick={iniciar} disabled={ocupado} style={{ minHeight: 46 }}>Iniciar ruta del día</button>
           </div>
         </div>
       )}
 
-      {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `2px solid ${C.rojo}`, font: '400 13px/1.45 var(--font)', color: '#7c1405' }}>{error}</div>}
+      {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `1px solid ${C.rojo}`, font: '400 13px/1.45 var(--font)', color: '#7c1405', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
 
       {/* Paradas */}
-      <div style={{ border: `2px solid ${C.borde}`, background: '#fff' }}>
+      <div style={{ border: `1px solid ${C.borde}`, background: '#fff', borderRadius: 'var(--radio-md)' }}>
         {v.paradas.length === 0 && <div style={{ padding: 14, font: '400 13px var(--font)', color: C.gris }}>No hay paradas este día.</div>}
         {v.paradas.map((p, i) => {
           const s = SEMAFORO[p.estado] || SEMAFORO.pendiente
@@ -202,7 +202,7 @@ function Marcar({ p, estado, fecha, onCerrar, onListo }) {
             placeholder={ok ? 'Ej.: el encargado pidió cambiar la hora de limpieza' : 'Ej.: portón cerrado, no había nadie'} />
         </label>
         {puedeMant &&(ok || !retiro) && (
-          <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', border: `2px solid ${mant ? C.rojo : C.borde}`, cursor: 'pointer' }}>
+          <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', border: `1px solid ${mant ? C.rojo : C.borde}`, cursor: 'pointer', borderRadius: 'var(--radio-sm)' }}>
             <input type="checkbox" checked={mant} onChange={(e) => setMant(e.target.checked)} style={{ width: 20, height: 20, accentColor: C.rojo, marginTop: 1 }} />
             <span>
               <strong>Requiere mantención</strong>
@@ -213,7 +213,7 @@ function Marcar({ p, estado, fecha, onCerrar, onListo }) {
           </label>
         )}
         {puedeMant && mant && (ok || !retiro) && (
-          <div style={{ display: 'grid', gap: 10, padding: '10px 12px', border: `2px solid ${C.rojo}`, background: '#fff' }}>
+          <div style={{ display: 'grid', gap: 10, padding: '10px 12px', border: `1px solid ${C.rojo}`, background: '#fff', borderRadius: 'var(--radio-md)' }}>
             <span><strong>¿Cuáles baños?</strong>{!unidades.length && <span style={{ color: C.gris }}> · el cliente no tiene baños FOSAN en arriendo</span>}</span>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {unidades.map((u) => {
@@ -258,7 +258,7 @@ function Marcar({ p, estado, fecha, onCerrar, onListo }) {
           <span>Fotos (opcional){fotos.length ? ` · ${fotos.length} elegida(s)` : ''}</span>
           <input type="file" accept="image/*,application/pdf" multiple onChange={(e) => setFotos([...e.target.files])} />
         </label>
-        {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `2px solid ${C.rojo}`, color: '#7c1405' }}>{error}</div>}
+        {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `1px solid ${C.rojo}`, color: '#7c1405', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
       </div>
     </Modal>
   )
@@ -291,11 +291,11 @@ function Cerrar({ viaje, pendientes, onCerrar, onListo }) {
         </label>
         {recorridos > 0 && <p style={{ margin: 0 }}>Recorrido del día: <strong>{miles(recorridos)} km</strong></p>}
         {pendientes > 0 && (
-          <div style={{ padding: '10px 12px', background: '#fef7e0', border: `2px solid ${C.amarillo}` }}>
+          <div style={{ padding: '10px 12px', background: '#fef7e0', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-sm)' }}>
             Quedan {pendientes} parada(s) pendientes. Al cerrar quedarán como <strong>No se pudo</strong>.
           </div>
         )}
-        {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `2px solid ${C.rojo}`, color: '#7c1405' }}>{error}</div>}
+        {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `1px solid ${C.rojo}`, color: '#7c1405', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
       </div>
     </Modal>
   )

@@ -75,7 +75,7 @@ export default function Calendario({ puedeEditar, onCerrar }) {
     <Modal ancho={760} onCerrar={onCerrar}
       titulo={`Calendario · ${MESES[mes]} ${anio}`}>
       <div style={{
-        display: 'flex', gap: 8, padding: '10px 18px', borderBottom: `2px solid ${C.borde}`,
+        display: 'flex', gap: 8, padding: '10px 18px', borderBottom: `1px solid ${C.borde}`,
       }}>
         <button onClick={() => irMes(-1)} style={btnNav}>‹</button>
         <button onClick={() => irMes(1)} style={btnNav}>›</button>
@@ -119,7 +119,7 @@ export default function Calendario({ puedeEditar, onCerrar }) {
         })}
       </div>
 
-      <div style={{ padding: '16px 18px', borderTop: `2px solid ${C.borde}` }}>
+      <div style={{ padding: '16px 18px', borderTop: `1px solid ${C.borde}` }}>
         <div style={{ font: '700 14px var(--font)', marginBottom: 10 }}>
           Eventos del {Number(d)} de {MESES[Number(m) - 1].toLowerCase()} {y}
         </div>
@@ -163,10 +163,9 @@ export default function Calendario({ puedeEditar, onCerrar }) {
                 const col = COLOR_EVENTO[t]
                 return (
                   <button key={t} onClick={() => setTipo(t)} style={{
-                    border: `2px solid ${col}`, background: on ? col : '#fff',
+                    border: `1px solid ${col}`, background: on ? col : '#fff',
                     color: on ? '#fff' : col, font: '600 12px var(--font)',
-                    padding: '8px 12px', minHeight: 38, cursor: 'pointer',
-                  }}>{L_TIPO_EVENTO[t]}</button>
+                    padding: '8px 12px', minHeight: 38, cursor: 'pointer', borderRadius: 'var(--radio-sm)' }}>{L_TIPO_EVENTO[t]}</button>
                 )
               })}
             </div>
@@ -175,10 +174,9 @@ export default function Calendario({ puedeEditar, onCerrar }) {
                 onKeyDown={(e) => { if (e.key === 'Enter') guardar() }}
                 placeholder="Descripción del evento"
                 style={{
-                  flex: 1, minWidth: 220, border: `2px solid ${C.borde}`,
-                  padding: '10px 12px', font: '400 13px var(--font)', outline: 'none',
-                }} />
-              <button className="btn btn-verde" onClick={guardar}>Guardar</button>
+                  flex: 1, minWidth: 220, border: `1px solid ${C.borde}`,
+                  padding: '10px 12px', font: '400 13px var(--font)', outline: 'none', borderRadius: 'var(--radio-sm)' }} />
+              <button className="btn btn-azul" onClick={guardar}>Guardar</button>
             </div>
           </>
         )}
@@ -193,6 +191,6 @@ export default function Calendario({ puedeEditar, onCerrar }) {
 }
 
 const btnNav = {
-  border: `2px solid ${C.borde}`, background: '#fff', width: 36, height: 36,
+  border: `1px solid ${C.borde}`, background: '#fff', width: 36, height: 36,
   cursor: 'pointer', color: C.navy, font: '700 15px var(--font)',
 }

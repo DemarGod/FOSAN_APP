@@ -103,7 +103,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
   return (
     <header style={{
       display: 'flex', alignItems: 'center', gap: 14, height: 64, padding: '0 16px',
-      background: '#fff', borderBottom: `2px solid ${C.borde}`,
+      background: '#fff', borderBottom: `1px solid ${C.borde}`,
       position: 'sticky', top: 0, zIndex: 30,
     }}>
       <div className="sbtab" style={{ font: '800 17px/1 var(--font)', letterSpacing: '-.02em', color: C.navy }}>
@@ -113,8 +113,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
       <div ref={cajaBusca} className="desk-only" style={{ flex: 1, maxWidth: 420, position: 'relative' }}>
         <form onSubmit={buscar} style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          border: `1px solid ${C.borde}`, padding: '7px 10px', background: '#fff',
-        }}>
+          border: `1px solid ${C.borde}`, padding: '7px 10px', background: '#fff', borderRadius: 'var(--radio-md)' }}>
           <Icon d={I.busca} size={15} color={C.gris} />
           <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar baños, clientes o secciones"
@@ -123,8 +122,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
         {res && (
           <div style={{
             position: 'absolute', top: 40, left: 0, right: 0, background: '#fff', zIndex: 1100,
-            border: `2px solid ${C.borde}`, boxShadow: '0 10px 30px rgba(31,58,99,.18)', maxHeight: 420, overflowY: 'auto',
-          }}>
+            border: `1px solid ${C.borde}`, boxShadow: '0 10px 30px rgba(31,58,99,.18)', maxHeight: 420, overflowY: 'auto', borderRadius: 'var(--radio-md)' }}>
             {!hayRes && <div style={{ padding: 14, font: '400 13px var(--font)', color: C.gris }}>Sin resultados para "{busqueda.trim()}".</div>}
             {res.paginas.length > 0 && <Grupo t="Secciones" />}
             {res.paginas.map((p) => <Resultado key={p.to} d={p.d} t={p.label} onClick={() => ir(p.to)} />)}
@@ -139,9 +137,8 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
       <div style={{ flex: 1 }} />
 
       <button onClick={onCalendario} title="Calendario" style={{
-        border: `2px solid ${C.borde}`, background: '#fff', color: C.navy,
-        width: 40, height: 40, display: 'grid', placeItems: 'center', cursor: 'pointer',
-      }}>
+        border: `1px solid ${C.borde}`, background: '#fff', color: C.navy,
+        width: 40, height: 40, display: 'grid', placeItems: 'center', cursor: 'pointer', borderRadius: 'var(--radio-md)' }}>
         <Icon d={I.cal} size={18} w={1.7} />
       </button>
 
@@ -163,11 +160,10 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
         {abierto && (
           <div style={{
             position: 'absolute', top: 38, right: 0, width: 'min(360px, 80vw)', background: '#fff',
-            border: `2px solid ${C.borde}`, boxShadow: '0 10px 30px rgba(31,58,99,.18)', zIndex: 1100,
-          }}>
+            border: `1px solid ${C.borde}`, boxShadow: '0 10px 30px rgba(31,58,99,.18)', zIndex: 1100, borderRadius: 'var(--radio-md)' }}>
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-              padding: '12px 14px', borderBottom: `2px solid ${C.borde}`,
+              padding: '12px 14px', borderBottom: `1px solid ${C.borde}`,
             }}>
               <span style={{ font: '700 14px var(--font)' }}>Notificaciones</span>
               {sinLeer > 0 && (

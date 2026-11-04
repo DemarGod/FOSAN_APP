@@ -10,15 +10,14 @@ export default function SelectorBanos({ banos = [], elegidos = [], onChange, vac
   const alternar = (id) => onChange(set.has(id) ? elegidos.filter((x) => x !== id) : [...elegidos, id])
 
   return (
-    <div style={{ border: `2px solid ${C.borde}`, background: '#fff', minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
+    <div style={{ border: `1px solid ${C.borde}`, background: '#fff', minWidth: 0, maxWidth: '100%', overflow: 'hidden', borderRadius: 'var(--radio-md)' }}>
       <div style={{
         display: 'flex', gap: 8, alignItems: 'center', padding: '8px 10px',
-        borderBottom: `2px solid ${C.borde}`, background: C.suave, flexWrap: 'wrap',
+        borderBottom: `1px solid ${C.borde}`, background: C.suave, flexWrap: 'wrap',
       }}>
         <select value={tipo} onChange={(e) => setTipo(e.target.value)} style={{
-          border: `2px solid ${C.borde}`, background: '#fff', font: '600 12px var(--font)',
-          padding: '6px 8px', minHeight: 34, color: C.navy, maxWidth: '100%', minWidth: 0,
-        }}>
+          border: `1px solid ${C.borde}`, background: '#fff', font: '600 12px var(--font)',
+          padding: '6px 8px', minHeight: 34, color: C.navy, maxWidth: '100%', minWidth: 0, borderRadius: 'var(--radio-md)' }}>
           <option value="">Tipo: todos</option>
           {tipos.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
