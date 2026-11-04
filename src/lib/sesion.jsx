@@ -7,8 +7,10 @@ export const useSesion = () => useContext(SesionCtx)
 // perfil.permisos = { clientes: { ver, editar }, ... } cargado desde permisos_rol
 export const esDueno = (perfil) => perfil?.rol === 'dueno'
 export const puedeEditar = esDueno
-// Mi ruta: la ven los operadores (su ruta) y el dueño (para "ver como operador")
-export const verMiRuta = (perfil) => esDueno(perfil) || perfil?.rol === 'operador'
+// Mi ruta: la ven siempre los operadores. El dueño solo si lo activa en Administración → Mi perfil (ajustes).
+export const verMiRuta = (perfil, ajustes = {}) => perfil?.rol === 'operador' || (esDueno(perfil) && ajustes.menu_mi_ruta_dueno === '1')
+// Administración: el dueño ve todo; la secretaria solo la pestaña Mi perfil. El resto ve "Mi perfil" suelto en el menú.
+export const verAdministracion = (perfil) => esDueno(perfil) || perfil?.rol === 'secretaria'
 export const esSecretaria = (perfil) => perfil?.rol === 'secretaria'
 export const puedeVer = (perfil, sec) => esDueno(perfil) || !!perfil?.permisos?.[sec]?.ver
 export const puedeOperar = (perfil, sec) => {

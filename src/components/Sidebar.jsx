@@ -1,33 +1,38 @@
 import { NavLink } from 'react-router-dom'
 import { C, Icon, I } from '../lib/ui'
-import { useSesion, puedeVer, esDueno, verMiRuta } from '../lib/sesion'
+import { useSesion, puedeVer, verMiRuta, verAdministracion } from '../lib/sesion'
+import { useAjustes } from '../lib/ajustes'
 
 const DESPACHO = 'M3 7h11v9H3zM14 10h4l3 3v3h-7zM7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM6 4h5M8.5 1.5 11 4 8.5 6.5'
 const HISTORIAL = 'M12 21a9 9 0 1 0-9-9M3 4v5h5M12 7v5l3 2'
 const RUTA = 'M5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM19 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM7 17h6a3 3 0 0 0 0-6h-2a3 3 0 0 1 0-6h6'
 
+// Orden del menú: Inicio · Clientes · Inventario · Operaciones · (Mi ruta) · Flota · Mantenimiento · Reportes · Administración.
+// Sin títulos de grupo. El calendario se abre con el botón de la barra superior.
 export const NAV = [
   { to: '/', label: 'Inicio', d: I.home, fin: true, s: 'inicio' },
   { to: '/clientes', label: 'Clientes', d: I.users, s: 'clientes' },
-  { grupo: 'Logística' },
   // Inventario (lámina 3): Equipos · Insumos y EPP · Mapa
   { to: '/inventario', label: 'Inventario', d: I.box, s: ['banos', 'insumos', 'ubicaciones'] },
+  // Operaciones (lámina 4): Programación · Rutas · Respaldos
+  { to: '/operaciones', label: 'Operaciones', d: RUTA, s: 'rutas' },
+  // Mi ruta: operadores siempre; el dueño solo si lo activa en Administración → Mi perfil
+  { to: '/mi-ruta', label: 'Mi ruta', d: DESPACHO, miRuta: true },
   // Flota (lámina 5): vehículos por patente
   { to: '/flota', label: 'Flota', d: I.truck, s: 'transporte' },
-  // Operaciones (lámina 4): Programación · Rutas (las Rutas semanales de siempre) · Respaldos
-  { to: '/operaciones', label: 'Operaciones', d: RUTA, s: 'rutas' },
-  { to: '/mi-ruta', label: 'Mi ruta', d: DESPACHO, miRuta: true },   // solo operadores y dueño
-  { grupo: 'Gestión' },
   // Mantenimiento (lámina 6): equipos y vehículos
   { to: '/mantenimiento', label: 'Mantenimiento', d: I.wrench, s: 'mantenciones' },
-  { calendario: true, label: 'Calendario', d: I.cal, s: 'calendario' },
-  // Reportes (lámina 7): Inventario · Operaciones · Flota · Mantenimiento · Análisis (antes página aparte)
+  // Reportes (lámina 7): Inventario · Operaciones · Flota · Mantenimiento · Análisis
   { to: '/reportes', label: 'Reportes', d: I.chart, s: ['reportes', 'analisis'] },
-  // Administración (lámina 8) reúne Personal y usuarios, Roles y permisos, Catálogos e Historial de cambios.
-  // Solo el dueño la ve. "Mi perfil" lo ven todos.
-  { to: '/administracion', label: 'Administración', d: I.gear, soloDueno: true },
-  { to: '/configuracion', label: 'Mi perfil', d: I.users },
+  // Administración (lámina 8) + Mi perfil: dueño (todo) y secretaria (solo Mi perfil)
+  { to: '/administracion', label: 'Administración', d: I.gear, admin: true },
+  // Quien no ve Administración (operador, lectura…) tiene Mi perfil suelto
+  { to: '/configuracion', label: 'Mi perfil', d: I.users, sinAdmin: true },
 ]
+
+// ¿Este ítem del menú corresponde a este usuario?
+export const itemVisible = (perfil, ajustes, n) => (!n.s || [].concat(n.s).some((x) => puedeVer(perfil, x)))
+  && !(n.admin && !verAdministracion(perfil)) && !(n.sinAdmin && verAdministracion(perfil)) && !(n.miRuta && !verMiRuta(perfil, ajustes))
 
 const item = (activo) => ({
   width: 'calc(100% - 16px)', margin: '2px 8px', display: 'flex', alignItems: 'center', gap: 11,
@@ -39,6 +44,7 @@ const item = (activo) => ({
 
 export default function Sidebar({ onCalendario }) {
   const { perfil } = useSesion()
+  const ajustes = useAjustes()
   return (
     <aside className="sidebar" style={{
       background: '#13294b', color: '#fff', borderRight: 0,
@@ -52,7 +58,7 @@ export default function Sidebar({ onCalendario }) {
       </div>
 
       <nav style={{ flex: 1, overflowY: 'auto', padding: '10px 0' }}>
-        {NAV.filter((n) => (!n.s || [].concat(n.s).some((x) => puedeVer(perfil, x))) && !(n.soloDueno && !esDueno(perfil)) && !(n.miRuta && !verMiRuta(perfil))).map((n, i) => {
+        {NAV.filter((n) => itemVisible(perfil, ajustes, n)).map((n, i) => {
           if (n.grupo) {
             return (
               <div key={n.grupo} style={{

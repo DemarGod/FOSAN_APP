@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { C, Icon, I } from '../lib/ui'
-import { useSesion, puedeVer, esDueno, verMiRuta } from '../lib/sesion'
-import { NAV } from './Sidebar'
+import { useSesion } from '../lib/sesion'
+import { useAjustes } from '../lib/ajustes'
+import { NAV, itemVisible } from './Sidebar'
 
 const RUTA = 'M5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM19 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM7 17h6a3 3 0 0 0 0-6h-2a3 3 0 0 1 0-6h6'
 const MENU = 'M4 6h16M4 12h16M4 18h16'
@@ -14,11 +15,11 @@ const TABS = [
   { to: '/operaciones', label: 'Operaciones', d: RUTA, s: 'rutas' },
   { to: '/mi-ruta', label: 'Mi ruta', d: I.truck, miRuta: true },
 ]
-const permitido = (perfil, n) => (!n.s || [].concat(n.s).some((x) => puedeVer(perfil, x)))
-  && !(n.soloDueno && !esDueno(perfil)) && !(n.miRuta && !verMiRuta(perfil))
 
 export default function Tabbar({ onCalendario }) {
   const { perfil } = useSesion()
+  const ajustes = useAjustes()
+  const permitido = (p, n) => itemVisible(p, ajustes, n)
   const { pathname } = useLocation()
   const [abierto, setAbierto] = useState(false)
   useEffect(() => { setAbierto(false) }, [pathname])

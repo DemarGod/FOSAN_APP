@@ -11,18 +11,24 @@ import {
 } from '../lib/api'
 import { hoyISO } from '../lib/costos'
 import { C, Icon, I, fechaHora } from '../lib/ui'
+import Configuracion from './Configuracion'
+import { useSesion, esDueno } from '../lib/sesion'
 
 const PESTANAS = [
   { v: 'personal', l: 'Personal y usuarios' },
   { v: 'roles', l: 'Roles y permisos' },
   { v: 'catalogos', l: 'Catálogos' },
   { v: 'historial', l: 'Historial de cambios' },
+  { v: 'perfil', l: 'Mi perfil', todos: true },   // también la secretaria
 ]
 const chico = { minHeight: 34, padding: '6px 12px' }
 
 export default function Administracion() {
   const [params, setParams] = useSearchParams()
-  const tab = PESTANAS.some((p) => p.v === params.get('tab')) ? params.get('tab') : 'personal'
+  const { perfil } = useSesion()
+  // El dueño ve todas las pestañas; la secretaria solo Mi perfil
+  const pestanas = PESTANAS.filter((p) => esDueno(perfil) || p.todos)
+  const tab = pestanas.some((p) => p.v === params.get('tab')) ? params.get('tab') : pestanas[0].v
   const irA = (v) => setParams({ tab: v }, { replace: true })
   return (
     <div style={{ display: 'grid', gap: 16 }}>
@@ -33,12 +39,13 @@ export default function Administracion() {
         </span>
       </div>
       <section className="card">
-        <Pestanas opciones={PESTANAS} valor={tab} onChange={irA} />
+        <Pestanas opciones={pestanas} valor={tab} onChange={irA} />
         <div style={{ padding: 18 }}>
           {tab === 'personal' && <AdminPersonal />}
           {tab === 'roles' && <AdminRoles />}
           {tab === 'catalogos' && <Catalogos />}
           {tab === 'historial' && <HistorialCambios />}
+          {tab === 'perfil' && <Configuracion embebido />}
         </div>
       </section>
     </div>
