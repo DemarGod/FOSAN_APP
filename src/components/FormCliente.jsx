@@ -93,7 +93,7 @@ export default function FormCliente({ clienteId = null, onCerrar, onGuardado, on
       const datos = {
         tipo_cliente: v.tipo_cliente,
         rut: formatoRut(v.rut),
-        nombre: v.nombre.trim(),
+        nombre: v.nombre.trim().toUpperCase(),   // razón social siempre en mayúsculas; el nombre comercial queda como se escribe
         nombre_comercial: v.nombre_comercial.trim() || null,
         ...(v.rubro ? { rubro: v.rubro } : {}),
         telefono: v.telefono || null,
@@ -163,7 +163,7 @@ export default function FormCliente({ clienteId = null, onCerrar, onGuardado, on
         </CampoBase>
 
         <CampoBase etiqueta={v.tipo_cliente === 'persona' ? 'Nombre completo' : 'Nombre / razón social'} obligatorio error={errores.nombre}>
-          <input value={v.nombre} onChange={set('nombre')} maxLength={120} placeholder="CONSTRUCTORA NORTE" />
+          <input value={v.nombre} onChange={(e) => set('nombre')({ target: { value: e.target.value.toUpperCase() } })} maxLength={120} placeholder="CONSTRUCTORA NORTE" />
         </CampoBase>
         <CampoBase etiqueta="Nombre comercial">
           <input value={v.nombre_comercial} onChange={set('nombre_comercial')} maxLength={80} placeholder="NORTE" />

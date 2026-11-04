@@ -756,6 +756,20 @@ export const editarOperacion = async (id, datos, banos) => {
     if (e2) throw e2
   }
 }
+// Cupo del servicio: unidades solicitadas, asignadas y en otras entregas programadas (paquete 9c)
+export const cupoServicio = async (servicioId, excluir = null) => {
+  const { data, error } = await supabase.rpc('cupo_servicio', { p_servicio: servicioId, p_excluir: excluir })
+  if (error) throw error
+  return (Array.isArray(data) ? data[0] : data) || null
+}
+export const registrarExceso = async (id, exceso, motivo) => {
+  const { error } = await supabase.rpc('registrar_exceso_unidades', { p_despacho: id, p_exceso: exceso, p_motivo: motivo || '' })
+  if (error) throw error
+}
+// Operaciones (no canceladas) de varios servicios: para no repetir una fosa puntual
+export const operacionesDeServicios = (ids) => (ids.length
+  ? rows(supabase.from('despachos').select('id, folio, servicio_id, estado').in('servicio_id', ids).neq('estado', 'cancelado'))
+  : Promise.resolve([]))
 export const cancelarOperacion = async (id, motivo) => {
   const { error } = await supabase.rpc('cancelar_operacion', { p_id: id, p_motivo: motivo })
   if (error) throw error

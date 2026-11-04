@@ -9,7 +9,7 @@ import { RespaldoModal, ConfirmarEjecucion } from './OpRespaldos'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
 import {
   operaciones, banosDeOperacion, banosAsignados, banosDisponibles, crearDespacho, editarOperacion, cancelarOperacion,
-  ubicacionesDe, serviciosDe, vehiculos, personalActivo, operacionPorFolio,
+  ubicacionesDe, serviciosDe, vehiculos, personalActivo, operacionPorFolio, cupoServicio, registrarExceso, operacionesDeServicios,
 } from '../lib/api'
 import { rutasDeSemana, lunesDe } from '../lib/rutasSemana'
 import { exportarTabla } from '../lib/excel'
@@ -209,6 +209,10 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
   const [errores, setErrores] = useState({})
   const [error, setError] = useState(null)
   const [guardando, setGuardando] = useState(false)
+  const [cupo, setCupo] = useState(null)              // { solicitada, asignadas, reservadas } del servicio
+  const [urgente, setUrgente] = useState(!!op.exceso_unidades)
+  const [motivoUrg, setMotivoUrg] = useState(op.exceso_motivo || '')
+  const [opsServ, setOpsServ] = useState([])          // operaciones de los servicios del cliente (fosa puntual)
 
   useEffect(() => {
     Promise.all([vehiculos(), personalActivo(), banosDisponibles()]).then(([f, p, b]) => { setFlota(f); setPersonas(p); setLibres(b) }).catch(setError)
@@ -227,7 +231,11 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
       setUbic(act)
       if (!v.ubicacion_id && act.length === 1) setV((p) => ({ ...p, ubicacion_id: act[0].id }))
     }).catch(setError)
-    serviciosDe(v.cliente_id).then((s) => setServs(s.filter((x) => x.estado === 'vigente'))).catch(setError)
+    serviciosDe(v.cliente_id).then((s) => {
+      const vig = s.filter((x) => x.estado === 'vigente')
+      setServs(vig)
+      operacionesDeServicios(vig.map((x) => x.id)).then(setOpsServ).catch(() => setOpsServ([]))
+    }).catch(setError)
   }, [v.cliente_id])
   useEffect(() => {
     setAsignados([])
@@ -247,6 +255,18 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
   const conEntrega = esArriendo && ['entrega', 'cambio'].includes(accion)
   const conRetiro = esArriendo && ['retiro', 'cambio'].includes(accion)
   const serviciosUbic = servs.filter((s) => !v.ubicacion_id || !s.ubicacion_id || s.ubicacion_id === v.ubicacion_id)
+  // Fosa puntual: se hace una sola vez. Si ya tiene una operación (programada o realizada), no se vuelve a elegir.
+  const fosaUsada = (s) => s.tipo === 'limpieza_fosas' && s.modalidad !== 'recurrente'
+    && opsServ.find((o) => o.servicio_id === s.id && o.id !== op.id)
+  // Cupo de unidades del servicio de arriendo
+  useEffect(() => {
+    setCupo(null)
+    if (esArriendo && v.servicio_id) cupoServicio(v.servicio_id, nueva ? null : op.id).then(setCupo).catch(() => setCupo(null))
+  }, [v.servicio_id, esArriendo])
+  const conCupo = conEntrega && cupo?.solicitada != null
+  const libresCupo = conCupo ? Math.max(0, cupo.solicitada - cupo.asignadas - cupo.reservadas + (accion === 'cambio' ? retirar.length : 0)) : Infinity
+  const exceso = conCupo ? Math.max(0, entregar.length - libresCupo) : 0
+  const servicioSel = servs.find((s) => s.id === v.servicio_id)
   const set = (k) => (e) => {
     const val = e.target.value
     setV((p) => ({ ...p, [k]: val, ...(k === 'cliente_id' ? { ubicacion_id: '', servicio_id: '' } : {}), ...(k === 'ubicacion_id' ? { servicio_id: '' } : {}) }))
@@ -270,6 +290,8 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
     if (!v.ubicacion_id) e.ubicacion_id = 'Elige la ubicación.'
     if (!v.servicio_id) e.servicio_id = 'Elige el servicio.'
     if (conEntrega && !entregar.length) e.entregar = 'Elige las unidades a entregar.'
+    else if (exceso > 0 && !urgente) e.entregar = `Supera lo solicitado por el servicio (${cupo.solicitada}). Edita la cantidad del servicio o marca la urgencia.`
+    else if (exceso > 0 && motivoUrg.trim().length < 5) e.entregar = 'Explica el motivo de la urgencia.'
     if (conRetiro && !retirar.length) e.retirar = 'Elige las unidades a retirar.'
     if (!v.vehiculo_id) e.vehiculo_id = 'Elige la patente.'
     if (!v.responsable_id) e.responsable_id = 'Elige el responsable.'
@@ -286,8 +308,10 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
       ...(conRetiro ? retirar.map((b) => ({ id: b.id, accion: 'retiro' })) : []),
     ]
     try {
-      if (nueva) await crearDespacho({ ...datos, origen: 'operaciones' }, banos)
-      else await editarOperacion(op.id, datos, banos)
+      const id = nueva ? await crearDespacho({ ...datos, origen: 'operaciones' }, banos) : (await editarOperacion(op.id, datos, banos), op.id)
+      // Urgencia: queda registrada en la operación y avisa en Notificaciones
+      if (exceso > 0) await registrarExceso(id, exceso, motivoUrg.trim())
+      else if (!nueva && op.exceso_unidades) await registrarExceso(id, 0, '')
       onGuardado()
     } catch (x) { setError(x); setGuardando(false) }
   }
@@ -310,7 +334,10 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
           </Campo>
           <Campo etiqueta="Servicio" obligatorio error={errores.servicio_id} ayuda={v.cliente_id && !serviciosUbic.length ? 'No hay servicios vigentes en esta ubicación: créalo en la ficha del cliente.' : undefined}>
             <select value={v.servicio_id} onChange={set('servicio_id')} disabled={!serviciosUbic.length}>
-              <option value="">Seleccionar</option>{serviciosUbic.map((s) => <option key={s.id} value={s.id}>{s.codigo} · {L_SERV[s.tipo] || s.tipo}</option>)}
+              <option value="">Seleccionar</option>{serviciosUbic.map((s) => {
+                const usada = fosaUsada(s)
+                return <option key={s.id} value={s.id} disabled={!!usada}>{s.codigo} · {L_SERV[s.tipo] || s.tipo}{usada ? ` · ya programada (${usada.folio})` : ''}</option>
+              })}
             </select>
           </Campo>
           {esArriendo && (
@@ -321,7 +348,29 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
             </Campo>
           )}
           {conEntrega && <Unidades titulo={accion === 'cambio' ? 'Unidades a entregar' : 'Unidades'} disponibles={libres} elegidas={entregar} setElegidas={setEntregar} error={errores.entregar}
-            ayuda="Solo baños disponibles y no reservados por otra operación." />}
+            tope={urgente ? Infinity : libresCupo}
+            ayuda={conCupo
+              ? `Servicio ${servicioSel?.codigo || ''}: solicita ${cupo.solicitada} · asignadas ${cupo.asignadas} · en otras entregas programadas ${Math.max(0, cupo.reservadas)} · disponibles para esta entrega ${libresCupo}.`
+              : 'Solo baños disponibles y no reservados por otra operación.'} />}
+          {conCupo && (entregar.length >= libresCupo || urgente) && (
+            <div style={{ display: 'grid', gap: 10, padding: 16, border: `3px solid ${C.amarillo}`, background: '#fef7e0', borderRadius: 'var(--radio-md)' }}>
+              <strong style={{ font: '800 16px/1.3 var(--font)', color: '#7a4a00' }}>⚠ CUPO DEL SERVICIO COMPLETO</strong>
+              <span style={{ font: '400 14px/1.5 var(--font)', color: '#5c3b00' }}>
+                El servicio {servicioSel?.codigo} solicita <b>{cupo.solicitada}</b> unidad(es). Para entregar más, lo correcto es <b>editar la cantidad del servicio</b> en la ficha del cliente.
+                Si es una urgencia, puedes seguir: quedará registrada en la operación y se avisará en Notificaciones, porque el servicio y el cobro quedan descuadrados hasta que se actualicen.
+              </span>
+              <label style={{ display: 'flex', gap: 10, alignItems: 'center', font: '700 14px var(--font)', color: '#5c3b00', cursor: 'pointer' }}>
+                <input type="checkbox" checked={urgente} onChange={(e) => { setUrgente(e.target.checked); setErrores({}) }} style={{ width: 20, height: 20 }} />
+                Es urgente: entregar más unidades de las solicitadas
+              </label>
+              {urgente && (
+                <Campo etiqueta="Motivo de la urgencia" obligatorio>
+                  <textarea value={motivoUrg} onChange={(e) => setMotivoUrg(e.target.value)} maxLength={300} style={{ minHeight: 60 }} placeholder="Ej.: evento del cliente hoy, se regulariza el servicio mañana." />
+                </Campo>
+              )}
+              {exceso > 0 && <strong style={{ font: '700 14px var(--font)', color: C.rojo }}>Esta entrega supera lo solicitado en {exceso} unidad(es).</strong>}
+            </div>
+          )}
           {conRetiro && <Unidades titulo={accion === 'cambio' ? 'Unidades a retirar' : 'Unidades'} disponibles={asignados} elegidas={retirar} setElegidas={setRetirar} error={errores.retirar}
             ayuda="Solo los asignados a este cliente en esta ubicación." />}
           {tipoServ && !esArriendo && <Ayuda>{tipoServ === 'limpieza_fosas' ? 'Fosa: no se eligen baños.' : 'Limpieza de baños del cliente: se atienden sus equipos externos.'}</Ayuda>}
@@ -355,8 +404,9 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
   )
 }
 
-function Unidades({ titulo, disponibles, elegidas, setElegidas, error, ayuda }) {
+function Unidades({ titulo, disponibles, elegidas, setElegidas, error, ayuda, tope = Infinity }) {
   const [texto, setTexto] = useState('')
+  const lleno = elegidas.length >= tope
   const ids = new Set(elegidas.map((b) => b.id))
   const res = disponibles.filter((b) => !ids.has(b.id) && (!texto || String(b.codigo).includes(texto.trim()))).slice(0, 30)
   return (
@@ -369,8 +419,10 @@ function Unidades({ titulo, disponibles, elegidas, setElegidas, error, ayuda }) 
           </span>
         ))}
       </div>
-      <input value={texto} onChange={(e) => setTexto(e.target.value.replace(/\D/g, ''))} placeholder={`Buscar N.º de unidad (${disponibles.length - ids.size} disponibles)`} inputMode="numeric" />
-      {texto && (
+      {lleno
+        ? <small style={{ color: '#7a4a00', fontWeight: 600 }}>Cupo del servicio completo: no se pueden agregar más unidades.</small>
+        : <input value={texto} onChange={(e) => setTexto(e.target.value.replace(/\D/g, ''))} placeholder={`Buscar N.º de unidad (${disponibles.length - ids.size} disponibles)`} inputMode="numeric" />}
+      {texto && !lleno && (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {res.length === 0 && <small>Sin coincidencias.</small>}
           {res.map((b) => <Boton key={b.id} onClick={() => { setElegidas((p) => [...p, b]); setTexto('') }} style={{ minHeight: 30, padding: '4px 10px' }}>+ {b.codigo}</Boton>)}
@@ -417,6 +469,12 @@ function Detalle({ o, editable, onCerrar, onEditar, onRuta, onConfirmar, onRespa
           </div>
         </div>
         {o.estado === 'hecho' && (o.recibido_por || o.resultado) && <Ayuda>Recibió: {o.recibido_por || '—'}{o.resultado ? ` · ${o.resultado}` : ''}</Ayuda>}
+        {o.exceso_unidades > 0 && (
+          <div style={{ padding: 14, border: `3px solid ${C.amarillo}`, background: '#fef7e0', borderRadius: 'var(--radio-md)', font: '400 14px/1.5 var(--font)', color: '#5c3b00' }}>
+            <b style={{ font: '800 15px var(--font)', color: '#7a4a00' }}>⚠ URGENCIA: entrega sobre lo solicitado (+{o.exceso_unidades})</b><br />
+            Motivo: {o.exceso_motivo || '—'}. Actualiza la cantidad del servicio {o.servicio_codigo || ''} para que el cobro cuadre.
+          </div>
+        )}
         {o.estado === 'programado' && o.en_ruta && <Ayuda>Está en una ruta: se confirma desde Mi ruta, con la ejecución del día.</Ayuda>}
         <Ayuda>Realizadas: se consultan resultado, observaciones y respaldo (constancia, archivos y firma). Los movimientos confirmados no se reescriben.</Ayuda>
       </div>

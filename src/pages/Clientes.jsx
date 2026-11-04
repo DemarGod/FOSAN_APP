@@ -27,7 +27,7 @@ export default function Clientes() {
   const [error, setError] = useState(null)
   const [texto, setTexto] = useState(params.get('q') || '')
   const [estado, setEstado] = useState('activos')
-  const [filtro, setFiltro] = useState({ texto: params.get('q') || '', estado: 'activos' })
+  const [filtro, setFiltro] = useState({ texto: params.get('q') || '', estado: 'activos', servicios: '' })
   const [pagina, setPagina] = useState(1)
   const [form, setForm] = useState(false)          // true = nuevo · id = editar
   const [desactivar, setDesactivar] = useState(null)
@@ -47,6 +47,8 @@ export default function Clientes() {
     return datos.filter((c) => {
       if (filtro.estado === 'activos' && !c.activo) return false
       if (filtro.estado === 'inactivos' && c.activo) return false
+      if (filtro.servicios === 'con' && !(c.servicios_vigentes > 0)) return false
+      if (filtro.servicios === 'sin' && c.servicios_vigentes > 0) return false
       if (!t) return true
       return (c.nombre || '').toLowerCase().includes(t) || (c.nombre_comercial || '').toLowerCase().includes(t)
         || (c.codigo || '').toLowerCase().includes(t) || (tr.length >= 3 && normalizarRut(c.rut).includes(tr))
@@ -56,8 +58,11 @@ export default function Clientes() {
   const pag = Math.min(pagina, paginas)
   const enPagina = visibles.slice((pag - 1) * POR_PAGINA, pag * POR_PAGINA)
 
-  const aplicar = (e) => { e?.preventDefault(); setFiltro({ texto, estado }); setPagina(1) }
-  const limpiar = () => { setTexto(''); setEstado('activos'); setFiltro({ texto: '', estado: 'activos' }); setPagina(1) }
+  const aplicar = (e) => { e?.preventDefault(); setFiltro((f) => ({ ...f, texto, estado })); setPagina(1) }
+  const limpiar = () => { setTexto(''); setEstado('activos'); setFiltro({ texto: '', estado: 'activos', servicios: '' }); setPagina(1) }
+  // Pulsar un indicador filtra la lista (pulsarlo de nuevo lo quita)
+  const porServicios = (s) => { setEstado('activos'); setFiltro((f) => ({ ...f, estado: 'activos', servicios: f.servicios === s ? '' : s })); setPagina(1) }
+  const marcado = (s) => (filtro.servicios === s ? { outline: `2px solid ${C.azul}`, outlineOffset: -2, borderRadius: 'var(--radio-md)' } : {})
   const verInactivos = () => { setEstado('inactivos'); setFiltro({ texto: '', estado: 'inactivos' }); setTexto(''); setPagina(1) }
 
   const exportar = () => exportarTabla(
@@ -120,9 +125,9 @@ export default function Clientes() {
       </div>
 
       <div className="kpis">
-        <Indicador icono={I.users} color={C.verde} rotulo="Clientes activos" valor={cargando ? '…' : activos.length} />
-        <Indicador icono={I.doc} color={C.azul} rotulo="Con servicios vigentes" valor={cargando ? '…' : activos.filter((c) => c.servicios_vigentes > 0).length} />
-        <Indicador icono={PROHIBIDO} color={C.rojo} rotulo="Sin servicios vigentes" valor={cargando ? '…' : activos.filter((c) => !c.servicios_vigentes).length} />
+        <div style={marcado('')}><Indicador icono={I.users} color={C.verde} rotulo="Clientes activos" valor={cargando ? '…' : activos.length} alClic={() => porServicios('')} /></div>
+        <div style={marcado('con')}><Indicador icono={I.doc} color={C.azul} rotulo="Con servicios vigentes" valor={cargando ? '…' : activos.filter((c) => c.servicios_vigentes > 0).length} alClic={() => porServicios('con')} /></div>
+        <div style={marcado('sin')}><Indicador icono={PROHIBIDO} color={C.rojo} rotulo="Sin servicios vigentes" valor={cargando ? '…' : activos.filter((c) => !c.servicios_vigentes).length} alClic={() => porServicios('sin')} /></div>
       </div>
 
       <section className="card">
