@@ -10,7 +10,7 @@ import { supabase } from '../lib/supabase'
 import { flota, vehiculos, parametros, mantenimiento, documentosDe, observacionesDe, agregarObservacion } from '../lib/api'
 import { TIPOS_VEHICULO, costoKmVehiculo, mapaParametros } from '../lib/costos'
 import { useSesion, puedeOperar, verFinanzas } from '../lib/sesion'
-import { C, Icon, I, qrCeldas, fecha, fechaHora, clp } from '../lib/ui'
+import { C, Icon, I, fecha, fechaHora, clp } from '../lib/ui'
 
 const TONO = { disponible: 'ok', en_ruta: 'info', mantenimiento: 'atencion', fuera_servicio: 'error', baja: 'neutro' }
 const L_DISP = { disponible: 'Disponible', mantencion: 'En mantenimiento', fuera_de_servicio: 'Fuera de servicio', baja: 'Desactivado' }
@@ -141,14 +141,6 @@ function Datos({ v, tec, ckm, finanzas, editable }) {
             <Fila l="Costo por km" v={ckm ? `${clp(ckm)}/km` : null} />
           </>}
         </div>
-        {v.qr_token && (
-          <div style={{ textAlign: 'center' }}>
-            <svg width={160} height={160} viewBox="0 0 160 160" style={{ border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', background: '#fff' }}>
-              {qrCeldas(v.qr_token).map((q, i) => <rect key={i} x={q.x} y={q.y} width={8} height={8} fill={C.tinta} />)}
-            </svg>
-            <div className="text-muted" style={{ fontSize: 12, marginTop: 4 }}>QR del vehículo</div>
-          </div>
-        )}
       </div>
       <details open={obs.length > 0 || docs.length > 0}>
         <summary style={{ cursor: 'pointer', font: '600 14px var(--font)' }}>Documentos ({docs.length}) y observaciones ({obs.length})</summary>

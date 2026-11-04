@@ -253,16 +253,6 @@ export default function FormActivo({ activoId = null, onCerrar, onGuardado }) {
               placeholder="Estado de la unidad, accesorios, detalles del traslado…" />
           </label>
 
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10, background: C.suave,
-            border: `2px solid ${C.borde}`, padding: '11px 13px',
-          }}>
-            <Icon d={I.qr} size={18} color={C.azul} />
-            <span style={{ font: '400 12px/1.45 var(--font)', color: '#3c4551' }}>
-              Al guardar se genera el código QR de la unidad para pegarlo en la cabina.
-            </span>
-          </div>
-
           {error && (
             <div style={{
               padding: '11px 13px', background: '#fce8e6', border: `2px solid ${C.rojo}`,

@@ -14,7 +14,7 @@ import {
 } from '../lib/api'
 import { useSesion, puedeOperar, esDueno } from '../lib/sesion'
 import { hoyISO } from '../lib/costos'
-import { C, Icon, I, qrCeldas, fecha, fechaHora, COLORES_BANO, L_ESTADO_MANT } from '../lib/ui'
+import { C, Icon, I, fecha, fechaHora, COLORES_BANO, L_ESTADO_MANT } from '../lib/ui'
 
 const PESTANAS = [
   { v: 'datos', l: 'Datos generales' },
@@ -151,12 +151,6 @@ function Datos({ e, editable }) {
           <Fila l="Color" v={e.color} />
           <Fila l="Fecha incorporación" v={e.fecha_incorporacion ? fecha(e.fecha_incorporacion) : null} />
           <Fila l="Observaciones" v={e.notas} />
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <svg width={160} height={160} viewBox="0 0 160 160" style={{ border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', background: '#fff' }}>
-            {qrCeldas(e.qr_token).map((q, i) => <rect key={i} x={q.x} y={q.y} width={8} height={8} fill={C.tinta} />)}
-          </svg>
-          <div className="text-muted" style={{ fontSize: 12, marginTop: 4 }}>QR único de esta unidad</div>
         </div>
       </div>
       <details>
