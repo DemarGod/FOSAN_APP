@@ -605,6 +605,20 @@ export const inicioDatos = async (desde, hasta) => {
   paradas.forEach((p) => { if (p.salidas) p.salidas.rutas_semana = { nombre: nom[p.salidas.ruta_semana_id] || null } })
   return { disponibles, atrasados, mant, ops, paradas }
 }
+// Gráficos del Inicio (situación actual + últimos 6 meses). Cada parte falla sola sin romper el resto.
+export const inicioGraficos = async (finanzas) => {
+  const seguro = (p) => p.then((r) => r, () => [])
+  const hoy = new Date(); const desde = new Date(hoy.getFullYear(), hoy.getMonth() - 5, 1).toISOString().slice(0, 10)
+  const [ops, equipos, mant, flotaL, clientes, fin] = await Promise.all([
+    seguro(rows(supabase.from('despachos').select('fecha_programada, fecha_realizada, estado').gte('fecha_programada', desde).limit(5000))),
+    seguro(rows(supabase.from('v_equipos').select('situacion, cliente').eq('propiedad', 'empresa').neq('situacion', 'baja').limit(5000))),
+    seguro(rows(supabase.from('v_mantenimiento').select('estado_m, vencido').limit(5000))),
+    seguro(rows(supabase.from('v_flota').select('estado_flota'))),
+    seguro(rows(supabase.from('clientes').select('id').eq('activo', true))),
+    finanzas ? seguro(rows(supabase.from('v_utilidad_mensual').select('*'))) : Promise.resolve([]),
+  ])
+  return { ops, equipos, mant, flota: flotaL, clientesActivos: clientes.length, fin, desde }
+}
 export const actividadPeriodo = (desde, hasta) => rows(
   supabase.from('auditoria').select('*').gte('fecha', desde).lte('fecha', hasta + 'T23:59:59').order('fecha', { ascending: false }).limit(200)
 )

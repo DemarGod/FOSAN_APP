@@ -6,10 +6,14 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Modal from '../components/Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda, Pestanas } from '../components/Base'
-import { useSesion, puedeOperar, puedeVer, esDueno } from '../lib/sesion'
-import { inicioDatos, actividadPeriodo, avisosCalculados } from '../lib/api'
+import { TarjetaGrafico, Barras, BarrasH, Dona, SERIE } from '../components/Graficos'
+import { useSesion, puedeOperar, puedeVer, esDueno, verFinanzas } from '../lib/sesion'
+import { inicioDatos, actividadPeriodo, avisosCalculados, inicioGraficos } from '../lib/api'
 import { hoyISO } from '../lib/costos'
-import { C, Icon, I, fecha, fechaHora } from '../lib/ui'
+import { C, Icon, I, fecha, fechaHora, clp } from '../lib/ui'
+
+const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+const PROHIBIDO = 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM5.6 5.6l12.8 12.8'
 
 const L_SERV = { arriendo_limpieza: 'Arriendo', limpieza_cliente: 'Limpieza de baños', limpieza_fosas: 'Limpieza de fosa' }
 const L_ACC = { entrega: 'Entrega', retiro: 'Retiro', cambio: 'Cambio', limpieza: 'Limpieza' }
@@ -41,6 +45,9 @@ export default function Inicio({ onCalendario }) {
   const [trabajo, setTrabajo] = useState(null)
   const [registro, setRegistro] = useState(null)
   const veActividad = esDueno(perfil)
+  const finanzas = verFinanzas(perfil)
+  const [g, setG] = useState(null)
+  useEffect(() => { inicioGraficos(finanzas).then(setG).catch(() => setG({ ops: [], equipos: [], mant: [], flota: [], fin: [], clientesActivos: null })) }, [])
 
   useEffect(() => {
     setD(null); setActividad(null); setError(null)
@@ -66,12 +73,6 @@ export default function Inicio({ onCalendario }) {
   const unDia = rango.desde === rango.hasta
   const titRango = unDia ? (rango.desde === hoy ? `Hoy · ${fecha(hoy)}` : fecha(rango.desde)) : `${fecha(rango.desde)} – ${fecha(rango.hasta)}`
   const v = (x) => (d ? (x ?? '—') : '…')
-  const KPIS = [
-    { l: 'Disponibles', n: d?.disponibles, d: I.box, color: C.verde, ir: '/inventario', s: 'Equipos propios operativos' },
-    { l: unDia && rango.desde === hoy ? 'Trabajos del día' : 'Trabajos del período', n: trabajos?.length, d: I.cal, color: C.azul, ir: '/operaciones?tab=programacion' },
-    { l: 'Atrasados', n: d?.atrasados, d: I.alert, color: C.rojo, ir: '/operaciones?tab=programacion&estado=pendiente', s: 'Operaciones sin realizar' },
-    { l: 'Mantenimientos pendientes', n: d?.mant, d: I.wrench, color: C.amarillo, ir: '/mantenimiento' },
-  ].filter((k) => !(k.ir.startsWith('/mantenimiento') && !puedeVer(perfil, 'mantenciones')))
 
   // Alertas: atrasados + avisos calculados (insumos, mantenciones, contratos, eventos)
   const alertas = [
@@ -79,26 +80,106 @@ export default function Inicio({ onCalendario }) {
     ...avisos.map((a) => ({ ...a, a: corregirRuta(a.a), boton: a.origen === 'Insumos' ? 'Ver insumo' : 'Revisar' })),
   ].sort((x, y) => ({ alerta: 0, aviso: 1, info: 2 }[x.nivel] - { alerta: 0, aviso: 1, info: 2 }[y.nivel]))
 
+  // ── Datos de los gráficos ──
+  const graf = armarGraficos(g)
+  const TILES = [
+    { l: 'Clientes activos', n: g?.clientesActivos, d: I.users, color: C.azul, fondo: C.tinte, ir: '/clientes' },
+    { l: 'Equipos disponibles', n: d?.disponibles, s: g ? `de ${g.equipos.length} propios` : null, d: I.box, color: '#1e8e3e', fondo: '#e6f4ea', ir: '/inventario' },
+    { l: unDia && rango.desde === hoy ? 'Trabajos del día' : 'Trabajos del período', n: trabajos?.length, d: I.cal, color: C.azul, fondo: C.tinte, ir: '/operaciones?tab=programacion' },
+    { l: 'Atrasados', n: d?.atrasados, rojo: !!d?.atrasados, s: 'Operaciones sin realizar', d: I.alert, color: C.rojo, fondo: '#fce8e6', ir: '/operaciones?tab=programacion&estado=pendiente' },
+    ...(puedeVer(perfil, 'mantenciones') ? [{ l: 'Mantenimientos pendientes', n: d?.mant, d: I.wrench, color: '#b06000', fondo: '#fef7e0', ir: '/mantenimiento' }] : []),
+    { l: 'Alertas críticas', n: d ? alertas.filter((a) => a.nivel === 'alerta').length : null, rojo: alertas.some((a) => a.nivel === 'alerta'), d: PROHIBIDO, color: C.rojo, fondo: '#fce8e6', ir: '/' },
+  ]
+
   return (
     <div style={{ display: 'grid', gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <h2 style={{ margin: 0, flex: 1 }}>Inicio</h2>
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <h2 style={{ margin: 0 }}>{saludo()}{perfil?.nombre ? `, ${perfil.nombre.split(' ')[0]}` : ''}</h2>
+          <span className="text-muted">Centro de control de FOSAN · {fecha(hoy)}</span>
+        </div>
         <Boton icono={I.cal} onClick={() => setElegirFecha(true)}>{titRango}</Boton>
         {puedeOperar(perfil, 'rutas') && <Boton tipo="principal" icono={I.plus} onClick={() => navegar('/operaciones?tab=programacion&nueva=1')}>Nueva orden</Boton>}
       </div>
 
-      <div className="kpis">
-        {KPIS.map((k) => (
-          <button key={k.l} type="button" className="indicador" onClick={() => navegar(k.ir)} style={{ display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left', cursor: 'pointer' }}>
-            <Icon d={k.d} size={26} color={k.color} />
-            <div><span>{k.l}</span><b style={k.l === 'Atrasados' && d?.atrasados ? { color: C.rojo } : undefined}>{v(k.n)}</b>{k.s && <small className="text-muted" style={{ display: 'block' }}>{k.s}</small>}</div>
+      {/* Indicadores */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
+        {TILES.map((k) => (
+          <button key={k.l} type="button" onClick={() => navegar(k.ir)} className="card"
+            style={{ display: 'grid', gap: 6, padding: 14, textAlign: 'left', cursor: 'pointer', border: `1px solid ${C.borde}` }}>
+            <span style={{ width: 38, height: 38, borderRadius: 10, display: 'grid', placeItems: 'center', background: k.fondo }}><Icon d={k.d} size={20} color={k.color} /></span>
+            <b style={{ font: '800 28px/1 var(--font)', color: k.rojo ? C.rojo : C.tinta }}>{k.n ?? '…'}</b>
+            <span style={{ font: '600 13px var(--font)', color: C.tinta }}>{k.l}</span>
+            {k.s && <small className="text-muted" style={{ marginTop: -4 }}>{k.s}</small>}
           </button>
         ))}
       </div>
-      <small className="text-muted" style={{ marginTop: -8 }}>Existencias actuales · Agenda del período seleccionado ({titRango}).</small>
+
+      {/* Gráficos */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
+        <TarjetaGrafico titulo="Operaciones por mes" sub="Programadas vs realizadas · últimos 6 meses"
+          tabla={{ columnas: ['Mes', 'Programadas', 'Realizadas'], filas: graf.meses.map((m, i) => [m, graf.prog[i], graf.real[i]]) }}>
+          <Barras etiquetas={graf.meses} series={[{ l: 'Programadas', c: SERIE[0], datos: graf.prog }, { l: 'Realizadas', c: SERIE[1], datos: graf.real }]}
+            onBarra={() => navegar('/operaciones?tab=programacion')} />
+        </TarjetaGrafico>
+
+        <TarjetaGrafico titulo="Situación de los equipos" sub="Equipos propios · situación actual"
+          tabla={{ columnas: ['Situación', 'Equipos'], filas: graf.situacion.map((p) => [p.l, p.v]) }}>
+          <Dona partes={graf.situacion.map((p) => ({ ...p, onClick: () => navegar('/inventario') }))} sub="equipos" />
+        </TarjetaGrafico>
+
+        {puedeVer(perfil, 'mantenciones') && (
+          <TarjetaGrafico titulo="Estado del mantenimiento" sub="Equipos y vehículos"
+            tabla={{ columnas: ['Estado', 'Mantenimientos'], filas: graf.mant.map((p) => [p.l, p.v]) }}>
+            <BarrasH items={graf.mant.map((p) => ({ ...p, onClick: () => navegar('/mantenimiento') }))} />
+          </TarjetaGrafico>
+        )}
+
+        <TarjetaGrafico titulo="Clientes con más baños" sub="Top 5 por unidades asignadas"
+          tabla={{ columnas: ['Cliente', 'Baños'], filas: graf.top.map((p) => [p.l, p.v]) }}>
+          <BarrasH items={graf.top.map((p) => ({ ...p, onClick: () => navegar('/clientes?q=' + encodeURIComponent(p.l)) }))} vacio="Sin baños asignados." />
+        </TarjetaGrafico>
+
+        {finanzas && graf.fin.etiquetas.length > 0 ? (
+          <TarjetaGrafico titulo="Ventas vs costos" sub="Últimos 6 meses · desde Análisis"
+            tabla={{ columnas: ['Mes', 'Ventas', 'Costos'], filas: graf.fin.etiquetas.map((m, i) => [m, clp(graf.fin.ventas[i]), clp(graf.fin.costos[i])]) }}>
+            <Barras etiquetas={graf.fin.etiquetas} fmt={clp} series={[{ l: 'Ventas', c: SERIE[0], datos: graf.fin.ventas }, { l: 'Costos', c: SERIE[1], datos: graf.fin.costos }]}
+              onBarra={() => navegar('/reportes?tab=analisis')} />
+          </TarjetaGrafico>
+        ) : (
+          <TarjetaGrafico titulo="Estado de la flota" sub="Vehículos activos"
+            tabla={{ columnas: ['Estado', 'Vehículos'], filas: graf.flota.map((p) => [p.l, p.v]) }}>
+            <BarrasH items={graf.flota.map((p) => ({ ...p, onClick: () => navegar('/flota') }))} vacio="Sin vehículos." />
+          </TarjetaGrafico>
+        )}
+
+        <TarjetaGrafico titulo="Alertas y acciones pendientes" sub={`${alertas.length} pendiente(s)`}>
+          <div style={{ display: 'grid', maxHeight: 250, overflowY: 'auto' }}>
+            {alertas.length === 0 && <div className="text-muted" style={{ padding: '12px 0' }}>Sin alertas pendientes.</div>}
+            {alertas.slice(0, 12).map((a) => {
+              const nv = NIVEL[a.nivel] || NIVEL.info
+              return (
+                <button key={a.id} type="button" onClick={a.a ? () => navegar(a.a) : undefined}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', border: 0, borderBottom: `1px solid ${C.fila}`, background: 'transparent', textAlign: 'left', cursor: a.a ? 'pointer' : 'default' }}>
+                  <Icon d={nv.d} size={18} color={nv.color} />
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <b style={{ display: 'block', font: '600 13px/1.35 var(--font)', color: C.tinta }}>{a.texto}</b>
+                    {a.origen && <small className="text-muted">{a.origen}</small>}
+                  </span>
+                  {a.a && <span style={{ color: C.gris, font: '400 18px var(--font)' }}>›</span>}
+                </button>
+              )
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Boton icono={I.pin} onClick={() => navegar('/inventario?tab=mapa')} style={{ flex: 1 }}>Ver mapa</Boton>
+            <Boton icono={I.cal} onClick={onCalendario} style={{ flex: 1 }}>Ver calendario</Boton>
+          </div>
+        </TarjetaGrafico>
+      </div>
       {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) minmax(260px, 1fr)', gap: 16, alignItems: 'start' }} className="cols2">
+      <div>
         <section className="card">
           <div style={{ padding: '12px 16px 0' }}>
             <Pestanas opciones={[{ v: 'trabajos', l: unDia && rango.desde === hoy ? 'Trabajos del día' : 'Trabajos del período' }, ...(veActividad ? [{ v: 'actividad', l: 'Actividad reciente' }] : [])]} valor={tab} onChange={setTab} />
@@ -128,29 +209,6 @@ export default function Inicio({ onCalendario }) {
           </div>
         </section>
 
-        <section className="card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px', borderBottom: `1px solid ${C.borde}` }}>
-            <Icon d={I.alert} size={18} color={C.rojo} /><h6 style={{ margin: 0, flex: 1 }}>Alertas</h6>
-            <small className="text-muted">{alertas.length}</small>
-          </div>
-          <div style={{ maxHeight: 340, overflowY: 'auto' }}>
-            {alertas.length === 0 && <div style={{ padding: 16 }} className="text-muted">Sin alertas pendientes.</div>}
-            {alertas.map((a) => {
-              const n = NIVEL[a.nivel] || NIVEL.info
-              return (
-                <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderBottom: `1px solid ${C.fila}` }}>
-                  <Icon d={n.d} size={16} color={n.color} />
-                  <span style={{ flex: 1, minWidth: 0, font: '400 13px/1.4 var(--font)' }}>{a.texto}{a.origen && <small className="text-muted" style={{ display: 'block' }}>{a.origen}</small>}</span>
-                  {a.a && <button type="button" onClick={() => navegar(a.a)} style={{ border: 0, background: 'transparent', color: C.azul, cursor: 'pointer', font: '600 13px var(--font)' }}>{a.boton}</button>}
-                </div>
-              )
-            })}
-          </div>
-          <div style={{ display: 'flex', gap: 8, padding: 14, flexWrap: 'wrap' }}>
-            <Boton icono={I.pin} onClick={() => navegar('/inventario?tab=mapa')} style={{ flex: 1 }}>Ver mapa</Boton>
-            <Boton icono={I.cal} onClick={onCalendario} style={{ flex: 1 }}>Ver calendario</Boton>
-          </div>
-        </section>
       </div>
       <small className="text-muted">Los indicadores abren listados filtrados. Revisar una alerta abre el registro relacionado. Solo se muestran acciones autorizadas.</small>
 
@@ -239,4 +297,50 @@ function DetalleRegistro({ a, onCerrar }) {
       </div>
     </Modal>
   )
+}
+
+function saludo() {
+  const h = new Date().getHours()
+  return h < 12 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches'
+}
+
+// Prepara los datos de los gráficos a partir de inicioGraficos()
+function armarGraficos(g) {
+  const hoy = new Date()
+  const claves = Array.from({ length: 6 }, (_, i) => { const d = new Date(hoy.getFullYear(), hoy.getMonth() - 5 + i, 1); return d.toISOString().slice(0, 7) })
+  const meses = claves.map((k) => MESES[Number(k.slice(5, 7)) - 1])
+  const ops = g?.ops || []
+  const prog = claves.map((k) => ops.filter((o) => o.estado !== 'cancelado' && String(o.fecha_programada).startsWith(k)).length)
+  const real = claves.map((k) => ops.filter((o) => o.estado === 'hecho' && String(o.fecha_realizada || o.fecha_programada).startsWith(k)).length)
+  const eq = g?.equipos || []
+  const cuenta = (f) => eq.filter(f).length
+  const situacion = [
+    { l: 'Asignados', v: cuenta((e) => e.situacion === 'asignado'), c: SERIE[0] },
+    { l: 'Reservados', v: cuenta((e) => e.situacion === 'reservado'), c: SERIE[1] },
+    { l: 'Disponibles', v: cuenta((e) => e.situacion === 'disponible'), c: SERIE[2] },
+    { l: 'En mantenimiento', v: cuenta((e) => e.situacion === 'en_mantenimiento'), c: SERIE[3] },
+    { l: 'Otros', v: cuenta((e) => !['asignado', 'reservado', 'disponible', 'en_mantenimiento'].includes(e.situacion)), c: SERIE[4] },
+  ].filter((p) => p.v > 0 || p.l !== 'Otros')
+  const m = g?.mant || []
+  const mant = [
+    { l: 'Programados', v: m.filter((x) => x.estado_m === 'programado' && !x.vencido).length, c: C.azul },
+    { l: 'En curso', v: m.filter((x) => x.estado_m === 'en_curso' && !x.vencido).length, c: C.amarillo },
+    { l: 'Vencidos', v: m.filter((x) => x.vencido).length, c: C.rojo },
+    { l: 'Completados', v: m.filter((x) => x.estado_m === 'completado').length, c: C.verde },
+  ]
+  const porCliente = {}
+  eq.filter((e) => e.situacion === 'asignado' && e.cliente).forEach((e) => { porCliente[e.cliente] = (porCliente[e.cliente] || 0) + 1 })
+  const top = Object.entries(porCliente).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([l, v]) => ({ l, v }))
+  const fl = g?.flota || []
+  const flota = [
+    { l: 'Disponibles', v: fl.filter((x) => x.estado_flota === 'disponible').length, c: C.verde },
+    { l: 'En ruta', v: fl.filter((x) => x.estado_flota === 'en_ruta').length, c: C.azul },
+    { l: 'En mantenimiento', v: fl.filter((x) => x.estado_flota === 'mantenimiento').length, c: C.amarillo },
+    { l: 'Fuera de servicio', v: fl.filter((x) => x.estado_flota === 'fuera_servicio').length, c: C.rojo },
+  ]
+  const fin = (g?.fin || []).filter((x) => x.mes).sort((a, b) => String(a.mes).localeCompare(String(b.mes))).slice(-6)
+  return {
+    meses, prog, real, situacion, mant, top, flota,
+    fin: { etiquetas: fin.map((x) => MESES[Number(String(x.mes).slice(5, 7)) - 1] || String(x.mes)), ventas: fin.map((x) => Number(x.ventas || 0)), costos: fin.map((x) => Number(x.costos || 0)) },
+  }
 }
