@@ -21,8 +21,8 @@ export const NAV = [
   // Mantenimiento (lámina 6): equipos y vehículos
   { to: '/mantenimiento', label: 'Mantenimiento', d: I.wrench, s: 'mantenciones' },
   { calendario: true, label: 'Calendario', d: I.cal, s: 'calendario' },
-  { to: '/reportes', label: 'Reportes', d: I.chart, s: 'reportes' },
-  { to: '/analisis', label: 'Análisis', d: 'M3 3v18h18M7 15l4-4 3 3 5-6', s: 'analisis' },
+  // Reportes (lámina 7): Inventario · Operaciones · Flota · Mantenimiento · Análisis (antes página aparte)
+  { to: '/reportes', label: 'Reportes', d: I.chart, s: ['reportes', 'analisis'] },
   // Administración (lámina 8) reúne Personal y usuarios, Roles y permisos, Catálogos e Historial de cambios.
   // Solo el dueño la ve. "Mi perfil" lo ven todos.
   { to: '/administracion', label: 'Administración', d: I.gear, soloDueno: true },

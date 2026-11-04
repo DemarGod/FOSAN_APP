@@ -27,8 +27,7 @@ const SINONIMOS = {
   '/insumos': 'insumo insumos stock quimico papel',
   '/inventario': 'inventario equipo equipos insumo insumos stock bodega',
   '/ubicaciones': 'mapa ubicacion ubicaciones faena direccion',
-  '/reportes': 'reporte reportes excel informe',
-  '/analisis': 'analisis costos rentabilidad margen utilidad aseo equilibrio km',
+  '/reportes': 'reporte reportes excel informe pdf csv analisis costos rentabilidad margen utilidad ventas',
   '/configuracion': 'configuracion parametros diesel usuarios',
 }
 

@@ -15,7 +15,6 @@ import Mantenimiento from './pages/Mantenimiento'
 import RutasSemana from './pages/RutasSemana'
 import Operaciones from './pages/Operaciones'
 import MiRuta from './pages/MiRuta'
-import Analisis from './pages/Analisis'
 import Clientes from './pages/Clientes'
 import FichaCliente from './pages/FichaCliente'
 import Ubicaciones from './pages/Ubicaciones'
@@ -139,11 +138,11 @@ export default function App() {
               <Route path="/rutas" element={<Navigate to="/rutas-semanales" replace />} />
               <Route path="/clientes" element={puedeVer(perfil, 'clientes') ? <Clientes /> : <SinAcceso />} />
               <Route path="/clientes/:id" element={puedeVer(perfil, 'clientes') ? <FichaCliente /> : <SinAcceso />} />
-              <Route path="/utilidades" element={<Navigate to="/analisis" replace />} />
+              <Route path="/utilidades" element={<Navigate to="/reportes?tab=analisis" replace />} />
               <Route path="/mantenciones" element={<Navigate to="/mantenimiento" replace />} />
               <Route path="/ubicaciones" element={puedeVer(perfil, 'ubicaciones') ? <Ubicaciones /> : <SinAcceso />} />
-              <Route path="/reportes" element={puedeVer(perfil, 'reportes') ? <Reportes /> : <SinAcceso />} />
-              <Route path="/analisis" element={puedeVer(perfil, 'analisis') ? <Analisis /> : <SinAcceso />} />
+              <Route path="/reportes" element={puedeVer(perfil, 'reportes') || puedeVer(perfil, 'analisis') ? <Reportes /> : <SinAcceso />} />
+              <Route path="/analisis" element={<Navigate to="/reportes?tab=analisis" replace />} />
               <Route path="/configuracion" element={<Configuracion />} />
               <Route path="/historial" element={esDueno(perfil) ? <Historial /> : <SinAcceso />} />
               <Route path="/administracion" element={esDueno(perfil) ? <Administracion /> : <SinAcceso />} />
