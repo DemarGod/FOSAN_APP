@@ -8,15 +8,20 @@ import {
   personalLista, guardarPersona, usuarioOcupado, crearAcceso, actualizarAcceso, asignarClave, eliminarCuenta, normalizarRut,
 } from '../lib/api'
 import { formatoRut, rutValido, formatoTel, telValido, correoValido } from '../lib/validar'
-import { useSesion, nombreRol, ROLES } from '../lib/sesion'
+import { useSesion, nombreRol } from '../lib/sesion'
+import { useRoles, rolesCacheados } from '../lib/roles'
 import { C, Icon, I } from '../lib/ui'
 
 // Función = rol: solo Dueño, Secretaria y Operador (conductores, ayudantes y mecánicos son Operador)
-const FUNCIONES = ['Dueño', 'Secretaria', 'Operador']
-const ROL_DE_FUNCION = { 'Dueño': 'dueno', Secretaria: 'secretaria', Operador: 'operador' }
+// Función = rol: Dueño, Secretaria, Operador, Ejecutivo de ventas y los roles que cree el dueño
+// (conductores, ayudantes y mecánicos son Operador)
+const FUNCIONES_PREVIAS = { 'Dueño': 'dueno', Secretaria: 'secretaria', Operador: 'operador' }
+const funciones = () => rolesCacheados().map((r) => r.nombre)
+const rolDeFuncion = (f) => rolesCacheados().find((r) => r.nombre === f || r.clave === f)?.clave || FUNCIONES_PREVIAS[f]
+const rolSinRevisar = (clave) => rolesCacheados().find((r) => r.clave === clave && !r.revisado)
 const OJO_NO = 'M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A9.8 9.8 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.9 8.4 2 12 2 12s3.6 7 10 7c1.6 0 3-.4 4.3-1'
 const chico = { minHeight: 34, padding: '6px 12px' }
-const funcionL = (f) => (ROLES.some((r) => r.v === f) ? nombreRol(f) : f || '—')
+const funcionL = (f) => (rolesCacheados().some((r) => r.clave === f) ? nombreRol(f) : f || '—')
 const sugerirUsuario = (nombre) => {
   const p = String(nombre || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z\s]/g, '').trim().split(/\s+/).filter(Boolean)
   return p.length ? (p.length > 1 ? `${p[0]}.${p[p.length > 2 ? p.length - 2 : 1]}` : p[0]) : ''
@@ -25,6 +30,7 @@ const usuarioValido = (u) => /^[a-z0-9._-]{3,40}$/.test(u)
 const acceso = (x) => (!x.perfiles ? 'sin' : x.perfiles.activo === false || x.activo === false ? 'inactivo' : 'activo')
 
 export default function AdminPersonal() {
+  useRoles()   // vuelve a dibujar cuando cargan o cambian los roles
   const { usuario: yo } = useSesion()
   const [lista, setLista] = useState(null)
   const [error, setError] = useState(null)
@@ -136,15 +142,17 @@ async function validarAcceso(a, e) {
 }
 
 function BloqueAcceso({ a, set, errores }) {
+  const sinRevisar = rolSinRevisar(a.rol)
   return (
     <div style={{ display: 'grid', gap: 12 }}>
+      {sinRevisar && <Ayuda tono="atencion">El rol <b>{sinRevisar.nombre}</b> trae permisos predeterminados. Dueño: revisa en <b>Roles y permisos</b> qué puede consultar, registrar y exportar este usuario antes de entregarle la clave.</Ayuda>}
       <div className="cols2" style={{ gap: 12 }}>
         <Campo etiqueta="Usuario" obligatorio ayuda="Para entrar: ana.perez" error={errores.usuario}>
           <input value={a.usuario} onChange={(e) => set('usuario', e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''))} maxLength={40} />
         </Campo>
         <Campo etiqueta="Rol" obligatorio error={errores.rol} ayuda="Según la función de la persona.">
           <select value={a.rol} onChange={(e) => set('rol', e.target.value)} disabled={!!a.rolFijo}>
-            {ROLES.map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}
+            {rolesCacheados().map((r) => <option key={r.clave} value={r.clave}>{r.nombre}</option>)}
           </select>
         </Campo>
       </div>
@@ -166,7 +174,7 @@ function FormPersona({ persona, personas, onCerrar, onGuardado }) {
     telefono: persona.telefono || '', activo: persona.activo !== false,
   })
   const [conAcceso, setConAcceso] = useState(false)
-  const [a, setA] = useState({ usuario: '', correo: '', rol: ROL_DE_FUNCION[persona.funcion] || ROL_DE_FUNCION[funcionL(persona.funcion)] || 'operador', rolFijo: true, clave: '', clave2: '' })
+  const [a, setA] = useState({ usuario: '', correo: '', rol: rolDeFuncion(persona.funcion) || rolDeFuncion(funcionL(persona.funcion)) || 'operador', rolFijo: true, clave: '', clave2: '' })
   const [errores, setErrores] = useState({})
   const [error, setError] = useState(null)
   const [guardando, setGuardando] = useState(false)
@@ -208,9 +216,9 @@ function FormPersona({ persona, personas, onCerrar, onGuardado }) {
             <input value={v.rut} onChange={set('rut', formatoRut)} maxLength={12} placeholder="12.345.678-9" />
           </Campo>
           <Campo etiqueta="Función" obligatorio error={errores.funcion}>
-            <select value={v.funcion} onChange={(e) => { set('funcion')(e); if (ROL_DE_FUNCION[e.target.value]) setA((p) => ({ ...p, rol: ROL_DE_FUNCION[e.target.value] })) }}>
+            <select value={v.funcion} onChange={(e) => { set('funcion')(e); if (rolDeFuncion(e.target.value)) setA((p) => ({ ...p, rol: rolDeFuncion(e.target.value) })) }}>
               <option value="">Seleccionar</option>
-              {[...FUNCIONES, ...(v.funcion && !FUNCIONES.includes(v.funcion) ? [v.funcion] : [])].map((f) => <option key={f} value={f}>{f}</option>)}
+              {[...funciones(), ...(v.funcion && !funciones().includes(v.funcion) ? [v.funcion] : [])].map((f) => <option key={f} value={f}>{f}</option>)}
             </select>
           </Campo>
           <Campo etiqueta="Teléfono (opcional)" error={errores.telefono}>
@@ -277,7 +285,7 @@ function VerPersona({ p, onCerrar }) {
 function GestionarAcceso({ persona, esYo, onCerrar, onGuardado }) {
   const perfil = persona.perfiles
   const [v, setV] = useState({ usuario: perfil?.usuario || '', rol: perfil?.rol || 'secretaria', activo: perfil?.activo !== false })
-  const [a, setA] = useState({ usuario: sugerirUsuario(persona.nombre), correo: '', rol: ROL_DE_FUNCION[persona.funcion] || ROL_DE_FUNCION[funcionL(persona.funcion)] || 'operador', rolFijo: !!(ROL_DE_FUNCION[persona.funcion] || ROL_DE_FUNCION[funcionL(persona.funcion)]), clave: '', clave2: '' })
+  const [a, setA] = useState({ usuario: sugerirUsuario(persona.nombre), correo: '', rol: rolDeFuncion(persona.funcion) || rolDeFuncion(funcionL(persona.funcion)) || 'operador', rolFijo: !!(rolDeFuncion(persona.funcion) || rolDeFuncion(funcionL(persona.funcion))), clave: '', clave2: '' })
   const [errores, setErrores] = useState({})
   const [error, setError] = useState(null)
   const [msg, setMsg] = useState(null)
@@ -327,8 +335,8 @@ function GestionarAcceso({ persona, esYo, onCerrar, onGuardado }) {
               <Campo etiqueta="Correo"><input value={perfil.correo || ''} readOnly /></Campo>
               <Campo etiqueta="Rol" obligatorio ayuda={esYo ? 'No puedes cambiar tu propio rol.' : undefined}>
                 <select value={v.rol} onChange={(e) => setV((p) => ({ ...p, rol: e.target.value }))} disabled={esYo}>
-                  {ROLES.map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}
-                  {perfil?.rol && !ROLES.some((r) => r.v === perfil.rol) && <option value={perfil.rol}>{nombreRol(perfil.rol)} (antiguo)</option>}
+                  {rolesCacheados().map((r) => <option key={r.clave} value={r.clave}>{r.nombre}</option>)}
+                  {perfil?.rol && !rolesCacheados().some((r) => r.clave === perfil.rol) && <option value={perfil.rol}>{nombreRol(perfil.rol)} (antiguo)</option>}
                 </select>
               </Campo>
               <Campo etiqueta="Estado" obligatorio>

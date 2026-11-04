@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react'
+import { rolesCacheados } from './roles'
 
 export const SesionCtx = createContext({ perfil: null, usuario: null })
 export const useSesion = () => useContext(SesionCtx)
@@ -11,8 +12,7 @@ export const puedeEditar = esDueno
 export const esOperador = (perfil) => perfil?.rol === 'operador'
 // Mi ruta: los operadores siempre. Dueño y secretaria solo si el dueño lo activa en Administración → Roles y permisos.
 export const verMiRuta = (perfil, ajustes = {}) => esOperador(perfil)
-  || (esDueno(perfil) && ajustes.menu_mi_ruta_dueno === '1')
-  || (perfil?.rol === 'secretaria' && ajustes.menu_mi_ruta_secretaria === '1')
+  || (!!perfil?.rol && ajustes['menu_mi_ruta_' + perfil.rol] === '1')   // dueño, secretaria, ventas u otro rol
 // Administración: el dueño ve todo; la secretaria solo la pestaña Mi perfil. El resto ve "Mi perfil" suelto en el menú.
 export const verAdministracion = (perfil) => esDueno(perfil) || perfil?.rol === 'secretaria'
 export const esSecretaria = (perfil) => perfil?.rol === 'secretaria'
@@ -31,7 +31,7 @@ export const ROLES = [
   { v: 'operador', l: 'Operador', d: 'Solo Mi ruta y Mi perfil' },
 ]
 const ROLES_ANTIGUOS = { administrador: 'Administrador operacional', lectura: 'Solo lectura' }
-export const nombreRol = (rol) => ROLES.find((r) => r.v === rol)?.l || ROLES_ANTIGUOS[rol] || 'Solo lectura'
+export const nombreRol = (rol) => rolesCacheados().find((r) => r.clave === rol)?.nombre || ROLES.find((r) => r.v === rol)?.l || ROLES_ANTIGUOS[rol] || 'Solo lectura'
 
 export const SECCIONES = [
   { s: 'inicio', l: 'Inicio' },

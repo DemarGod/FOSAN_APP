@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { SesionCtx } from './lib/sesion'
+import { leerRoles } from './lib/roles'
 import Login from './components/Login'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
@@ -97,6 +98,7 @@ export default function App() {
     supabase.from('perfiles').select('*').eq('id', usuario.id).maybeSingle()
       .then(async ({ data }) => {
         const p = data || { nombre: usuario.email, rol: 'lectura' }
+        await leerRoles(true).catch(() => {})   // nombres de los roles (script 38)
         const { data: per } = await supabase.from('permisos_rol').select('*').eq('rol', p.rol)
         setPerfil({ ...p, permisos: Object.fromEntries((per || []).map((x) => [x.seccion, x])) })
       })

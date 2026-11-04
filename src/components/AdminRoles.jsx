@@ -1,10 +1,12 @@
 // Administración → Roles y permisos (lámina 8.4).
 // Se elige un rol y se marca Consultar / Registrar / Exportar por módulo.
 // Mientras llegan las etapas 3 a 6, cada módulo nuevo guarda el permiso en las pantallas actuales que le corresponden.
+// Paquete 17: roles con nombre propio (Ejecutivo de ventas u otros que cree el dueño), con aviso de "sin revisar".
 import { useEffect, useMemo, useState } from 'react'
 import { Boton, Campo, Ayuda } from './Base'
 import { todosPermisos, guardarPermisosRol } from '../lib/api'
-import { ROLES } from '../lib/sesion'
+import { useRoles, crearRol, renombrarRol, marcarRolRevisado } from '../lib/roles'
+import Modal from './Modal'
 import { useAjustes, guardarAjuste } from '../lib/ajustes'
 import { C, Icon, I } from '../lib/ui'
 import { Reglas } from './AdminPersonal'
@@ -16,7 +18,8 @@ const MODULOS = [
   { m: 'Operaciones', s: ['rutas', 'calendario'], op: '(solo sus rutas y trabajos)', nota: 'Rutas semanales y Calendario' },
   { m: 'Flota', s: ['transporte'] },
   { m: 'Mantenimiento', s: ['mantenciones'] },
-  { m: 'Reportes', s: ['reportes', 'analisis'], op: '(solo sus registros)', soloConsulta: true, nota: 'Reportes y Análisis' },
+  { m: 'Reportes', s: ['reportes'], op: '(solo sus registros)', soloConsulta: true },
+  { m: 'Análisis', s: ['analisis'], soloConsulta: true, nota: 'Costos y rentabilidad (pestaña de Reportes)' },
   { m: 'Administración', s: [], soloDueno: true },
 ]
 const ACC = [
@@ -24,17 +27,23 @@ const ACC = [
   { k: 'editar', l: 'Registrar' },
   { k: 'exportar', l: 'Exportar' },
 ]
-// Dueño: acceso total (solo se elige si ve Mi ruta). Operador: fijo, solo Mi ruta y Mi perfil. Secretaria: configurable.
-const EDITABLES = ROLES
-const CLAVE_MI_RUTA = { dueno: 'menu_mi_ruta_dueno', secretaria: 'menu_mi_ruta_secretaria' }
+// Dueño: acceso total (solo se elige si ve Mi ruta). Operador: fijo, solo Mi ruta y Mi perfil.
+// Secretaria, Ejecutivo de ventas y los roles nuevos: configurables.
+const claveMiRuta = (rol) => 'menu_mi_ruta_' + rol
+const esFijo = (rol) => rol === 'dueno' || rol === 'operador'
 
 export default function AdminRoles() {
+  const roles = useRoles()
   const [rol, setRol] = useState('secretaria')
+  const [nuevo, setNuevo] = useState(false)
+  const [renombrar, setRenombrar] = useState(false)
   const ajustes = useAjustes()
   const [miRuta, setMiRuta] = useState(false)
-  const miRutaBase = rol === 'operador' ? true : ajustes[CLAVE_MI_RUTA[rol]] === '1'
+  const miRutaBase = rol === 'operador' ? true : ajustes[claveMiRuta(rol)] === '1'
   useEffect(() => { setMiRuta(miRutaBase) }, [rol, miRutaBase])
-  const fijo = rol === 'dueno' || rol === 'operador'    // sus módulos no se configuran
+  const fijo = esFijo(rol)    // sus módulos no se configuran
+  const rolInfo = roles.find((r) => r.clave === rol)
+  const sinRevisar = rolInfo && rolInfo.revisado === false
   const [base, setBase] = useState(null)     // filas guardadas: { 'rol:seccion': fila }
   const [v, setV] = useState({})             // { modulo: { ver, editar, exportar } } en edición
   const [montos, setMontos] = useState(false)
@@ -77,14 +86,18 @@ export default function AdminRoles() {
 
   const guardar = async () => {
     setGuardando(true); setError(null)
-    try { if (CLAVE_MI_RUTA[rol] && miRuta !== miRutaBase) await guardarAjuste(CLAVE_MI_RUTA[rol], miRuta ? '1' : '0') } catch (e) { setError(e); setGuardando(false); return }
+    try { if (rol !== 'operador' && miRuta !== miRutaBase) await guardarAjuste(claveMiRuta(rol), miRuta ? '1' : '0') } catch (e) { setError(e); setGuardando(false); return }
     if (rol === 'dueno') { setMsg('Guardado. El menú se actualiza de inmediato.'); setGuardando(false); return }
     const filas = []
     MODULOS.filter((x) => !x.soloDueno).forEach((x) => x.s.forEach((s) => filas.push({
       seccion: s, ver: !!v[x.m]?.ver, editar: x.soloConsulta ? false : !!v[x.m]?.editar, exportar: !!v[x.m]?.exportar,
     })))
     filas.push({ seccion: 'finanzas', ver: montos, editar: false, exportar: false })
-    try { await guardarPermisosRol(rol, filas); await cargar(); setMsg('Permisos guardados. Cada persona los verá al recargar la app.') } catch (e) { setError(e) }
+    try {
+      await guardarPermisosRol(rol, filas)
+      if (sinRevisar) await marcarRolRevisado(rol)   // guardar = el dueño ya lo revisó
+      await cargar(); setMsg('Permisos guardados. Cada persona los verá al recargar la app.')
+    } catch (e) { setError(e) }
     setGuardando(false)
   }
 
@@ -93,7 +106,12 @@ export default function AdminRoles() {
     const sin = MODULOS.filter((x) => !x.soloDueno && !v[x.m]?.ver).map((x) => x.m)
     return { con, sin }
   }, [v])
-  const rolL = ROLES.find((r) => r.v === rol)?.l
+  const rolL = rolInfo?.nombre || rol
+  const elegirRol = (c) => { if (!sucio || window.confirm('Hay cambios sin guardar. ¿Cambiar de rol sin guardar?')) setRol(c) }
+  const revisar = async () => {
+    setError(null)
+    try { await marcarRolRevisado(rol); setMsg('Rol marcado como revisado.') } catch (e) { setError(e) }
+  }
 
   if (error && !base) return <Ayuda tono="error">{String(error.message || error)}</Ayuda>
   if (!base) return <div style={{ color: C.gris }}>Cargando…</div>
@@ -101,11 +119,26 @@ export default function AdminRoles() {
   return (
     <div style={{ display: 'grid', gap: 14 }}>
       <span className="text-muted">Define los permisos de cada rol en los diferentes módulos.</span>
-      <Campo etiqueta="Seleccionar rol" style={{ maxWidth: 280 }}>
-        <select value={rol} onChange={(e) => { if (!sucio || window.confirm('Hay cambios sin guardar. ¿Cambiar de rol sin guardar?')) setRol(e.target.value) }}>
-          {EDITABLES.map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}
-        </select>
-      </Campo>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <Campo etiqueta="Seleccionar rol" style={{ width: 280 }}>
+          <select value={rol} onChange={(e) => elegirRol(e.target.value)}>
+            {roles.map((r) => <option key={r.clave} value={r.clave}>{r.nombre}{r.revisado === false ? ' (sin revisar)' : ''}</option>)}
+          </select>
+        </Campo>
+        {!fijo && <Boton onClick={() => setRenombrar(true)}>Renombrar</Boton>}
+        <Boton icono={I.plus} onClick={() => { if (!sucio || window.confirm('Hay cambios sin guardar. ¿Continuar sin guardar?')) setNuevo(true) }}>Nuevo rol</Boton>
+      </div>
+
+      {sinRevisar && (
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', padding: 14, background: '#fef7e0', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)', font: '400 13px/1.5 var(--font)' }}>
+          <Icon d={I.alert} size={18} color={C.amarillo} />
+          <span style={{ flex: 1, minWidth: 220 }}>
+            <b>Dueño: revisa este rol.</b> <b>{rolL}</b> trae permisos predeterminados (plantilla). Revisa qué puede consultar, registrar y exportar,
+            y si ve los montos, antes de entregarle la clave a sus usuarios. Al guardar, el rol queda revisado.
+          </span>
+          {!sucio && <Boton onClick={revisar}>Marcar como revisado</Boton>}
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(220px, 1fr)', gap: 16, alignItems: 'start' }} className="cols2">
         <div className="card">
@@ -163,12 +196,12 @@ export default function AdminRoles() {
                 : <li>No puede consultar ningún módulo.</li>}
               {resumen.sin.length > 0 && <li>No tiene acceso a {resumen.sin.join(', ')}{montos ? '' : ', ni a los montos'}.</li>}
               <li>{miRuta ? 'Ve' : 'No ve'} "Mi ruta" en su menú.</li>
-              <li>En Administración solo ve la pestaña Mi perfil.</li>
+              <li>{rol === 'secretaria' ? 'En Administración solo ve la pestaña Mi perfil.' : 'No ve Administración; tiene "Mi perfil" en el menú.'}</li>
             </ul>}
           </div>
           <div style={{ display: 'flex', gap: 10, padding: 14, background: '#fef7e0', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)', font: '400 13px/1.5 var(--font)' }}>
             <Icon d={I.info} size={18} color={C.amarillo} />
-            <span>Roles: <b>Dueño</b> (acceso total), <b>Secretaria</b> (según estos permisos) y <b>Operador</b> (solo Mi ruta y Mi perfil). La función de cada persona define su rol.</span>
+            <span><b>Dueño</b>: acceso total. <b>Operador</b>: solo Mi ruta y Mi perfil. Los demás roles (Secretaria, Ejecutivo de ventas y los que crees) usan estos permisos. La función de cada persona define su rol.</span>
           </div>
         </div>
       </div>
@@ -180,6 +213,67 @@ export default function AdminRoles() {
         <Boton tipo="principal" onClick={guardar} disabled={!sucio || guardando}>{guardando ? 'Guardando…' : 'Guardar permisos'}</Boton>
       </div>
       <Reglas />
+      {nuevo && <NuevoRol roles={roles} onCerrar={() => setNuevo(false)} onCreado={(c) => { setNuevo(false); setRol(c); cargar(); setMsg('Rol creado con la plantilla. Revisa sus permisos y guarda.') }} />}
+      {renombrar && <RenombrarRol rol={rolInfo} onCerrar={() => setRenombrar(false)} onListo={() => { setRenombrar(false); setMsg('Nombre del rol actualizado.') }} />}
     </div>
+  )
+}
+
+// Crear un rol con nombre propio: copia los permisos de una plantilla (por defecto, Ejecutivo de ventas)
+function NuevoRol({ roles, onCerrar, onCreado }) {
+  const plantillas = roles.filter((r) => !esFijo(r.clave))
+  const [nombre, setNombre] = useState('')
+  const [base, setBase] = useState(plantillas.some((r) => r.clave === 'ventas') ? 'ventas' : plantillas[0]?.clave || '')
+  const [error, setError] = useState(null)
+  const [creando, setCreando] = useState(false)
+  const crear = async () => {
+    setError(null)
+    if (nombre.trim().length < 3) { setError('Escribe el nombre del rol.'); return }
+    if (roles.some((r) => r.nombre.toLowerCase() === nombre.trim().toLowerCase())) { setError('Ya existe un rol con ese nombre.'); return }
+    setCreando(true)
+    try { onCreado(await crearRol(nombre.trim(), base || null)) } catch (e) { setError(e); setCreando(false) }
+  }
+  return (
+    <Modal titulo="Nuevo rol" ancho={480} onCerrar={onCerrar} pie={<>
+      <Boton onClick={onCerrar}>Cancelar</Boton>
+      <Boton tipo="principal" onClick={crear} disabled={creando}>{creando ? 'Creando…' : 'Crear rol'}</Boton>
+    </>}>
+      <div style={{ display: 'grid', gap: 12 }}>
+        <Campo etiqueta="Nombre del rol" obligatorio>
+          <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej.: Ejecutivo de ventas zona sur" autoFocus />
+        </Campo>
+        <Campo etiqueta="Partir con los permisos de" ayuda="Se copian como punto de partida. Después los ajustas.">
+          <select value={base} onChange={(e) => setBase(e.target.value)}>
+            {plantillas.map((r) => <option key={r.clave} value={r.clave}>{r.nombre}</option>)}
+          </select>
+        </Campo>
+        <Ayuda tono="atencion">El rol nuevo queda <b>sin revisar</b> hasta que guardes sus permisos o lo marques como revisado.</Ayuda>
+        {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
+      </div>
+    </Modal>
+  )
+}
+
+function RenombrarRol({ rol, onCerrar, onListo }) {
+  const [nombre, setNombre] = useState(rol?.nombre || '')
+  const [error, setError] = useState(null)
+  const [guardando, setGuardando] = useState(false)
+  const guardar = async () => {
+    setError(null)
+    if (nombre.trim().length < 3) { setError('Escribe el nombre del rol.'); return }
+    setGuardando(true)
+    try { await renombrarRol(rol.clave, nombre); onListo() } catch (e) { setError(e); setGuardando(false) }
+  }
+  return (
+    <Modal titulo="Renombrar rol" ancho={420} onCerrar={onCerrar} pie={<>
+      <Boton onClick={onCerrar}>Cancelar</Boton>
+      <Boton tipo="principal" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar'}</Boton>
+    </>}>
+      <div style={{ display: 'grid', gap: 12 }}>
+        <Campo etiqueta="Nombre visible"><input value={nombre} onChange={(e) => setNombre(e.target.value)} autoFocus /></Campo>
+        <span className="text-muted" style={{ fontSize: 12 }}>Solo cambia el nombre que se muestra. Las personas con este rol mantienen sus permisos.</span>
+        {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
+      </div>
+    </Modal>
   )
 }

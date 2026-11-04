@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useSesion, esDueno, puedeVer } from '../lib/sesion'
+import { useSesion, esOperador, puedeVer } from '../lib/sesion'
 import { miRutaDeLaSemana, diasDeRuta, operadores, DIAS_RUTA, SEMAFORO, fechaDia, diaCorto, etiquetaSemana } from '../lib/rutasSemana'
 import { hoyISO } from '../lib/costos'
 import { C } from '../lib/ui'
@@ -10,7 +10,7 @@ import DiaRuta, { Punto } from '../components/DiaRuta'
 // Vista del operador: solo la ruta asignada para la semana en curso
 export default function MiRuta() {
   const { usuario, perfil } = useSesion()
-  const dueno = esDueno(perfil) || perfil?.rol === 'secretaria'   // dueño y secretaria: "Ver como operador"
+  const dueno = !!perfil && !esOperador(perfil)   // todo rol que no sea operador: "Ver como operador"
   const [ops, setOps] = useState([])
   const [verComo, setVerComo] = useState('')          // dueño: id del operador que se está mirando
   useEffect(() => { if (dueno) operadores().then(setOps).catch(() => {}) }, [dueno])
