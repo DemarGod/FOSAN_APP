@@ -10,7 +10,7 @@ import DiaRuta, { Punto } from '../components/DiaRuta'
 // Vista del operador: solo la ruta asignada para la semana en curso
 export default function MiRuta() {
   const { usuario, perfil } = useSesion()
-  const dueno = esDueno(perfil)
+  const dueno = esDueno(perfil) || perfil?.rol === 'secretaria'   // dueño y secretaria: "Ver como operador"
   const [ops, setOps] = useState([])
   const [verComo, setVerComo] = useState('')          // dueño: id del operador que se está mirando
   useEffect(() => { if (dueno) operadores().then(setOps).catch(() => {}) }, [dueno])

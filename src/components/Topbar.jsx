@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { notificaciones, marcarLeidas, avisosCalculados, buscarGlobal } from '../lib/api'
 import { NAV } from './Sidebar'
 import { C, Icon, I, fechaHora } from '../lib/ui'
-import { nombreRol } from '../lib/sesion'
+import { nombreRol, esOperador } from '../lib/sesion'
 
 const NIVEL = {
   alerta: { color: C.rojo, tint: '#fce8e6', d: I.alert },
@@ -33,6 +33,7 @@ const SINONIMOS = {
 
 export default function Topbar({ perfil, onCalendario, version = 0 }) {
   const navegar = useNavigate()
+  const operador = esOperador(perfil)   // el operador no ve buscador, calendario ni alertas
   const [abierto, setAbierto] = useState(false)
   const [avisos, setAvisos] = useState([])
   const [busqueda, setBusqueda] = useState('')
@@ -58,7 +59,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
 
   const ir = (a) => { navegar(a); setBusqueda(''); setRes(null) }
 
-  const cargar = () => Promise.all([notificaciones().catch(() => []), avisosCalculados().catch(() => [])])
+  const cargar = () => (operador ? Promise.resolve([[], []]) : Promise.all([notificaciones().catch(() => []), avisosCalculados().catch(() => [])]))
     .then(([db, calc]) => {
       const leidos = leidosLocal()
       const calculados = calc.map((a) => ({ ...a, leida: leidos.has(a.id) }))
@@ -110,7 +111,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
         FOSAN
       </div>
 
-      <div ref={cajaBusca} className="desk-only" style={{ flex: 1, maxWidth: 420, position: 'relative' }}>
+      {!operador && <div ref={cajaBusca} className="desk-only" style={{ flex: 1, maxWidth: 420, position: 'relative' }}>
         <form onSubmit={buscar} style={{
           display: 'flex', alignItems: 'center', gap: 8,
           border: `1px solid ${C.borde}`, padding: '7px 10px', background: '#fff', borderRadius: 'var(--radio-md)' }}>
@@ -132,10 +133,11 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
             {res.clientes.map((c) => <Resultado key={c.id} d={I.users} t={c.nombre} sub={[c.direccion, c.comuna].filter(Boolean).join(', ')} onClick={() => ir('/clientes?q=' + encodeURIComponent(c.nombre))} />)}
           </div>
         )}
-      </div>
+      </div>}
 
       <div style={{ flex: 1 }} />
 
+      {!operador && <>
       <button onClick={onCalendario} title="Calendario" style={{
         border: `1px solid ${C.borde}`, background: '#fff', color: C.navy,
         width: 40, height: 40, display: 'grid', placeItems: 'center', cursor: 'pointer', borderRadius: 'var(--radio-md)' }}>
@@ -204,6 +206,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
           </div>
         )}
       </div>
+      </>}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
         <div style={{

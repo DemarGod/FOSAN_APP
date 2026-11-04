@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Boton, Campo, Ayuda } from './Base'
 import { todosPermisos, guardarPermisosRol } from '../lib/api'
 import { ROLES } from '../lib/sesion'
+import { useAjustes, guardarAjuste } from '../lib/ajustes'
 import { C, Icon, I } from '../lib/ui'
 import { Reglas } from './AdminPersonal'
 
@@ -23,10 +24,17 @@ const ACC = [
   { k: 'editar', l: 'Registrar' },
   { k: 'exportar', l: 'Exportar' },
 ]
-const EDITABLES = ROLES.filter((r) => r.v !== 'dueno')
+// Dueño: acceso total (solo se elige si ve Mi ruta). Operador: fijo, solo Mi ruta y Mi perfil. Secretaria: configurable.
+const EDITABLES = ROLES
+const CLAVE_MI_RUTA = { dueno: 'menu_mi_ruta_dueno', secretaria: 'menu_mi_ruta_secretaria' }
 
 export default function AdminRoles() {
-  const [rol, setRol] = useState(EDITABLES.find((r) => r.v === 'operador')?.v || EDITABLES[0].v)
+  const [rol, setRol] = useState('secretaria')
+  const ajustes = useAjustes()
+  const [miRuta, setMiRuta] = useState(false)
+  const miRutaBase = rol === 'operador' ? true : ajustes[CLAVE_MI_RUTA[rol]] === '1'
+  useEffect(() => { setMiRuta(miRutaBase) }, [rol, miRutaBase])
+  const fijo = rol === 'dueno' || rol === 'operador'    // sus módulos no se configuran
   const [base, setBase] = useState(null)     // filas guardadas: { 'rol:seccion': fila }
   const [v, setV] = useState({})             // { modulo: { ver, editar, exportar } } en edición
   const [montos, setMontos] = useState(false)
@@ -63,10 +71,14 @@ export default function AdminRoles() {
       return { ...p, [m]: x }
     })
   }
-  const sucio = JSON.stringify(v) !== JSON.stringify(desdeBase) || montos !== !!base?.[rol + ':finanzas']?.ver
+  const sucio = rol === 'operador' ? false
+    : rol === 'dueno' ? miRuta !== miRutaBase
+      : JSON.stringify(v) !== JSON.stringify(desdeBase) || montos !== !!base?.[rol + ':finanzas']?.ver || miRuta !== miRutaBase
 
   const guardar = async () => {
     setGuardando(true); setError(null)
+    try { if (CLAVE_MI_RUTA[rol] && miRuta !== miRutaBase) await guardarAjuste(CLAVE_MI_RUTA[rol], miRuta ? '1' : '0') } catch (e) { setError(e); setGuardando(false); return }
+    if (rol === 'dueno') { setMsg('Guardado. El menú se actualiza de inmediato.'); setGuardando(false); return }
     const filas = []
     MODULOS.filter((x) => !x.soloDueno).forEach((x) => x.s.forEach((s) => filas.push({
       seccion: s, ver: !!v[x.m]?.ver, editar: x.soloConsulta ? false : !!v[x.m]?.editar, exportar: !!v[x.m]?.exportar,
@@ -102,7 +114,7 @@ export default function AdminRoles() {
               <thead><tr><th>Módulo</th>{ACC.map((a) => <th key={a.k} style={{ textAlign: 'center' }}>{a.l}</th>)}</tr></thead>
               <tbody>
                 {MODULOS.map((x) => (
-                  <tr key={x.m}>
+                  <tr key={x.m} style={fijo ? { opacity: 0.55 } : undefined}>
                     <td>
                       <span style={{ fontWeight: 600 }}>{x.m}</span>{rol === 'operador' && x.op ? <span className="text-muted"> {x.op}</span> : null}
                       {x.nota && <div className="text-muted" style={{ fontSize: 12 }}>Hoy: {x.nota}</div>}
@@ -110,7 +122,8 @@ export default function AdminRoles() {
                     </td>
                     {ACC.map((a) => (
                       <td key={a.k} style={{ textAlign: 'center' }}>
-                        {x.soloDueno ? <span className="text-muted" title="Solo el dueño">—</span>
+                        {fijo ? <input type="checkbox" checked={rol === 'dueno'} disabled style={{ width: 18, height: 18 }} />
+                          : x.soloDueno ? <span className="text-muted" title="Solo el dueño">—</span>
                           : x.soloConsulta && a.k === 'editar' ? <span className="text-muted">—</span>
                             : <input type="checkbox" checked={!!v[x.m]?.[a.k]} onChange={(e) => cambiar(x.m, a.k, e.target.checked)}
                               aria-label={`${rolL}: ${a.l} ${x.m}`} style={{ width: 18, height: 18, accentColor: C.azul, cursor: 'pointer' }} />}
@@ -118,11 +131,23 @@ export default function AdminRoles() {
                     ))}
                   </tr>
                 ))}
+                <tr>
+                  <td>
+                    <span style={{ fontWeight: 600 }}>Mi ruta</span> <span className="text-muted">(ver la ruta de los operadores)</span>
+                    <div className="text-muted" style={{ fontSize: 12 }}>{rol === 'operador' ? 'El operador siempre ve su ruta.' : 'Muestra "Mi ruta" en el menú de este rol, con "Ver como operador".'}</div>
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <input type="checkbox" checked={miRuta} disabled={rol === 'operador'} onChange={(e) => { setMiRuta(e.target.checked); setMsg(null) }}
+                      aria-label={`${rolL}: Mi ruta`} style={{ width: 18, height: 18, accentColor: C.azul, cursor: 'pointer' }} />
+                  </td>
+                  <td style={{ textAlign: 'center' }}><span className="text-muted">—</span></td>
+                  <td style={{ textAlign: 'center' }}><span className="text-muted">—</span></td>
+                </tr>
               </tbody>
             </table>
           </div>
           <label style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '12px 14px', borderTop: `1px solid ${C.borde}`, font: '600 13px var(--font)' }}>
-            <input type="checkbox" checked={montos} onChange={(e) => { setMontos(e.target.checked); setMsg(null) }} style={{ width: 18, height: 18, accentColor: C.azul }} />
+            <input type="checkbox" checked={fijo ? rol === 'dueno' : montos} disabled={fijo} onChange={(e) => { setMontos(e.target.checked); setMsg(null) }} style={{ width: 18, height: 18, accentColor: C.azul }} />
             Ver montos (valores mensuales y costos)
           </label>
         </div>
@@ -130,17 +155,20 @@ export default function AdminRoles() {
         <div style={{ display: 'grid', gap: 12 }}>
           <div style={{ padding: 14, background: C.tinte, borderRadius: 'var(--radio-md)', font: '400 13px/1.5 var(--font)' }}>
             <b>Permisos del rol {rolL} en esta configuración:</b>
-            <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+            {rol === 'dueno' ? <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}><li>Acceso total a todos los módulos, montos y Administración.</li><li>{miRuta ? 'Ve' : 'No ve'} "Mi ruta" en su menú.</li></ul>
+              : rol === 'operador' ? <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}><li>Solo ve <b>Mi ruta</b> y <b>Mi perfil</b>.</li><li>No ve el resto de la app, las alertas, el buscador ni el calendario.</li></ul>
+                : <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
               {resumen.con.length
                 ? <li>Puede consultar {resumen.con.map((x) => x.m + (rol === 'operador' && x.op ? ' ' + x.op : '')).join(', ')}.</li>
                 : <li>No puede consultar ningún módulo.</li>}
               {resumen.sin.length > 0 && <li>No tiene acceso a {resumen.sin.join(', ')}{montos ? '' : ', ni a los montos'}.</li>}
-              <li>No tiene acceso al módulo de Administración.</li>
-            </ul>
+              <li>{miRuta ? 'Ve' : 'No ve'} "Mi ruta" en su menú.</li>
+              <li>En Administración solo ve la pestaña Mi perfil.</li>
+            </ul>}
           </div>
           <div style={{ display: 'flex', gap: 10, padding: 14, background: '#fef7e0', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)', font: '400 13px/1.5 var(--font)' }}>
             <Icon d={I.info} size={18} color={C.amarillo} />
-            <span>El Dueño tiene acceso a todos los módulos y a la gestión de cuentas. Si conduce, también accede a Mi ruta.</span>
+            <span>Roles: <b>Dueño</b> (acceso total), <b>Secretaria</b> (según estos permisos) y <b>Operador</b> (solo Mi ruta y Mi perfil). La función de cada persona define su rol.</span>
           </div>
         </div>
       </div>
@@ -148,7 +176,7 @@ export default function AdminRoles() {
       {msg && <Ayuda>{msg}</Ayuda>}
       {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <Boton onClick={() => { setV(desdeBase); setMontos(!!base?.[rol + ':finanzas']?.ver); setMsg(null) }} disabled={!sucio}>Cancelar</Boton>
+        <Boton onClick={() => { setV(desdeBase); setMontos(!!base?.[rol + ':finanzas']?.ver); setMiRuta(miRutaBase); setMsg(null) }} disabled={!sucio}>Cancelar</Boton>
         <Boton tipo="principal" onClick={guardar} disabled={!sucio || guardando}>{guardando ? 'Guardando…' : 'Guardar permisos'}</Boton>
       </div>
       <Reglas />

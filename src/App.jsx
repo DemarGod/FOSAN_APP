@@ -24,7 +24,7 @@ import FichaEquipo from './pages/FichaEquipo'
 import Historial from './pages/Historial'
 import Administracion from './pages/Administracion'
 import { C } from './lib/ui'
-import { puedeOperar, puedeVer, esDueno, verAdministracion } from './lib/sesion'
+import { puedeOperar, puedeVer, esDueno, verAdministracion, esOperador } from './lib/sesion'
 
 export default function App() {
   const [usuario, setUsuario] = useState(null)
@@ -122,6 +122,14 @@ export default function App() {
         <main style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           <Topbar perfil={perfil} onCalendario={() => setCal(true)} version={calVersion} />
           <div className="pad">
+            {esOperador(perfil) ? (
+              // El operador solo usa Mi ruta y Mi perfil
+              <Routes>
+                <Route path="/mi-ruta" element={<MiRuta />} />
+                <Route path="/configuracion" element={<Configuracion />} />
+                <Route path="*" element={<Navigate to="/mi-ruta" replace />} />
+              </Routes>
+            ) : (
             <Routes>
               <Route path="/" element={puedeVer(perfil, 'inicio') ? <Inicio onCalendario={() => setCal(true)} /> : <Navigate to="/mi-ruta" replace />} />
               <Route path="/inventario" element={puedeVer(perfil, 'banos') || puedeVer(perfil, 'insumos') || puedeVer(perfil, 'ubicaciones') ? <Inventario /> : <SinAcceso />} />
@@ -149,11 +157,12 @@ export default function App() {
               <Route path="/activo/:token" element={<FichaEquipo />} />
               <Route path="*" element={<p className="text-muted">Esta página no existe.</p>} />
             </Routes>
+            )}
           </div>
           <Tabbar onCalendario={() => setCal(true)} />
         </main>
       </div>
-      {cal && <Calendario puedeEditar={puedeOperar(perfil, 'calendario')} onCerrar={() => { setCal(false); setCalVersion((n) => n + 1) }} />}
+      {cal && !esOperador(perfil) && <Calendario puedeEditar={puedeOperar(perfil, 'calendario')} onCerrar={() => { setCal(false); setCalVersion((n) => n + 1) }} />}
     </SesionCtx.Provider>
   )
 }

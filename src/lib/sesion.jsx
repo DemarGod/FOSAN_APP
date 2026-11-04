@@ -7,8 +7,12 @@ export const useSesion = () => useContext(SesionCtx)
 // perfil.permisos = { clientes: { ver, editar }, ... } cargado desde permisos_rol
 export const esDueno = (perfil) => perfil?.rol === 'dueno'
 export const puedeEditar = esDueno
-// Mi ruta: la ven siempre los operadores. El dueño solo si lo activa en Administración → Mi perfil (ajustes).
-export const verMiRuta = (perfil, ajustes = {}) => perfil?.rol === 'operador' || (esDueno(perfil) && ajustes.menu_mi_ruta_dueno === '1')
+// El operador solo usa Mi ruta y Mi perfil (no ve el resto de la app)
+export const esOperador = (perfil) => perfil?.rol === 'operador'
+// Mi ruta: los operadores siempre. Dueño y secretaria solo si el dueño lo activa en Administración → Roles y permisos.
+export const verMiRuta = (perfil, ajustes = {}) => esOperador(perfil)
+  || (esDueno(perfil) && ajustes.menu_mi_ruta_dueno === '1')
+  || (perfil?.rol === 'secretaria' && ajustes.menu_mi_ruta_secretaria === '1')
 // Administración: el dueño ve todo; la secretaria solo la pestaña Mi perfil. El resto ve "Mi perfil" suelto en el menú.
 export const verAdministracion = (perfil) => esDueno(perfil) || perfil?.rol === 'secretaria'
 export const esSecretaria = (perfil) => perfil?.rol === 'secretaria'
@@ -20,14 +24,14 @@ export const puedeOperar = (perfil, sec) => {
   return !!(p?.ver && p?.editar)
 }
 export const verFinanzas = (perfil) => esDueno(perfil) || !!perfil?.permisos?.finanzas?.ver
+// Roles de la app: solo Dueño, Secretaria y Operador. (Los antiguos se siguen mostrando con su nombre.)
 export const ROLES = [
   { v: 'dueno', l: 'Dueño', d: 'Acceso total' },
-  { v: 'administrador', l: 'Administrador operacional', d: 'Gestión diaria' },
-  { v: 'secretaria', l: 'Secretaria', d: 'Información administrativa' },
-  { v: 'operador', l: 'Operador', d: 'Solo tareas asignadas' },
-  { v: 'lectura', l: 'Solo lectura', d: 'Consulta' },
+  { v: 'secretaria', l: 'Secretaria', d: 'Según sus permisos' },
+  { v: 'operador', l: 'Operador', d: 'Solo Mi ruta y Mi perfil' },
 ]
-export const nombreRol = (rol) => ROLES.find((r) => r.v === rol)?.l || 'Solo lectura'
+const ROLES_ANTIGUOS = { administrador: 'Administrador operacional', lectura: 'Solo lectura' }
+export const nombreRol = (rol) => ROLES.find((r) => r.v === rol)?.l || ROLES_ANTIGUOS[rol] || 'Solo lectura'
 
 export const SECCIONES = [
   { s: 'inicio', l: 'Inicio' },

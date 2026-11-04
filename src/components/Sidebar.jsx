@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { C, Icon, I } from '../lib/ui'
-import { useSesion, puedeVer, verMiRuta, verAdministracion } from '../lib/sesion'
+import { useSesion, puedeVer, verMiRuta, verAdministracion, esOperador } from '../lib/sesion'
 import { useAjustes } from '../lib/ajustes'
 
 const DESPACHO = 'M3 7h11v9H3zM14 10h4l3 3v3h-7zM7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM6 4h5M8.5 1.5 11 4 8.5 6.5'
@@ -31,7 +31,7 @@ export const NAV = [
 ]
 
 // ¿Este ítem del menú corresponde a este usuario?
-export const itemVisible = (perfil, ajustes, n) => (!n.s || [].concat(n.s).some((x) => puedeVer(perfil, x)))
+export const itemVisible = (perfil, ajustes, n) => (esOperador(perfil) ? !!(n.miRuta || n.sinAdmin) : true) && (!n.s || [].concat(n.s).some((x) => puedeVer(perfil, x)))
   && !(n.admin && !verAdministracion(perfil)) && !(n.sinAdmin && verAdministracion(perfil)) && !(n.miRuta && !verMiRuta(perfil, ajustes))
 
 const item = (activo) => ({
