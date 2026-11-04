@@ -83,8 +83,7 @@ export default function RutasSemana() {
           <strong style={{ font: '700 13px var(--font)', color: C.navy }}>{pendientes.length} entrega(s) o retiro(s) sin ruta</strong>
           {pendientes.slice(0, 6).map((d) => (
             <span key={d.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', font: '400 12px var(--font)' }}>
-              <Chip tarea={d.tipo} /><strong>{d.cliente}</strong><span style={{ color: C.gris }}>#{d.folio} · {d.banos || 'sin baños'}</span>
-            </span>
+              <Chip tarea={d.tipo} servicio={d.servicio_tipo} /><strong>{d.cliente}</strong><span style={{ color: C.gris }}>#{d.folio} · {d.servicio_tipo === 'limpieza_fosas' ? 'fosa' : d.banos || 'sin baños'}</span>            </span>
           ))}
           <span style={{ font: '400 12px var(--font)', color: C.gris }}>Ábrelos desde “Editar planilla” de una ruta para asignarles un día.</span>
         </div>

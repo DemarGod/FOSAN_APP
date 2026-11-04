@@ -77,8 +77,9 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
           const s = SEMAFORO[p.estado] || SEMAFORO.pendiente
           const c = p.clientes || {}
           const dir = [c.direccion, c.comuna].filter(Boolean).join(', ')
-          const banos = p.despacho ? p.despacho.banos
-            : [p.codigos.join(', '), c.banos_propios ? `Baño propio${c.banos_propios > 1 ? ' ×' + c.banos_propios : ''}` : ''].filter(Boolean).join(' · ')
+          const servicio = p.despacho?.servicio_tipo
+          const banos = servicio === 'limpieza_fosas' ? 'Fosa' : p.despacho ? p.despacho.banos
+          : [p.codigos.join(', '), c.banos_propios ? `Baño propio${c.banos_propios > 1 ? ' ×' + c.banos_propios : ''}` : ''].filter(Boolean).join(' · ')
           const fijo = p.despacho_id && p.estado === 'hecha'
           return (
             <div key={p.id} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: 12, borderBottom: `1px solid ${C.fila}`, borderLeft: `5px solid ${s.c}` }}>
@@ -89,10 +90,10 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
               <span style={{ flex: 1, minWidth: 0, display: 'grid', gap: 4 }}>
                 <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
                   <strong style={{ font: '700 14px/1.3 var(--font)' }}>{c.nombre}</strong>
-                  <Chip tarea={p.tarea} />
+                  <Chip tarea={p.tarea} servicio={servicio} />
                   <span style={{ font: '600 11px var(--font)', color: s.c }}>{s.l}</span>
                 </span>
-                {banos && <span style={{ font: '400 12px var(--font)', color: '#3c4551' }}>Baños: {banos}</span>}
+                {banos && <span style={{ font: '400 12px var(--font)', color: '#3c4551' }}>{servicio === 'limpieza_fosas' ? 'Fosa' : `Baños: ${banos}`}</span>}
                 {(c.contacto_nombre || c.telefono) && (
                   <span style={{ font: '400 12px var(--font)', color: '#3c4551' }}>
                     {c.contacto_nombre}{c.contacto_nombre && c.telefono ? ' · ' : ''}
@@ -157,10 +158,13 @@ function Marcar({ p, estado, fecha, onCerrar, onListo }) {
   const [ocupado, setOcupado] = useState(false)
   const ok = estado === 'hecha'
   const retiro = p.tarea === 'retiro' || p.tarea === 'cambio'
+    // Solo se reportan mantenciones de baños FOSAN: no en fosas ni en limpieza de baños propios del cliente
+  const servicio = p.despacho?.servicio_tipo
+  const puedeMant = unidades.length > 0 && servicio !== 'limpieza_fosas' && servicio !== 'limpieza_cliente'
   const guardar = async () => {
     if (!ok && !obs.trim()) return setError('Escribe por qué no se pudo.')
-      if (mant && !elegidos.length) return setError(unidades.length ? 'Marca cuál o cuáles baños requieren mantención.' : 'Este cliente no tiene baños FOSAN en arriendo para reportar.')
-    const items = mant ? elegidos.map((id) => ({
+      if (puedeMant && mant && !elegidos.length) return setError(unidades.length ? 'Marca cuál o cuáles baños requieren mantención.' : 'Este clienteno tiene baños FOSAN en arriendo para reportar.')
+    const items = mant && puedeMant ? elegidos.map((id) => ({
       id, tipo: malos[id].tipo === 'Otro' ? malos[id].otro.trim() : malos[id].tipo, retirado: retiro && ok ? true : malos[id].retirado,
     })) : []
     const sinTipo = items.find((x) => !x.tipo)
@@ -197,7 +201,7 @@ function Marcar({ p, estado, fecha, onCerrar, onListo }) {
           <textarea rows={3} maxLength={300} value={obs} onChange={(e) => setObs(e.target.value)} autoFocus
             placeholder={ok ? 'Ej.: el encargado pidió cambiar la hora de limpieza' : 'Ej.: portón cerrado, no había nadie'} />
         </label>
-        {(ok || !retiro) && (
+        {puedeMant &&(ok || !retiro) && (
           <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', border: `2px solid ${mant ? C.rojo : C.borde}`, cursor: 'pointer' }}>
             <input type="checkbox" checked={mant} onChange={(e) => setMant(e.target.checked)} style={{ width: 20, height: 20, accentColor: C.rojo, marginTop: 1 }} />
             <span>
@@ -208,7 +212,7 @@ function Marcar({ p, estado, fecha, onCerrar, onListo }) {
             </span>
           </label>
         )}
-        {mant && (ok || !retiro) && (
+        {puedeMant && mant && (ok || !retiro) && (
           <div style={{ display: 'grid', gap: 10, padding: '10px 12px', border: `2px solid ${C.rojo}`, background: '#fff' }}>
             <span><strong>¿Cuáles baños?</strong>{!unidades.length && <span style={{ color: C.gris }}> · el cliente no tiene baños FOSAN en arriendo</span>}</span>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -300,6 +304,7 @@ function Cerrar({ viaje, pendientes, onCerrar, onListo }) {
 export const Punto = ({ color, grande }) => (
   <span style={{ display: 'inline-block', width: grande ? 14 : 10, height: grande ? 14 : 10, borderRadius: '50%', background: color, flex: 'none' }} />
 )
+
 export const Chip = ({ tarea }) => (
   <span style={{
     font: '600 10px var(--font)', textTransform: 'uppercase', letterSpacing: '.05em', padding: '3px 7px',

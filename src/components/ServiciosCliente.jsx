@@ -13,6 +13,7 @@ import {
 import { formatoPesos, numeroDe, decimalDe, fechaValida, FECHA_MIN, FECHA_MAX } from '../lib/validar'
 import { DIAS, hoyISO } from '../lib/costos'
 import { C, Icon, I, fecha, clp } from '../lib/ui'
+import { FormUbicacion } from '../pages/FichaCliente'
 
 export const L_TIPO_SERV = {
   arriendo_limpieza: 'Arriendo de baños con limpieza',
@@ -177,6 +178,17 @@ function FormServicio({ cliente, servicio, finanzas, onCerrar, onGuardado }) {
   const [elegidos, setElegidos] = useState([])          // ids de equipos externos de este servicio
   const elegidosIniciales = useRef([])
   const [nuevoExt, setNuevoExt] = useState(null)
+  const [nuevaUbic, setNuevaUbic] = useState(false)
+  const [todosContactos, setTodosContactos] = useState([])
+  // Ubicación creada desde aquí: se recarga la lista y queda elegida
+  const ubicacionCreada = async () => {
+    setNuevaUbic(false)
+    const u = await ubicacionesDe(cliente.id)
+    const antes = new Set(ubic.map((x) => x.id))
+    setUbic(u.filter((x) => x.activa || x.id === servicio.ubicacion_id))
+    const nueva = u.find((x) => x.activa && !antes.has(x.id))
+    if (nueva) setV((p) => ({ ...p, ubicacion_id: nueva.id }))
+  }
   const [errores, setErrores] = useState({})
   const [error, setError] = useState(null)
   const [guardando, setGuardando] = useState(false)
@@ -186,6 +198,7 @@ function FormServicio({ cliente, servicio, finanzas, onCerrar, onGuardado }) {
       .then(([u, k, cat, ext]) => {
         setUbic(u.filter((x) => x.activa || x.id === servicio.ubicacion_id))
         setContactos(k.filter((x) => x.activo || x.id === servicio.contacto_id))
+        setTodosContactos(k.filter((x) => x.activo))
         setCategorias(cat)
         setExternos(ext)
         const mios = servicio.id ? ext.filter((e) => e.servicio_id === servicio.id).map((e) => e.id) : []
@@ -283,10 +296,11 @@ function FormServicio({ cliente, servicio, finanzas, onCerrar, onGuardado }) {
         </div>
         <div className="cols2" style={{ gap: 14 }}>
           <Campo etiqueta="Ubicación de servicio" obligatorio error={errores.ubicacion_id}
-            ayuda={!ubic.length ? 'Primero agrega una ubicación en la pestaña Ubicaciones.' : undefined}>
-            <select value={v.ubicacion_id} onChange={set('ubicacion_id')}>
+            ayuda={!ubic.length ? 'El cliente no tiene ubicaciones: elige “+ Nueva ubicación…”.' : undefined}>
+            <select value={v.ubicacion_id} onChange={(e) => (e.target.value === '__nueva' ? setNuevaUbic(true) : set('ubicacion_id')(e))}>
               <option value="">Seleccionar</option>
               {ubic.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}
+              <option value="__nueva">+ Nueva ubicación…</option>
             </select>
           </Campo>
           <Campo etiqueta="Tipo de servicio" obligatorio error={errores.tipo} ayuda={!nuevo ? 'El tipo no se cambia: si cambia el acuerdo, finaliza este y crea otro.' : undefined}>
@@ -415,6 +429,10 @@ function FormServicio({ cliente, servicio, finanzas, onCerrar, onGuardado }) {
         </Ayuda>
         {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
       </div>
+      {nuevaUbic && (
+        <FormUbicacion cliente={cliente} ubicacion={{}} otras={ubic} contactos={todosContactos} editable
+          onCerrar={() => setNuevaUbic(false)} onGuardado={() => ubicacionCreada().catch(setError)} />
+      )}
     </Modal>
   )
 }

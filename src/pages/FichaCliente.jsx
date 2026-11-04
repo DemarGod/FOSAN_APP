@@ -212,7 +212,7 @@ function Contactos({ cliente, editable }) {
   )
 }
 
-function FormContacto({ cliente, contacto, hayPrincipal, onCerrar, onGuardado }) {
+export function FormContacto({ cliente, contacto, hayPrincipal, onCerrar, onGuardado }) {
   const nuevo = !contacto.id
   const inicial = useMemo(() => ({
     nombre: contacto.nombre || '', cargo: contacto.cargo || '', telefono: contacto.telefono || '',
@@ -326,7 +326,7 @@ function Ubicaciones({ cliente, editable, onCambio }) {
   )
 }
 
-function FormUbicacion({ cliente, ubicacion, otras, contactos, editable, onCerrar, onGuardado }) {
+export function FormUbicacion({ cliente, ubicacion, otras, contactos, editable, onCerrar, onGuardado }) {
   const nueva = !ubicacion.id
   const t = (x) => (x === null || x === undefined ? '' : String(x))
   const inicial = useMemo(() => ({

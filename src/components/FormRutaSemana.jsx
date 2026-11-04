@@ -159,7 +159,7 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
 
           {/* Barra para agregar filas */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '10px 18px', borderTop: `2px solid ${C.borde}`, background: C.suave }}>
-            <div style={{ flex: '0 1 340px', minWidth: 240 }}>
+          <div style={{ flex: '0 1 340px', minWidth: 240 }}>
               <BuscarCliente valor="" onElegir={(c) => agregarCliente(c.id)} />
             </div>
             <button className="btn" onClick={agregarFrecuentes} disabled={!conLimpieza.length}>
@@ -173,8 +173,8 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
               <strong style={{ font: '700 12px var(--font)', color: C.navy }}>Entregas y retiros por programar</strong>
               {pendientes.map((d) => (
                 <div key={d.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, font: '400 12px var(--font)' }}>
-                  <Chip tarea={d.tipo} /><strong>{d.cliente}</strong>
-                  <span style={{ color: C.gris }}>#{d.folio} · {d.banos || 'sin baños'}{d.fecha_programada ? ` · para el ${d.fecha_programada.slice(8, 10)}/${d.fecha_programada.slice(5, 7)}` : ''}</span>
+                  <Chip tarea={d.tipo} servicio={d.servicio_tipo} /><strong>{d.cliente}</strong>
+                  <span style={{ color: C.gris }}>#{d.folio} · {d.servicio_tipo === 'limpieza_fosas' ? 'fosa' : d.banos || 'sin baños'}</span>
                   <button className="btn" style={{ minHeight: 30, padding: '0 10px' }} onClick={() => agregarDespacho(d)}>Agregar a la ruta</button>
                 </div>
               ))}
@@ -232,7 +232,7 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
                       <td style={td}>{c.contacto_nombre || '—'}</td>
                       <td style={{ ...td, whiteSpace: 'nowrap' }}>{c.telefono || '—'}</td>
                       <td style={{ ...td, maxWidth: 220 }}>
-                        {l.tarea === 'limpieza' ? ([codigos, propios].filter(Boolean).join(' · ') || <span style={{ color: C.rojo }}>Sin baños</span>)
+                        {desp?.servicio_tipo === 'limpieza_fosas' ? 'Fosa' : l.tarea === 'limpieza' ? ([codigos, propios].filter(Boolean).join(' · ') || <span style={{ color: C.rojo }}>Sin baños</span>)
                           : desp ? <span>#{desp.folio} · {desp.banos}</span>
                             : <button className="btn" style={{ minHeight: 30, padding: '0 10px', borderColor: l.banos.length ? C.borde : C.amarillo }} onClick={() => abrirBanos(l)}>
                               {l.banos.length ? `${l.banos.length} elegido(s)` : 'Elegir baños'}

@@ -35,6 +35,15 @@ export const SEMAFORO = {
 }
 export const L_TAREA = { limpieza: 'Limpieza', entrega: 'Entrega', retiro: 'Retiro', cambio: 'Cambio' }
 
+// Tipo de servicio de cada despacho (limpieza de fosa, limpieza de baños propios…): { [despacho_id]: tipo }
+const conServicio = async (lista) => {
+  const ids = lista.map((d) => d.id).filter(Boolean)
+  if (!ids.length) return lista
+  const s = await rows(supabase.from('despachos').select('id, servicios_cliente(tipo)').in('id', ids)).catch(() => [])
+  const tipo = Object.fromEntries(s.map((x) => [x.id, x.servicios_cliente?.tipo || null]))
+  return lista.map((d) => ({ ...d, servicio_tipo: tipo[d.id] || null }))
+}
+
 // ── Planificación ─────────────────────────────────────────────────────────
 export const operadores = () => rows(supabase.from('v_operadores').select('*').order('nombre'))
 
@@ -100,10 +109,9 @@ export const duplicarRutaSemana = async (r) => {
 
 // Entregas y retiros pendientes que no están en ninguna ruta (cliente nuevo, contrato vencido…)
 export const porProgramar = () => rows(
-  supabase.from('v_despachos').select('*').eq('estado', 'programado').is('salida_id', null).order('fecha_programada')
-)
+  supabase.from('v_despachos').select('*').eq('estado', 'programado').is('salida_id', null).order('fecha_programada')).then(conServicio)
 export const despachosPorId = (ids) => (ids.length
-  ? rows(supabase.from('v_despachos').select('id, folio, tipo, estado, cliente_id, banos, cantidad').in('id', ids))
+  ? rows(supabase.from('v_despachos').select('id, folio, tipo, estado, cliente_id, banos, cantidad').in('id', ids)).then(conServicio)
   : Promise.resolve([]))
 export const banosDeClienteRuta = (clienteId) => rows(
   supabase.from('activos').select('id, codigo, modelos_bano(nombre, tipo)').eq('cliente_id', clienteId).eq('estado', 'en_arriendo').order('codigo')
@@ -133,7 +141,7 @@ export const diasDeRuta = async (rutaId) => {
   const [par, desp] = await Promise.all([
     rows(supabase.from('salida_paradas')
       .select('*, clientes(nombre, contacto_nombre, telefono, direccion, comuna, banos_propios)').in('salida_id', ids).order('orden')),
-    rows(supabase.from('v_despachos').select('id, folio, banos').in('salida_id', ids)),
+    rows(supabase.from('v_despachos').select('id, folio, banos').in('salida_id', ids)).then(conServicio),
   ])
   const clientes = [...new Set(par.map((p) => p.cliente_id))]
   const arr = clientes.length ? await rows(supabase.from('activos').select('id, codigo, cliente_id').eq('estado', 'en_arriendo').in('cliente_id', clientes).order('codigo')) : []
