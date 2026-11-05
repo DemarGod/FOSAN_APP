@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Modal from './Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
 import {
-  personalLista, guardarPersona, usuarioOcupado, crearAcceso, actualizarAcceso, asignarClave, eliminarCuenta, normalizarRut,
+  personalLista, guardarPersona, usuarioOcupado, crearAcceso, actualizarAcceso, asignarClave, eliminarCuenta, darDeBajaPersona, normalizarRut,
 } from '../lib/api'
 import { formatoRut, rutValido, formatoTel, telValido, correoValido } from '../lib/validar'
 import { useSesion, nombreRol } from '../lib/sesion'
@@ -35,7 +35,7 @@ export default function AdminPersonal() {
   const [lista, setLista] = useState(null)
   const [error, setError] = useState(null)
   const [texto, setTexto] = useState('')
-  const [filtroAcceso, setFiltroAcceso] = useState('todos')
+  const [filtroAcceso, setFiltroAcceso] = useState('vigentes')
   const [form, setForm] = useState(null)        // {} nueva · persona a editar
   const [ver, setVer] = useState(null)
   const [gestionar, setGestionar] = useState(null)
@@ -45,7 +45,7 @@ export default function AdminPersonal() {
 
   const filas = useMemo(() => {
     const t = texto.trim().toLowerCase(), tr = normalizarRut(texto)
-    return (lista || []).filter((x) => (filtroAcceso === 'todos' || acceso(x) === filtroAcceso)
+    return (lista || []).filter((x) => (filtroAcceso === 'todos' || (filtroAcceso === 'vigentes' ? x.activo !== false : acceso(x) === filtroAcceso))
       && (!t || x.nombre.toLowerCase().includes(t) || (x.perfiles?.usuario || '').includes(t)
         || (tr.length >= 3 && normalizarRut(x.rut).includes(tr))))
   }, [lista, texto, filtroAcceso])
@@ -59,7 +59,8 @@ export default function AdminPersonal() {
         </Campo>
         <Campo etiqueta="Acceso" style={{ width: 170 }}>
           <select value={filtroAcceso} onChange={(e) => setFiltroAcceso(e.target.value)}>
-            <option value="todos">Todos</option>
+            <option value="vigentes">Trabajando en FOSAN</option>
+            <option value="todos">Todos (incluye dados de baja)</option>
             <option value="activo">Activo</option>
             <option value="inactivo">Inactivo</option>
             <option value="sin">Sin acceso</option>
@@ -116,7 +117,7 @@ export function Reglas() {
   )
 }
 
-function Clave({ etiqueta, valor, onChange, error }) {
+export function Clave({ etiqueta, valor, onChange, error }) {
   const [ver, setVer] = useState(false)
   return (
     <Campo etiqueta={etiqueta} obligatorio error={error}>
@@ -404,9 +405,14 @@ function EliminarCuenta({ persona, paso, setPaso, onListo }) {
   const [texto, setTexto] = useState('')
   const [error, setError] = useState(null)
   const [borrando, setBorrando] = useState(false)
+  const [baja, setBaja] = useState(true)        // además, la persona ya no trabaja en FOSAN: se oculta de la lista
   const confirmar = async () => {
     setBorrando(true)
-    try { await eliminarCuenta(persona.perfiles.correo); onListo() } catch (e) { setError(e); setBorrando(false) }
+    try {
+      await eliminarCuenta(persona.perfiles.correo)
+      if (baja) await darDeBajaPersona(persona.id)
+      onListo()
+    } catch (e) { setError(e); setBorrando(false) }
   }
   if (paso === 1) {
     return (
@@ -421,12 +427,16 @@ function EliminarCuenta({ persona, paso, setPaso, onListo }) {
     )
   }
   return (
-    <Modal titulo="Confirmar eliminación" ancho={460} onCerrar={() => setPaso(0)} pie={<>
+    <Modal titulo="Confirmar eliminación" ancho={460} guardia={false} onCerrar={() => setPaso(0)} pie={<>
       <Boton onClick={() => setPaso(0)}>Cancelar</Boton>
       <Boton tipo="peligro" onClick={confirmar} disabled={texto !== 'ELIMINAR' || borrando}>{borrando ? 'Eliminando…' : 'Eliminar cuenta'}</Boton>
     </>}>
       <div style={{ padding: 18, display: 'grid', gap: 12, font: '400 14px/1.5 var(--font)' }}>
-        <span>Esta acción <b>no se puede deshacer</b>. Lo que registró {persona.nombre} se conserva y la persona queda "Sin acceso".</span>
+        <span>Esta acción <b>no se puede deshacer</b>. Lo que registró {persona.nombre} se conserva en el historial.</span>
+        <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', cursor: 'pointer' }}>
+          <input type="checkbox" checked={baja} onChange={(e) => setBaja(e.target.checked)} style={{ width: 18, height: 18, marginTop: 2 }} />
+          <span>Ya no trabaja en FOSAN: <b>quitarla de la lista de Personal</b> (se puede ver con el filtro "Todos").</span>
+        </label>
         <Campo etiqueta="Para confirmar, escribe ELIMINAR">
           <input value={texto} onChange={(e) => setTexto(e.target.value)} autoFocus autoComplete="off" />
         </Campo>

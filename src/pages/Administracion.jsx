@@ -13,6 +13,7 @@ import { hoyISO } from '../lib/costos'
 import { C, Icon, I, fechaHora } from '../lib/ui'
 import Configuracion from './Configuracion'
 import { useSesion, esDueno } from '../lib/sesion'
+import { TablaCambios } from '../lib/auditoria'
 
 const PESTANAS = [
   { v: 'personal', l: 'Personal y usuarios' },
@@ -303,10 +304,6 @@ const MODULO = {
   ventas: 'Reportes', costos: 'Reportes',
 }
 const L_ACC = { crear: 'Registro creado', modificar: 'Dato modificado', eliminar: 'Registro eliminado' }
-const SECRETOS = /clave|password|contrasen|token|hash/i
-const OCULTOS = new Set(['id', 'qr_token', 'creado_en', 'actualizado_en', 'rut_norm'])
-const txt = (x) => (x === null || x === undefined || x === '' ? '—' : x === true ? 'Sí' : x === false ? 'No' : typeof x === 'object' ? JSON.stringify(x) : String(x))
-const campoL = (k) => (k.charAt(0).toUpperCase() + k.slice(1)).replace(/_/g, ' ')
 const modulo = (r) => MODULO[r.tabla] || 'Otros'
 
 function HistorialCambios() {
@@ -371,7 +368,6 @@ function HistorialCambios() {
 }
 
 function DetalleCambio({ r, onCerrar }) {
-  const entradas = Object.entries(r.cambios || {}).filter(([k]) => !OCULTOS.has(k))
   const motivo = r.accion === 'modificar'
     ? (r.cambios?.motivo_desactivacion?.despues || r.cambios?.motivo?.despues)
     : (r.cambios?.motivo_desactivacion || r.cambios?.motivo)
@@ -391,21 +387,7 @@ function DetalleCambio({ r, onCerrar }) {
           {fila('Acción', L_ACC[r.accion] || r.accion)}
           {motivo && fila('Motivo', String(motivo))}
         </div>
-        <table>
-          <thead><tr><th>Campo</th>{r.accion === 'modificar' && <th>Valor anterior</th>}<th>{r.accion === 'modificar' ? 'Valor nuevo' : 'Valor'}</th></tr></thead>
-          <tbody>
-            {entradas.map(([k, x]) => {
-              const secreto = SECRETOS.test(k)
-              return (
-                <tr key={k}>
-                  <td style={{ fontWeight: 600 }}>{campoL(k)}</td>
-                  {r.accion === 'modificar' && <td>{secreto ? '••••' : txt(x?.antes)}</td>}
-                  <td>{secreto ? '••••' : txt(r.accion === 'modificar' ? x?.despues : x)}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+        <TablaCambios accion={r.accion} cambios={r.cambios} />
         <div style={{ display: 'flex', gap: 10, padding: '10px 12px', background: '#fef7e0', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)', font: '400 13px/1.45 var(--font)' }}>
           <Icon d={I.alert} size={18} color={C.amarillo} />
           <span><b>Importante.</b> Para contraseñas solo se registra quién la asignó y la fecha; nunca la clave ni su valor anterior.</span>

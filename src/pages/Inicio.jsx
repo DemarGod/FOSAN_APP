@@ -12,6 +12,7 @@ import { useSesion, puedeOperar, puedeVer, esDueno, verFinanzas } from '../lib/s
 import { inicioDatos, actividadPeriodo, avisosCalculados, inicioGraficos, mapaPuntos } from '../lib/api'
 import { hoyISO } from '../lib/costos'
 import { C, Icon, I, fecha, fechaHora, clp } from '../lib/ui'
+import { TablaCambios } from '../lib/auditoria'
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const PROHIBIDO = 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM5.6 5.6l12.8 12.8'
@@ -299,19 +300,11 @@ function DetalleTrabajo({ t, onCerrar, onAbrir }) {
 
 // ── 1.4 Ver registro (actividad) ──────────────────────────────────────────
 function DetalleRegistro({ a, onCerrar }) {
-  const cambios = a.cambios && typeof a.cambios === 'object' ? Object.entries(a.cambios) : []
-  const txt = (x) => (x === null || x === undefined ? '—' : typeof x === 'object' ? JSON.stringify(x) : String(x))
-  const ocultar = /clave|password|contrasena|token/i
   return (
     <Modal titulo={`${L_TABLA[a.tabla] || a.tabla} ${L_ACCION[a.accion] || a.accion}`} ancho={640} onCerrar={onCerrar} pie={<Boton onClick={onCerrar}>Cerrar</Boton>}>
       <div style={{ padding: 18, display: 'grid', gap: 10 }}>
         <span style={{ font: '400 14px var(--font)' }}><b>{a.etiqueta || '—'}</b> · {fechaHora(a.fecha)} · {a.usuario_nombre || '—'}</span>
-        <Tabla filas={cambios.filter(([k]) => !ocultar.test(k) && k !== 'id').map(([k, val]) => ({ id: k, k, val }))} vacio="Sin detalle." columnas={[
-          { k: 'k', label: 'Campo' },
-          ...(a.accion === 'modificar'
-            ? [{ k: 'a', label: 'Antes', render: (r) => txt(r.val?.antes) }, { k: 'd', label: 'Después', render: (r) => txt(r.val?.despues) }]
-            : [{ k: 'v', label: 'Valor', render: (r) => txt(r.val) }]),
-        ]} />
+        <TablaCambios accion={a.accion} cambios={a.cambios} />
       </div>
     </Modal>
   )

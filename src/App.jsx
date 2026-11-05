@@ -3,13 +3,13 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { SesionCtx } from './lib/sesion'
 import { leerRoles } from './lib/roles'
+import { tieneRutaAsignada } from './lib/rutasSemana'
 import Login from './components/Login'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
 import Tabbar from './components/Tabbar'
 import Calendario from './components/Calendario'
 import Inicio from './pages/Inicio'
-import Banos from './pages/Banos'
 import Inventario from './pages/Inventario'
 import Flota from './pages/Flota'
 import Mantenimiento from './pages/Mantenimiento'
@@ -100,7 +100,8 @@ export default function App() {
         const p = data || { nombre: usuario.email, rol: 'lectura' }
         await leerRoles(true).catch(() => {})   // nombres de los roles (script 38)
         const { data: per } = await supabase.from('permisos_rol').select('*').eq('rol', p.rol)
-        setPerfil({ ...p, permisos: Object.fromEntries((per || []).map((x) => [x.seccion, x])) })
+        const tieneRuta = data ? await tieneRutaAsignada(usuario.id).catch(() => false) : false   // quien tenga ruta asignada ve "Mi ruta"
+        setPerfil({ ...p, tieneRuta, permisos: Object.fromEntries((per || []).map((x) => [x.seccion, x])) })
       })
   }, [usuario])
 
@@ -135,7 +136,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={puedeVer(perfil, 'inicio') ? <Inicio onCalendario={() => setCal(true)} /> : <Navigate to="/mi-ruta" replace />} />
               <Route path="/inventario" element={puedeVer(perfil, 'banos') || puedeVer(perfil, 'insumos') || puedeVer(perfil, 'ubicaciones') ? <Inventario /> : <SinAcceso />} />
-              <Route path="/banos" element={puedeVer(perfil, 'banos') ? <Banos /> : <SinAcceso />} />
+              <Route path="/banos" element={<Navigate to="/inventario" replace />} />
               <Route path="/camiones" element={<Navigate to="/flota" replace />} />
               <Route path="/flota" element={puedeVer(perfil, 'transporte') ? <Flota /> : <SinAcceso />} />
               <Route path="/transporte" element={puedeVer(perfil, 'transporte') ? <Flota /> : <SinAcceso />} />

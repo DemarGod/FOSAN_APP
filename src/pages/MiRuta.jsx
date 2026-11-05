@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useSesion, esOperador, puedeVer } from '../lib/sesion'
-import { miRutaDeLaSemana, diasDeRuta, operadores, DIAS_RUTA, SEMAFORO, fechaDia, diaCorto, etiquetaSemana } from '../lib/rutasSemana'
-import { hoyISO } from '../lib/costos'
+import { useSesion, esOperador } from '../lib/sesion'
+import { miRutaDeLaSemana, proximaRutaDe, lunesDe, diasDeRuta, operadores, DIAS_RUTA, SEMAFORO, fechaDia, diaCorto, etiquetaSemana } from '../lib/rutasSemana'
+import { hoyISO, sumarDias } from '../lib/costos'
 import { C } from '../lib/ui'
 import { Cargando, Aviso } from '../components/Listado'
 import DiaRuta, { Punto } from '../components/DiaRuta'
@@ -21,16 +21,21 @@ export default function MiRuta() {
   const [dias, setDias] = useState(null)
   const [dia, setDia] = useState(null)
   const [error, setError] = useState(null)
+  const [salto, setSalto] = useState(0)              // 0 = esta semana, 1 = la siguiente…
+  const [proxima, setProxima] = useState(null)       // lunes de la próxima semana con ruta
 
   useEffect(() => {
     setSemana(null); setRutaId(null); setDias(null)
-    miRutaDeLaSemana(uid, hoy).then((s) => {
+    const ref = sumarDias(hoy, 7 * salto)
+    miRutaDeLaSemana(uid, ref).then((s) => {
       setSemana(s)
       setRutaId(s.rutas[0]?.id || null)
       const n = new Date(hoy + 'T12:00:00').getDay()
-      setDia(n >= 1 && n <= 5 ? n : 1)
+      setDia(salto === 0 && n >= 1 && n <= 5 ? n : 1)
     }).catch(setError)
-  }, [uid])
+    if (uid) proximaRutaDe(uid, ref).then(setProxima).catch(() => setProxima(null))
+  }, [uid, salto])
+  useEffect(() => { setSalto(0) }, [uid])
 
   const cargar = () => (rutaId ? diasDeRuta(rutaId).then(setDias).catch(setError) : Promise.resolve())
   useEffect(() => { setDias(null); cargar() }, [rutaId])
@@ -67,16 +72,26 @@ export default function MiRuta() {
         <p style={{ margin: '4px 0 0', font: '400 13px var(--font)', color: C.gris }}>
           Semana del {etiquetaSemana(semana.lunes)}{ruta ? ` · ${ruta.nombre} · ${ruta.activos?.codigo || 'sin vehículo'}` : ''}
         </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+          <button className="btn" onClick={() => setSalto((x) => x - 1)} disabled={salto <= -4}>← Semana anterior</button>
+          {salto !== 0 && <button className="btn" onClick={() => setSalto(0)}>Esta semana</button>}
+          <button className="btn" onClick={() => setSalto((x) => x + 1)} disabled={salto >= 8}>Semana siguiente →</button>
+        </div>
       </div>
       {panelDueno}
 
       {semana.rutas.length === 0 && (
         <div style={{ padding: 18, border: `1px solid ${C.borde}`, background: '#fff', font: '400 14px/1.5 var(--font)', borderRadius: 'var(--radio-md)' }}>
-          {dueno && !verComo ? 'Elige un operador arriba para ver su ruta de esta semana.'
-            : dueno ? 'Este operador no tiene una ruta asignada esta semana.'
-            : perfil?.rol !== 'operador' && puedeVer(perfil, 'rutas')
-              ? <>Mi ruta es para los operadores. Para revisar las rutas entra a <Link to="/operaciones?tab=rutas" style={{ color: C.azul, fontWeight: 600 }}>Operaciones → Rutas</Link>.</>
-              : 'No tienes una ruta asignada esta semana. Cuando te asignen una, aparecerá aquí.'}
+          {dueno && verComo ? 'Este operador no tiene una ruta asignada esta semana.'
+            : dueno && !perfil?.tieneRuta ? 'No tienes una ruta asignada esta semana. Para ver la de un operador, elígelo arriba en "Ver como operador".'
+            : `No tienes una ruta asignada ${salto === 0 ? 'esta semana' : 'en esa semana'}. Cuando te asignen una, aparecerá aquí.`}
+          {proxima && (
+            <div style={{ marginTop: 10 }}>
+              <button className="btn btn-azul" onClick={() => setSalto(Math.round((new Date(proxima + 'T12:00:00') - new Date(lunesDe(hoy) + 'T12:00:00')) / 6048e5))}>
+                Ver la próxima ruta: semana del {etiquetaSemana(proxima)}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

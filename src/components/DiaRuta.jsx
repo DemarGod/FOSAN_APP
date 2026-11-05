@@ -116,6 +116,8 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
                     <>
                       <button className="btn btn-verde" style={{ minHeight: 42, minWidth: 116 }} onClick={() => setMarcar({ p, estado: 'hecha' })}>Realizada</button>
                       <button className="btn" style={{ minHeight: 38, color: C.rojo, borderColor: C.rojo }} onClick={() => setMarcar({ p, estado: 'no_realizada' })}>No se pudo</button>
+                      {p.codigos?.length > 0 && servicio !== 'limpieza_fosas' && servicio !== 'limpieza_cliente' && <button className="btn" style={{ minHeight: 34, fontSize: 12 }} onClick={() => setMarcar({ p, estado: 'hecha', mantInicial: true })}
+                        title="Marca la parada como realizada e informa el baño con falla">⚠ Realizada · baño con falla</button>}
                     </>
                   ) : (
                     <button className="btn" style={{ minHeight: 38 }} onClick={() => correr(() => marcarParadaRuta(p.id, 'pendiente'))} disabled={ocupado}>Deshacer</button>
@@ -138,13 +140,13 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
 }
 
 // Confirmar una parada, con observación y aviso de mantención
-function Marcar({ p, estado, fecha, onCerrar, onListo }) {
+function Marcar({ p, estado, fecha, onCerrar, onListo, mantInicial = false }) {
   const [obs, setObs] = useState('')
   // Respaldo opcional (se guarda en Google Drive): firma de quien recibe y fotos
   const [firma, setFirma] = useState(null)
   const [firmante, setFirmante] = useState('')
   const [fotos, setFotos] = useState([])
-  const [mant, setMant] = useState(false)
+  const [mant, setMant] = useState(mantInicial)
   // Baños con falla: { [id]: { tipo, otro, retirado } } — cada baño con su propia mantención
   const [malos, setMalos] = useState({})
   const elegidos = Object.keys(malos)

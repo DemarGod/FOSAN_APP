@@ -17,7 +17,7 @@ import { useSesion, puedeOperar, esDueno } from '../lib/sesion'
 import { hoyISO, sumarDias } from '../lib/costos'
 import { C, Icon, I, fecha } from '../lib/ui'
 
-export const L_ESTADO_OP = { programada: 'Programada', realizada: 'Realizada', pendiente: 'Pendiente', cancelada: 'Cancelada' }
+export const L_ESTADO_OP = { programada: 'Programada', realizada: 'Realizada', pendiente: 'Atrasada', cancelada: 'Cancelada' }
 export const TONO_OP = { programada: 'info', realizada: 'ok', pendiente: 'atencion', cancelada: 'neutro' }
 const L_SERV = { arriendo_limpieza: 'Arriendo de baños químicos', limpieza_cliente: 'Limpieza de baños', limpieza_fosas: 'Limpieza de fosa' }
 const L_ACCION = { entrega: 'Entrega', retiro: 'Retiro', cambio: 'Cambio', limpieza: 'Limpieza' }
@@ -88,14 +88,14 @@ export default function OpProgramacion({ irARutas }) {
       </div>
 
       <div className="kpis">
-        {[['programada', 'Programadas', C.blanco], ['realizada', 'Realizadas', '#e6f4ea'], ['pendiente', 'Pendientes', '#fef7e0']].map(([k, l, bg]) => (
+        {[['programada', 'Programadas', C.blanco], ['realizada', 'Realizadas', '#e6f4ea'], ['pendiente', 'Atrasadas', '#fef7e0']].map(([k, l, bg]) => (
           <button key={k} type="button" className="indicador" onClick={() => filtrar({ estado: k })}
             style={{ display: 'block', textAlign: 'left', cursor: 'pointer', background: bg, ...(aplicado.estado === k ? { outline: `2px solid ${C.azul}`, outlineOffset: -2 } : {}) }}>
             <span>{l}</span><b>{datos ? cuenta(k) : '…'}</b>
           </button>
         ))}
         <div style={{ font: '400 12px/1.5 var(--font)', color: C.gris, alignSelf: 'center' }}>
-          Según el período filtrado. Pendiente = programada para un día que ya pasó y aún no realizada.
+          Según el período filtrado. Atrasada = programada para un día que ya pasó y aún no realizada.
         </div>
       </div>
 
@@ -235,7 +235,8 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
     }).catch(setError)
     serviciosDe(v.cliente_id).then((s) => {
       const vig = s.filter((x) => x.estado === 'vigente')
-      setServs(vig)
+      // Los arriendos finalizados se muestran solo para retirar sus baños
+      setServs([...vig, ...s.filter((x) => x.estado !== 'vigente' && x.tipo === 'arriendo_limpieza')])
       operacionesDeServicios(vig.map((x) => x.id)).then(setOpsServ).catch(() => setOpsServ([]))
     }).catch(setError)
   }, [v.cliente_id])
@@ -243,9 +244,6 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
     setAsignados([])
     if (v.cliente_id) banosAsignados(v.cliente_id, v.ubicacion_id || null).then((a) => {
       setAsignados(a)
-      // Desde "Solicitar retiro" de la ficha del equipo: el baño ya queda elegido
-      const pre = op._retirar && a.find((x) => x.id === op._retirar)
-      if (pre) setRetirar((r) => (r.length ? r : [pre]))
     }).catch(() => {})
   }, [v.cliente_id, v.ubicacion_id])
   useEffect(() => { rutasDeSemana(lunesDe(v.fecha || hoyISO())).then(setRutas).catch(() => setRutas([])) }, [v.fecha])
@@ -269,6 +267,23 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
   const libresCupo = conCupo ? Math.max(0, cupo.solicitada - cupo.asignadas - cupo.reservadas + (accion === 'cambio' ? retirar.length : 0)) : Infinity
   const exceso = conCupo ? Math.max(0, entregar.length - libresCupo) : 0
   const servicioSel = servs.find((s) => s.id === v.servicio_id)
+  const finalizado = servicio?.estado && servicio.estado !== 'vigente'
+  // Servicio finalizado: solo retiro
+  useEffect(() => { if (nueva && finalizado && v.accion !== 'retiro') setV((p) => ({ ...p, accion: 'retiro' })) }, [finalizado])
+  // Si en la ubicación hay un solo servicio posible, queda elegido (también al venir de "Solicitar retiro")
+  useEffect(() => {
+    if (!nueva || v.servicio_id || !v.ubicacion_id) return
+    const posibles = serviciosUbic.filter((s) => !fosaUsada(s) && (s.estado === 'vigente' || op._retirar))
+    const arr = op._retirar ? posibles.filter((s) => s.tipo === 'arriendo_limpieza') : posibles
+    const unico = arr.length === 1 ? arr[0] : (op._retirar && arr.filter((s) => s.estado === 'vigente').length === 1 ? arr.find((s) => s.estado === 'vigente') : null)
+    if (unico) setV((p) => ({ ...p, servicio_id: unico.id }))
+  }, [servs, v.ubicacion_id])
+  // Desde "Solicitar retiro" de la ficha del equipo: el baño queda elegido (y se repone si se cambió el servicio)
+  useEffect(() => {
+    if (!op._retirar || !conRetiro || retirar.length) return
+    const pre = asignados.find((x) => x.id === op._retirar)
+    if (pre) setRetirar([pre])
+  }, [asignados, v.servicio_id, accion])
   const set = (k) => (e) => {
     const val = e.target.value
     setV((p) => ({ ...p, [k]: val, ...(k === 'cliente_id' ? { ubicacion_id: '', servicio_id: '' } : {}), ...(k === 'ubicacion_id' ? { servicio_id: '' } : {}) }))
@@ -291,9 +306,14 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
     if (!v.cliente_id) e.cliente_id = 'Elige el cliente.'
     if (!v.ubicacion_id) e.ubicacion_id = 'Elige la ubicación.'
     if (!v.servicio_id) e.servicio_id = 'Elige el servicio.'
+    else if (servicio && v.fecha && (nueva || v.fecha !== inicial.fecha || v.servicio_id !== inicial.servicio_id || v.accion !== inicial.accion)) {
+      if (v.fecha < servicio.fecha_inicio) e.fecha = `El servicio ${servicio.codigo} empieza el ${fecha(servicio.fecha_inicio)}: programa desde esa fecha.`
+      else if (accion !== 'retiro' && finalizado) e.servicio_id = `El servicio ${servicio.codigo} está finalizado: solo se programa el retiro.`
+      else if (accion !== 'retiro' && servicio.fecha_termino && v.fecha > servicio.fecha_termino) e.fecha = `El servicio ${servicio.codigo} termina el ${fecha(servicio.fecha_termino)}: después solo se programa el retiro.`
+    }
     if (conEntrega && !entregar.length) e.entregar = 'Elige las unidades a entregar.'
     else if (exceso > 0 && !urgente) e.entregar = `Supera lo solicitado por el servicio (${cupo.solicitada}). Edita la cantidad del servicio o marca la urgencia.`
-    else if (exceso > 0 && motivoUrg.trim().length < 5) e.entregar = 'Explica el motivo de la urgencia.'
+    else if ((exceso > 0 || urgente) && motivoUrg.trim().length < 5) e.entregar = 'Escribe el motivo de la urgencia (obligatorio).'
     if (conRetiro && !retirar.length) e.retirar = 'Elige las unidades a retirar.'
     if (!v.vehiculo_id) e.vehiculo_id = 'Elige la patente.'
     if (!v.responsable_id) e.responsable_id = 'Elige el responsable.'
@@ -319,13 +339,13 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
   }
 
   return (
-    <Modal titulo={nueva ? 'Nueva operación' : `Editar programación ${op.folio}`} ancho={920} onCerrar={cerrar} pie={<>
+    <Modal titulo={nueva ? 'Nueva operación' : `Editar programación ${op.folio}`} ancho={920} guardia={false} onCerrar={cerrar} pie={<>
       <Boton onClick={cerrar}>Cancelar</Boton>
       <Boton tipo="principal" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar programación'}</Boton>
     </>}>
       <div style={{ padding: 18, display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(240px, 1fr)', gap: 18 }} className="cols2">
         <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
-          <Campo etiqueta="Fecha programada" obligatorio error={errores.fecha}><input type="date" value={v.fecha} min={nueva ? hoyISO() : undefined} onChange={set('fecha')} /></Campo>
+          <Campo etiqueta="Fecha programada" obligatorio error={errores.fecha}><input type="date" value={v.fecha} min={nueva ? [hoyISO(), servicio?.fecha_inicio || ''].sort().pop() : undefined} onChange={set('fecha')} /></Campo>
           <Campo etiqueta="Cliente" obligatorio error={errores.cliente_id}>
             <BuscarCliente valor={v.cliente_id} onElegir={(c) => set('cliente_id')({ target: { value: c.id } })} disabled={!nueva} />
           </Campo>
@@ -334,18 +354,20 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
               <option value="">Seleccionar</option>{ubic.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}
             </select>
           </Campo>
-          <Campo etiqueta="Servicio" obligatorio error={errores.servicio_id} ayuda={v.cliente_id && !serviciosUbic.length ? 'No hay servicios vigentes en esta ubicación: créalo en la ficha del cliente.' : undefined}>
+          <Campo etiqueta="Servicio" obligatorio error={errores.servicio_id} ayuda={v.cliente_id && !serviciosUbic.length ? 'No hay servicios vigentes en esta ubicación: créalo en la ficha del cliente.'
+            : servicio ? `Desde ${fecha(servicio.fecha_inicio)}${servicio.fecha_termino ? ' hasta ' + fecha(servicio.fecha_termino) : ' · sin término'}.` : undefined}>
             <select value={v.servicio_id} onChange={set('servicio_id')} disabled={!serviciosUbic.length}>
               <option value="">Seleccionar</option>{serviciosUbic.map((s) => {
                 const usada = fosaUsada(s)
-                return <option key={s.id} value={s.id} disabled={!!usada}>{s.codigo} · {L_SERV[s.tipo] || s.tipo}{usada ? ` · ya programada (${usada.folio})` : ''}</option>
+                return <option key={s.id} value={s.id} disabled={!!usada}>{s.codigo} · {L_SERV[s.tipo] || s.tipo}{usada ? ` · ya programada (${usada.folio})` : ''}{s.estado !== 'vigente' ? ' · finalizado: solo retiro' : ''}</option>
               })}
             </select>
           </Campo>
           {esArriendo && (
             <Campo etiqueta="Solo arriendo: acción" obligatorio>
               <select value={v.accion} onChange={set('accion')}>
-                <option value="entrega">Entrega</option><option value="retiro">Retiro</option><option value="cambio">Cambio (retirar unos y dejar otros)</option><option value="limpieza">Limpieza puntual</option>
+                {finalizado ? <option value="retiro">Retiro</option>
+                  : <><option value="entrega">Entrega</option><option value="retiro">Retiro</option><option value="cambio">Cambio (retirar unos y dejar otros)</option><option value="limpieza">Limpieza puntual</option></>}
               </select>
             </Campo>
           )}
@@ -353,6 +375,7 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
             tope={urgente ? Infinity : libresCupo}
             ayuda={conCupo
               ? `Servicio ${servicioSel?.codigo || ''}: solicita ${cupo.solicitada} · asignadas ${cupo.asignadas} · en otras entregas programadas ${Math.max(0, cupo.reservadas)} · disponibles para esta entrega ${libresCupo}.`
+                + (entregar.length > 0 && entregar.length < libresCupo ? ` Entrega parcial: quedarán ${libresCupo - entregar.length} por entregar en otra operación.` : '')
               : 'Solo baños disponibles y no reservados por otra operación.'} />}
           {conCupo && (entregar.length >= libresCupo || urgente) && (
             <div style={{ display: 'grid', gap: 10, padding: 16, border: `3px solid ${C.amarillo}`, background: '#fef7e0', borderRadius: 'var(--radio-md)' }}>
@@ -366,7 +389,7 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
                 Es urgente: entregar más unidades de las solicitadas
               </label>
               {urgente && (
-                <Campo etiqueta="Motivo de la urgencia" obligatorio>
+                <Campo etiqueta="Motivo de la urgencia" obligatorio error={errores.entregar && urgente && motivoUrg.trim().length < 5 ? 'Obligatorio' : undefined}>
                   <textarea value={motivoUrg} onChange={(e) => setMotivoUrg(e.target.value)} maxLength={300} style={{ minHeight: 60 }} placeholder="Ej.: evento del cliente hoy, se regulariza el servicio mañana." />
                 </Campo>
               )}

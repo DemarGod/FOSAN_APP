@@ -15,6 +15,7 @@ import {
 import { formatoTel, telValido, correoValido, decimalDe } from '../lib/validar'
 import { useSesion, puedeOperar, verFinanzas } from '../lib/sesion'
 import { C, Icon, I, fecha, fechaHora } from '../lib/ui'
+import { TablaCambios } from '../lib/auditoria'
 
 const PESTANAS = [
   { v: 'resumen', l: 'Resumen' },
@@ -248,13 +249,13 @@ export function FormContacto({ cliente, contacto, hayPrincipal, onCerrar, onGuar
   }
 
   return (
-    <Modal titulo={nuevo ? 'Agregar contacto' : 'Editar contacto'} ancho={620} onCerrar={cerrar} pie={<>
+    <Modal titulo={nuevo ? 'Agregar contacto' : 'Editar contacto'} ancho={620} guardia={false} onCerrar={cerrar} pie={<>
       <Boton onClick={cerrar}>Cancelar</Boton>
       <Boton tipo="principal" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar contacto'}</Boton>
     </>}>
       <div className="cols2" style={{ gap: 14, padding: 18 }}>
         <Campo etiqueta="Nombre completo" obligatorio error={errores.nombre}>
-          <input value={v.nombre} onChange={set('nombre')} maxLength={80} autoFocus />
+          <input value={v.nombre} onChange={set('nombre')} maxLength={80} autoFocus style={{ textTransform: 'uppercase' }} />
         </Campo>
         <Campo etiqueta="Cargo"><input value={v.cargo} onChange={set('cargo')} maxLength={60} placeholder="Encargada de obra" /></Campo>
         <Campo etiqueta="Teléfono" error={errores.telefono}>
@@ -318,7 +319,7 @@ function Ubicaciones({ cliente, editable, onCambio }) {
           ]} />
         </div>
       )}
-      <Ayuda>Nombre y dirección son obligatorios. Desactivar una ubicación conserva su historial; no se puede si tiene baños FOSAN o servicios vigentes.</Ayuda>
+      <Ayuda>Nombre y dirección son obligatorios. <b>Para desactivar</b> una ubicación: Ver / Editar → desmarca "Ubicación activa" → Guardar. Conserva su historial y no se puede si tiene baños FOSAN o servicios vigentes.</Ayuda>
       {form && <FormUbicacion cliente={cliente} ubicacion={form} otras={(lista || []).filter((x) => x.id !== form.id)}
         contactos={contactos.filter((k) => k.activo || k.id === form.contacto_id)} editable={editable}
         onCerrar={() => setForm(null)} onGuardado={() => { setForm(null); cargar(); onCambio() }} />}
@@ -390,7 +391,7 @@ export function FormUbicacion({ cliente, ubicacion, otras, contactos, editable, 
   }
 
   return (
-    <Modal titulo={nueva ? 'Agregar ubicación' : soloVer ? v.nombre : 'Editar ubicación'} ancho={860} onCerrar={cerrar} pie={soloVer
+    <Modal titulo={nueva ? 'Agregar ubicación' : soloVer ? v.nombre : 'Editar ubicación'} ancho={860} guardia={false} onCerrar={cerrar} pie={soloVer
       ? <Boton onClick={onCerrar}>Cerrar</Boton>
       : <>
         <Boton onClick={cerrar}>Cancelar</Boton>
@@ -408,7 +409,7 @@ export function FormUbicacion({ cliente, ubicacion, otras, contactos, editable, 
         <div className="cols2" style={{ gap: 14 }}>
           <div style={{ display: 'grid', gap: 14, alignContent: 'start' }}>
             <Campo etiqueta="Nombre de ubicación" obligatorio error={errores.nombre}>
-              <input value={v.nombre} onChange={set('nombre')} maxLength={80} placeholder="OBRA CENTRO" autoFocus={nueva} />
+              <input value={v.nombre} onChange={set('nombre')} maxLength={80} placeholder="OBRA CENTRO" autoFocus={nueva} style={{ textTransform: 'uppercase' }} />
             </Campo>
             <Campo etiqueta="Comuna" obligatorio error={errores.comuna}>
               <input value={v.comuna} onChange={set('comuna')} maxLength={60} list="comunas-maule-ub" placeholder="Seleccionar o escribir" />
@@ -466,8 +467,6 @@ export function FormUbicacion({ cliente, ubicacion, otras, contactos, editable, 
 // ── Historial (2.10) ──────────────────────────────────────────────────────
 const L_TABLA = { clientes: 'Cliente', cliente_contactos: 'Contacto', servicios_cliente: 'Servicio', ubicaciones: 'Ubicación' }
 const L_ACCION = { crear: 'creación', modificar: 'modificación', eliminar: 'eliminación' }
-const OCULTOS = new Set(['id', 'cliente_id', 'rut_norm', 'creado_en', 'actualizado_en', 'desactivado_por'])
-const valorTexto = (x) => (x === null || x === undefined || x === '' ? '—' : typeof x === 'object' ? JSON.stringify(x) : String(x))
 
 function Historial({ cliente }) {
   const [lista, setLista] = useState(null)
@@ -493,19 +492,7 @@ function Historial({ cliente }) {
           pie={<Boton onClick={() => setVer(null)}>Cerrar</Boton>}>
           <div style={{ padding: 18, display: 'grid', gap: 10, font: '400 14px/1.5 var(--font)' }}>
             <span className="text-muted">{fechaHora(ver.fecha)} · {ver.usuario_nombre || '—'} · {L_ACCION[ver.accion] || ver.accion}</span>
-            <table>
-              <thead><tr><th>Campo</th>{ver.accion === 'modificar' ? <><th>Antes</th><th>Después</th></> : <th>Valor</th>}</tr></thead>
-              <tbody>
-                {Object.entries(ver.cambios || {}).filter(([k]) => !OCULTOS.has(k)).map(([k, x]) => (
-                  <tr key={k}>
-                    <td style={{ fontWeight: 600 }}>{k.replace(/_/g, ' ')}</td>
-                    {ver.accion === 'modificar'
-                      ? <><td>{valorTexto(x?.antes)}</td><td>{valorTexto(x?.despues)}</td></>
-                      : <td>{valorTexto(x)}</td>}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <TablaCambios accion={ver.accion} cambios={ver.cambios} />
           </div>
         </Modal>
       )}

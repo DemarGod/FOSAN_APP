@@ -7,13 +7,13 @@ import Modal from './Modal'
 import ImportarInventario from './ImportarInventario'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
 import {
-  equiposLista, siguienteNumeroUnidad, equipoPorNumero, crearEquipo,
+  equiposLista, mantencionesAbiertas, siguienteNumeroUnidad, equipoPorNumero, crearEquipo,
   catCategorias, catModelos, catUbicacionesInternas, clientesLista, ubicacionesDe,
 } from '../lib/api'
 import { exportarTabla } from '../lib/excel'
 import { useSesion, puedeOperar, esDueno } from '../lib/sesion'
 import { hoyISO } from '../lib/costos'
-import { C, I, COLORES_BANO } from '../lib/ui'
+import { C, I, COLORES_BANO, fecha } from '../lib/ui'
 
 export const L_SITUACION = {
   disponible: 'Disponible', reservado: 'Reservado', asignado: 'Asignado', en_traslado: 'En traslado',
@@ -48,7 +48,11 @@ export default function InvEquipos() {
   const [exportar, setExportar] = useState(false)
   const [aviso, setAviso] = useState(null)
   const [importar, setImportar] = useState(false)
-  const cargar = () => equiposLista().then(setDatos).catch(setError)
+  const [mants, setMants] = useState({})        // mantención abierta por equipo
+  const cargar = () => {
+    equiposLista().then(setDatos).catch(setError)
+    mantencionesAbiertas().then((m) => setMants(Object.fromEntries([...m].reverse().map((x) => [x.activo_id, x])))).catch(() => setMants({}))
+  }
   useEffect(() => { cargar() }, [])
 
   const lista = datos || []
@@ -151,7 +155,13 @@ export default function InvEquipos() {
           } columnas={[
             { k: 'codigo', label: 'N.º unidad', render: (e) => <b>{e.codigo}</b> },
             { k: 'cat', label: 'Categoría / modelo', render: (e) => [e.categoria, e.modelo].filter(Boolean).join(' · ') || '—' },
-            { k: 'situacion', label: 'Situación', render: (e) => <Estado tono={TONO_SITUACION[e.situacion]}>{L_SITUACION[e.situacion] || e.situacion || '—'}</Estado> },
+            { k: 'situacion', label: 'Situación', render: (e) => (
+              <div>
+                <Estado tono={TONO_SITUACION[e.situacion]}>{L_SITUACION[e.situacion] || e.situacion || '—'}</Estado>
+                {mants[e.id] && <div style={{ fontSize: 12, color: '#b06000', marginTop: 3 }} title="Tiene un mantenimiento abierto (ver en Mantenimiento)">
+                  🔧 {mants[e.id].folio} · {mants[e.id].iniciada_en ? 'en curso' : `programada ${fecha(mants[e.id].fecha_programada)}`}</div>}
+              </div>
+            ) },
             { k: 'condicion', label: 'Condición', render: (e) => <Estado tono={TONO_CONDICION[e.condicion]}>{L_CONDICION[e.condicion] || e.condicion || '—'}</Estado> },
             {
               k: 'ubicacion', label: 'Ubicación', render: (e) => (
@@ -209,6 +219,7 @@ function FormEquipo({ onCerrar, onGuardado, onAbrir }) {
   const [clientes, setClientes] = useState([])
   const [obras, setObras] = useState([])
   const [existe, setExiste] = useState(null)
+  const [siguiente, setSiguiente] = useState(null)   // siguiente número libre
   const [errores, setErrores] = useState({})
   const [error, setError] = useState(null)
   const [guardando, setGuardando] = useState(false)
@@ -220,6 +231,7 @@ function FormEquipo({ onCerrar, onGuardado, onAbrir }) {
         setCat(eq); setMod(m.filter((x) => x.activo)); setUbi(u.filter((x) => x.activa)); setClientes(cl)
         const bq = eq.find((x) => x.nombre === 'Baño químico')
         const bodega = u.find((x) => x.activa && x.tipo === 'bodega')
+        setSiguiente(n || null)
         setV((p) => ({ ...p, numero: String(n || ''), categoria_id: bq?.id || '', ubicacion_id: bodega?.id || '' }))
       }).catch(setError)
   }, [])
@@ -270,7 +282,7 @@ function FormEquipo({ onCerrar, onGuardado, onAbrir }) {
   }
 
   return (
-    <Modal titulo="Agregar equipo" ancho={820} onCerrar={cerrar} pie={<>
+    <Modal titulo="Agregar equipo" ancho={820} guardia={false} onCerrar={cerrar} pie={<>
       <Boton onClick={cerrar}>Cancelar</Boton>
       <Boton tipo="principal" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar equipo'}</Boton>
     </>}>
@@ -278,7 +290,7 @@ function FormEquipo({ onCerrar, onGuardado, onAbrir }) {
         <div className="cols2" style={{ gap: 14 }}>
           {esCliente
             ? <Campo etiqueta="Número de unidad" ayuda="Equipo del cliente: recibe un código EXT-### automático."><input value="EXT automático" readOnly /></Campo>
-            : <Campo etiqueta="Número de unidad" obligatorio ayuda="Sugerido: el siguiente libre. No se cambia ni se reutiliza." error={errores.numero}>
+            : <Campo etiqueta="Número de unidad" obligatorio ayuda={`Sugerido: el siguiente libre${siguiente ? ` (${siguiente})` : ''}. No se cambia ni se reutiliza.`} error={errores.numero}>
               <input value={v.numero} onChange={(e) => set('numero')({ target: { value: e.target.value.replace(/\D/g, '').slice(0, 7) } })} inputMode="numeric" />
             </Campo>}
           <Campo etiqueta="Categoría" obligatorio error={errores.categoria_id}>
@@ -310,6 +322,11 @@ function FormEquipo({ onCerrar, onGuardado, onAbrir }) {
               <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}><input type="radio" checked={!esCliente} onChange={() => set('propiedad')({ target: { value: 'empresa' } })} /> Empresa</label>
               <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}><input type="radio" checked={esCliente} onChange={() => set('propiedad')({ target: { value: 'cliente' } })} /> Cliente</label>
             </div>
+            <span style={{ font: '400 12px/1.4 var(--font)', color: C.gris }}>
+              {esCliente
+                ? 'Equipo del cliente: es suyo, no de FOSAN. Se registra para atenderlo en el servicio "Limpieza de baños del cliente" (rutas y respaldos). No cuenta como inventario propio ni se arrienda.'
+                : 'Equipo de FOSAN: cuenta en el inventario y se puede arrendar.'}
+            </span>
           </div>
           {!esCliente && (
             <Campo etiqueta="Ubicación inicial" obligatorio error={errores.ubicacion_id}>
@@ -353,7 +370,9 @@ function FormEquipo({ onCerrar, onGuardado, onAbrir }) {
 
         {existe && (
           <Ayuda tono="error">
-            El número {existe.codigo} ya existe. <Boton onClick={() => onAbrir(existe)} style={{ minHeight: 30, padding: '4px 10px', marginLeft: 6 }}>Abrir ficha</Boton>
+            El número {existe.codigo} ya existe.{siguiente ? <> El siguiente libre es el <b>{siguiente}</b>.</> : null}
+            {siguiente && <Boton tipo="principal" onClick={() => { setV((p) => ({ ...p, numero: String(siguiente) })); setExiste(null); setErrores({}) }} style={{ minHeight: 30, padding: '4px 10px', marginLeft: 6 }}>Usar N.º {siguiente}</Boton>}
+            <Boton onClick={() => onAbrir(existe)} style={{ minHeight: 30, padding: '4px 10px', marginLeft: 6 }}>Abrir ficha del {existe.codigo}</Boton>
           </Ayuda>
         )}
         <Ayuda>La situación inicial se calcula según ubicación, condición y reservas. Guardar crea el registro inicial de trazabilidad.</Ayuda>

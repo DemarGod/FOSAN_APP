@@ -135,7 +135,7 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
       {!datos ? <div style={{ padding: 18, color: C.gris }}>{error ? String(error.message || error) : 'Cargando…'}</div> : (
         <>
           <div style={{ padding: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-            <Campo l="Nombre"><input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={60} placeholder="Ruta norte" /></Campo>
+            <Campo l="Nombre"><input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={60} placeholder="RUTA NORTE" style={{ textTransform: 'uppercase' }} /></Campo>
             <Campo l={`Semana · ${etiquetaSemana(semana)}`}>
               <input type="date" value={semana} disabled={bloq.size > 0} onChange={(e) => e.target.value && setSemana(lunesDe(e.target.value))} />
             </Campo>

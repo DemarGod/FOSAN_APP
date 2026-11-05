@@ -394,7 +394,7 @@ function RegistrarResultado({ m, finanzas, onCerrar, onListo }) {
 
 // ── Exportar ──────────────────────────────────────────────────────────────
 function Exportar({ todas, filtradas, finanzas, onCerrar }) {
-  const [fmt, setFmt] = useState('csv')
+  const [fmt, setFmt] = useState('xlsx')   // XLSX: columnas con ancho; el CSV no guarda formato
   const [solo, setSolo] = useState(true)
   const descargar = () => {
     const cols = ['folio', 'clase', 'identificacion', 'tipo', 'fecha_programada', 'responsable', 'estado', 'vencido', 'fecha_realizacion', 'resultado', 'trabajo_requerido', 'trabajo_realizado', 'condicion_final', 'motivo_cancelacion', ...(finanzas ? ['costo'] : [])]
@@ -419,6 +419,7 @@ function Exportar({ todas, filtradas, finanzas, onCerrar }) {
           <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}><input type="radio" checked={fmt === 'csv'} onChange={() => setFmt('csv')} /> CSV</label>
           <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}><input type="radio" checked={fmt === 'xlsx'} onChange={() => setFmt('xlsx')} /> XLSX</label>
         </div>
+        <span className="text-muted" style={{ fontSize: 12 }}>XLSX: para leer en Excel (columnas con su ancho). CSV: texto plano para otros sistemas; Excel no ajusta sus columnas.</span>
         <label style={{ display: 'flex', gap: 8, alignItems: 'center', font: '600 13px var(--font)' }}>
           <input type="checkbox" checked={solo} onChange={(e) => setSolo(e.target.checked)} /> Solo resultados filtrados ({filtradas.length} de {todas.length})
         </label>

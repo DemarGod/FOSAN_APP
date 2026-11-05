@@ -249,7 +249,7 @@ function FormArticulo({ articulo, ubic, onCerrar, onGuardado }) {
   }
 
   return (
-    <Modal titulo={nuevo ? 'Agregar artículo' : `Editar ${articulo.codigo}`} ancho={820} onCerrar={cerrar} pie={<>
+    <Modal titulo={nuevo ? 'Agregar artículo' : `Editar ${articulo.codigo}`} ancho={820} guardia={false} onCerrar={cerrar} pie={<>
       <Boton onClick={cerrar}>Cancelar</Boton>
       <Boton tipo="principal" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar artículo'}</Boton>
     </>}>

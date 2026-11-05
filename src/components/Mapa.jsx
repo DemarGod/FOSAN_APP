@@ -25,6 +25,7 @@ export const LEYENDA = [
   { l: 'Limpieza · 1 por semana', c: COLORES.limpieza1 },
   { l: 'Limpieza · 2 o más', c: COLORES.limpieza2 },
   { l: 'Bodega', c: COLORES.bodega },
+  { l: 'Sin baños por ahora', c: COLORES.otro },
 ]
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))

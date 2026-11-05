@@ -10,9 +10,10 @@ import { Boton, Campo, Tabla, Pestanas, Estado, Ayuda } from '../components/Base
 import { L_SITUACION, L_CONDICION, TONO_SITUACION, TONO_CONDICION } from '../components/InvEquipos'
 import {
   equipoPorQr, ultimaEntrega, ordenesEquipo, movimientosDe, mantencionesEquipo, personalActivo, actualizarEquipo, moverEquipo, darDeBaja,
-  catModelos, catUbicacionesInternas, crearMantencion, documentosDe, observacionesDe, agregarObservacion,
+  catModelos, catUbicacionesInternas, crearMantencion, observacionesDe, agregarObservacion,
 } from '../lib/api'
 import { useSesion, puedeOperar, esDueno } from '../lib/sesion'
+import Documentos from '../components/Documentos'
 import { hoyISO } from '../lib/costos'
 import { C, Icon, I, fecha, fechaHora, COLORES_BANO, L_ESTADO_MANT } from '../lib/ui'
 
@@ -127,12 +128,11 @@ const Fila = ({ l, v }) => (
 
 // ── 3.5 Datos generales ───────────────────────────────────────────────────
 function Datos({ e, editable }) {
-  const [docs, setDocs] = useState([])
+  const { perfil } = useSesion()
   const [obs, setObs] = useState([])
   const [nueva, setNueva] = useState('')
   const [error, setError] = useState(null)
   useEffect(() => {
-    documentosDe(e.id).then(setDocs).catch(() => {})
     observacionesDe(e.id).then(setObs).catch(() => {})
   }, [e.id])
   const guardarObs = async () => {
@@ -153,15 +153,10 @@ function Datos({ e, editable }) {
           <Fila l="Observaciones" v={e.notas} />
         </div>
       </div>
-      <details>
-        <summary style={{ cursor: 'pointer', font: '600 14px var(--font)' }}>Documentos ({docs.length}) y observaciones ({obs.length})</summary>
+      {e.propiedad === 'empresa' && <Documentos activo={{ id: e.id, codigo: e.codigo, tipo: e.tipo }} editable={editable} quitar={esDueno(perfil)} />}
+      <details open={obs.length > 0}>
+        <summary style={{ cursor: 'pointer', font: '600 14px var(--font)' }}>Observaciones ({obs.length})</summary>
         <div style={{ display: 'grid', gap: 10, marginTop: 10 }}>
-          {docs.map((d) => (
-            <div key={d.id} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <Icon d={I.doc} size={16} color={C.azul} /><span style={{ flex: 1 }}>{d.titulo} · {fecha(d.creado_en)}</span>
-              <a href={d.archivo_url} target="_blank" rel="noreferrer">Descargar</a>
-            </div>
-          ))}
           {obs.map((o) => <div key={o.id} style={{ font: '400 13px/1.5 var(--font)' }}><span className="text-muted">{fechaHora(o.creado_en)} · </span>{o.texto}</div>)}
           {editable && (
             <div style={{ display: 'flex', gap: 8 }}>
@@ -201,7 +196,7 @@ function EditarDatos({ e, onCerrar, onGuardado }) {
     } catch (x) { setError(x); setGuardando(false) }
   }
   return (
-    <Modal titulo="Editar datos" ancho={520} onCerrar={cerrar} pie={<>
+    <Modal titulo="Editar datos" ancho={520} guardia={false} onCerrar={cerrar} pie={<>
       <Boton onClick={cerrar}>Cancelar</Boton>
       <Boton tipo="principal" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar cambios'}</Boton>
     </>}>

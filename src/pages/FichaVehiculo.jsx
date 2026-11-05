@@ -7,9 +7,10 @@ import FormVehiculo from '../components/FormVehiculo'
 import { Boton, Tabla, Estado, Ayuda, Pestanas } from '../components/Base'
 import { L_FLOTA, CambiarDisponibilidad, Desactivar } from './Flota'
 import { supabase } from '../lib/supabase'
-import { flota, vehiculos, parametros, mantenimiento, documentosDe, observacionesDe, agregarObservacion } from '../lib/api'
+import { flota, vehiculos, parametros, mantenimiento, observacionesDe, agregarObservacion } from '../lib/api'
+import Documentos from '../components/Documentos'
 import { TIPOS_VEHICULO, costoKmVehiculo, mapaParametros } from '../lib/costos'
-import { useSesion, puedeOperar, verFinanzas } from '../lib/sesion'
+import { useSesion, puedeOperar, verFinanzas, esDueno } from '../lib/sesion'
 import { C, Icon, I, fecha, fechaHora, clp } from '../lib/ui'
 
 const TONO = { disponible: 'ok', en_ruta: 'info', mantenimiento: 'atencion', fuera_servicio: 'error', baja: 'neutro' }
@@ -113,11 +114,11 @@ const Fila = ({ l, v }) => (
 
 // ── Datos generales + documentos y observaciones ──────────────────────────
 function Datos({ v, tec, ckm, finanzas, editable }) {
-  const [docs, setDocs] = useState([])
+  const { perfil } = useSesion()
   const [obs, setObs] = useState([])
   const [nueva, setNueva] = useState('')
   const [error, setError] = useState(null)
-  useEffect(() => { documentosDe(v.id).then(setDocs).catch(() => {}); observacionesDe(v.id).then(setObs).catch(() => {}) }, [v.id])
+  useEffect(() => { observacionesDe(v.id).then(setObs).catch(() => {}) }, [v.id])
   const guardarObs = async () => {
     if (!nueva.trim()) return
     try { await agregarObservacion(v.id, nueva.trim()); setObs(await observacionesDe(v.id)); setNueva('') } catch (x) { setError(x) }
@@ -136,21 +137,16 @@ function Datos({ v, tec, ckm, finanzas, editable }) {
           <Fila l="Capacidades" v={cap || null} />
           <Fila l="Fecha de registro" v={v.fecha_registro ? fecha(v.fecha_registro) : null} />
           <Fila l="Observaciones" v={v.observaciones} />
-          {finanzas && tec && <>
-            <Fila l="Rendimiento vacío / cargado" v={tec.rend_vacio ? `${tec.rend_vacio} / ${tec.rend_cargado ?? tec.rend_vacio} km/L` : null} />
-            <Fila l="Costo por km" v={ckm ? `${clp(ckm)}/km` : null} />
-          </>}
+          {finanzas ? <>
+            <Fila l="Rendimiento vacío / cargado" v={tec?.rend_vacio ? `${tec.rend_vacio} / ${tec.rend_cargado ?? tec.rend_vacio} km/L` : 'Sin datos: complétalos en "Editar datos"'} />
+            <Fila l="Costo por km" v={ckm ? `${clp(ckm)}/km` : 'Sin datos suficientes (rendimiento, valor y vida útil)'} />
+          </> : <Fila l="Costos" v="Solo con el permiso «Ver montos» (Administración → Roles y permisos)" />}
         </div>
       </div>
-      <details open={obs.length > 0 || docs.length > 0}>
-        <summary style={{ cursor: 'pointer', font: '600 14px var(--font)' }}>Documentos ({docs.length}) y observaciones ({obs.length})</summary>
+      <Documentos activo={{ id: v.id, codigo: v.codigo, tipo: v.tipo_vehiculo === 'camioneta' ? 'camioneta' : 'camion' }} editable={editable} quitar={esDueno(perfil)} />
+      <details open={obs.length > 0}>
+        <summary style={{ cursor: 'pointer', font: '600 14px var(--font)' }}>Observaciones ({obs.length})</summary>
         <div style={{ display: 'grid', gap: 10, marginTop: 10 }}>
-          {docs.map((d) => (
-            <div key={d.id} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <Icon d={I.doc} size={16} color={C.azul} /><span style={{ flex: 1 }}>{d.titulo} · {fecha(d.creado_en)}</span>
-              <a href={d.archivo_url} target="_blank" rel="noreferrer">Descargar</a>
-            </div>
-          ))}
           {obs.map((o) => <div key={o.id} style={{ font: '400 13px/1.5 var(--font)' }}><span className="text-muted">{fechaHora(o.creado_en)} · </span>{o.texto}</div>)}
           {editable && (
             <div style={{ display: 'flex', gap: 8 }}>

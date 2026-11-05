@@ -4,6 +4,7 @@ import Modal from '../components/Modal'
 import { historial } from '../lib/api'
 import { nombreRol } from '../lib/sesion'
 import { C, fechaHora } from '../lib/ui'
+import { TablaCambios, campoL, valorL } from '../lib/auditoria'
 
 // Sección de la app a la que pertenece cada tabla auditada
 const SECCION = {
@@ -25,19 +26,12 @@ const PERIODOS = [
   { v: '0', l: 'Todo' },
 ]
 
-const campo = (k) => (k.charAt(0).toUpperCase() + k.slice(1)).replace(/_/g, ' ')
-const valor = (v) => {
-  if (v === null || v === undefined || v === '') return '—'
-  if (v === true) return 'Sí'
-  if (v === false) return 'No'
-  if (typeof v === 'object') return JSON.stringify(v)
-  return String(v)
-}
 
 function resumen(r) {
   if (r.accion !== 'modificar') return `${ACCION[r.accion]} el registro`
   return Object.entries(r.cambios || {})
-    .map(([k, c]) => `${campo(k)}: ${valor(c.antes)} → ${valor(c.despues)}`)
+    .filter(([k]) => !OCULTOS.includes(k))
+    .map(([k, c]) => `${campoL(k)}: ${valorL(k, c?.antes)} → ${valorL(k, c?.despues)}`)
     .join(' · ')
 }
 
@@ -119,32 +113,12 @@ export default function Historial() {
 }
 
 function Detalle({ r, onCerrar }) {
-  const modifico = r.accion === 'modificar'
-  const filas = Object.entries(r.cambios || {}).filter(([k]) => modifico || !OCULTOS.includes(k))
   return (
     <Modal titulo={`${r.accionL} · ${r.seccionL} · ${r.registroL}`} ancho={680} onCerrar={onCerrar}>
       <div style={{ padding: '14px 18px', font: '400 13px/1.5 var(--font)', color: C.gris }}>
         {r.usuarioL} ({r.rolL}) · {r.fechaL}
       </div>
-      <div className="scroller">
-        <table style={{ minWidth: 480 }}>
-          <thead>
-            {modifico
-              ? <tr><th>Campo</th><th>Antes</th><th>Después</th></tr>
-              : <tr><th>Campo</th><th>{r.accion === 'crear' ? 'Valor guardado' : 'Valor eliminado'}</th></tr>}
-          </thead>
-          <tbody>
-            {filas.map(([k, c]) => (
-              <tr key={k}>
-                <td style={{ fontWeight: 600 }}>{campo(k)}</td>
-                {modifico
-                  ? <><td>{valor(c.antes)}</td><td>{valor(c.despues)}</td></>
-                  : <td>{valor(c)}</td>}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <div style={{ padding: '0 18px 18px' }}><TablaCambios accion={r.accion} cambios={r.cambios} /></div>
     </Modal>
   )
 }
