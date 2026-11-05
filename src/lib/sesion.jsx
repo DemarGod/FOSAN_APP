@@ -11,7 +11,7 @@ export const puedeEditar = esDueno
 // El operador solo usa Mi ruta y Mi perfil (no ve el resto de la app)
 export const esOperador = (perfil) => perfil?.rol === 'operador'
 // Mi ruta: los operadores siempre. Dueño y secretaria solo si el dueño lo activa en Administración → Roles y permisos.
-export const verMiRuta = (perfil, ajustes = {}) => esOperador(perfil)
+export const verMiRuta = (perfil, ajustes = {}) => esOperador(perfil) || !!perfil?.tieneRuta   // quien tenga una ruta asignada, siempre
   || (!!perfil?.rol && ajustes['menu_mi_ruta_' + perfil.rol] === '1')   // dueño, secretaria, ventas u otro rol
 // Administración: el dueño ve todo; la secretaria solo la pestaña Mi perfil. El resto ve "Mi perfil" suelto en el menú.
 export const verAdministracion = (perfil) => esDueno(perfil) || perfil?.rol === 'secretaria'

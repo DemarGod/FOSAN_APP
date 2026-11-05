@@ -13,9 +13,28 @@ export const PESTANAS = [
 
 const hoy = () => new Date().toISOString().slice(0, 10)
 
-function descargar(libro, nombre) {
+// Ancho de cada columna según su contenido (mín. 8, máx. 60 caracteres), para que los textos largos
+// (motivos, observaciones) no se monten sobre las columnas vecinas al abrir en Excel.
+export function ajustarAnchos(hoja) {
+  if (!hoja || !hoja['!ref']) return hoja
+  const r = XLSX.utils.decode_range(hoja['!ref'])
+  const cols = []
+  for (let c = r.s.c; c <= r.e.c; c++) {
+    let max = 8
+    for (let f = r.s.r; f <= r.e.r; f++) {
+      const celda = hoja[XLSX.utils.encode_cell({ r: f, c })]
+      if (celda && celda.v != null) max = Math.max(max, ...String(celda.w ?? celda.v).split('\n').map((x) => x.length + 2))
+    }
+    cols.push({ wch: Math.min(max, 60) })
+  }
+  hoja['!cols'] = cols
+  return hoja
+}
+export function guardarLibro(libro, nombre) {
+  libro.SheetNames.forEach((n) => ajustarAnchos(libro.Sheets[n]))
   XLSX.writeFile(libro, nombre)
 }
+function descargar(libro, nombre) { guardarLibro(libro, nombre) }
 
 /** Libro completo: una pestaña por vista. */
 export async function exportarLibro() {

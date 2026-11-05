@@ -134,6 +134,16 @@ export const miRutaDeLaSemana = async (uid, hoy = hoyISO()) => {
   const rutas = await rows(supabase.from('rutas_semana').select('*, activos(codigo)').eq('operador_id', uid).eq('lunes', lunes).order('nombre'))
   return { lunes, rutas }
 }
+// Próxima semana con ruta asignada (para avisar "tu próxima ruta es…")
+export const proximaRutaDe = async (uid, desde = hoyISO()) => {
+  const r = await rows(supabase.from('rutas_semana').select('lunes').eq('operador_id', uid).gt('lunes', lunesDe(desde)).order('lunes').limit(1))
+  return r[0]?.lunes || null
+}
+// ¿Tiene ruta esta semana o una próxima? (para mostrar "Mi ruta" en su menú)
+export const tieneRutaAsignada = async (uid) => {
+  const { count } = await supabase.from('rutas_semana').select('id', { count: 'exact', head: true }).eq('operador_id', uid).gte('lunes', lunesDe(hoyISO()))
+  return (count || 0) > 0
+}
 export const diasDeRuta = async (rutaId) => {
   const viajes = await rows(supabase.from('v_salidas').select('*').eq('ruta_semana_id', rutaId).order('fecha'))
   const ids = viajes.map((v) => v.id)

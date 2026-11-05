@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import * as XLSX from 'xlsx'
+import { guardarLibro } from '../lib/excel'
 import Modal from '../components/Modal'
 import { Boton, Campo, Tabla, Ayuda, Pestanas } from '../components/Base'
 import Analisis from './Analisis'
@@ -360,7 +361,7 @@ function Exportar({ inf, columnas, filas, totales, filtros, onCerrar }) {
       const hoja = XLSX.utils.json_to_sheet(filas.map((r) => Object.fromEntries(columnas.map((c) => [c.l, typeof r[c.k] === 'number' ? r[c.k] : (c.fmt ? c.fmt(r[c.k]) : r[c.k]) ?? '']))))
       XLSX.utils.book_append_sheet(libro, hoja, inf.titulo.slice(0, 31))
       if (incluir) XLSX.utils.book_append_sheet(libro, XLSX.utils.aoa_to_sheet([['Reporte', inf.titulo], ...filtros, [], ['Totales', ''], ...totales, [], ['Generado', new Date().toLocaleString('es-CL')]]), 'Filtros y totales')
-      XLSX.writeFile(libro, `${limpio}.xlsx`)
+      guardarLibro(libro, `${limpio}.xlsx`)
     } else {
       const w = window.open('', '_blank', 'width=1000,height=900')
       if (!w) return setError('El navegador bloqueó la ventana. Permite ventanas emergentes para generar el PDF.')

@@ -13,7 +13,7 @@ import {
 import { formatoPesos, numeroDe, decimalDe, fechaValida, FECHA_MIN, FECHA_MAX } from '../lib/validar'
 import { DIAS, hoyISO } from '../lib/costos'
 import { C, Icon, I, fecha, clp } from '../lib/ui'
-import { FormUbicacion } from '../pages/FichaCliente'
+import { FormUbicacion, FormContacto } from '../pages/FichaCliente'
 
 export const L_TIPO_SERV = {
   arriendo_limpieza: 'Arriendo de baños con limpieza',
@@ -179,6 +179,17 @@ function FormServicio({ cliente, servicio, finanzas, onCerrar, onGuardado }) {
   const elegidosIniciales = useRef([])
   const [nuevoExt, setNuevoExt] = useState(null)
   const [nuevaUbic, setNuevaUbic] = useState(false)
+  const [nuevoContacto, setNuevoContacto] = useState(false)
+  // Contacto creado desde el mismo formulario del servicio: queda elegido
+  const contactoCreado = async () => {
+    setNuevoContacto(false)
+    const k = await contactosDe(cliente.id)
+    const antes = new Set(todosContactos.map((x) => x.id))
+    setContactos(k.filter((x) => x.activo || x.id === servicio.contacto_id))
+    setTodosContactos(k.filter((x) => x.activo))
+    const nuevo = k.find((x) => x.activo && !antes.has(x.id))
+    if (nuevo) setV((p) => ({ ...p, contacto_id: nuevo.id }))
+  }
   const [todosContactos, setTodosContactos] = useState([])
   // Ubicación creada desde aquí: se recarga la lista y queda elegida
   const ubicacionCreada = async () => {
@@ -285,7 +296,7 @@ function FormServicio({ cliente, servicio, finanzas, onCerrar, onGuardado }) {
   }
 
   return (
-    <Modal titulo={nuevo ? 'Agregar servicio' : `Editar acuerdo ${servicio.codigo}`} ancho={900} onCerrar={cerrar} pie={<>
+    <Modal titulo={nuevo ? 'Agregar servicio' : `Editar acuerdo ${servicio.codigo}`} ancho={900} guardia={false} onCerrar={cerrar} pie={<>
       <Boton onClick={cerrar}>Cancelar</Boton>
       <Boton tipo="principal" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar servicio'}</Boton>
     </>}>
@@ -322,9 +333,10 @@ function FormServicio({ cliente, servicio, finanzas, onCerrar, onGuardado }) {
             <input type="checkbox" checked={v.sin_termino} onChange={set('sin_termino')} /> Sin fecha de término
           </label>
           <Campo etiqueta="Contacto responsable">
-            <select value={v.contacto_id} onChange={set('contacto_id')}>
+            <select value={v.contacto_id} onChange={(e) => (e.target.value === '__nuevo' ? setNuevoContacto(true) : set('contacto_id')(e))}>
               <option value="">Sin contacto</option>
               {contactos.map((k) => <option key={k.id} value={k.id}>{k.nombre}{k.correo ? ` (${k.correo})` : ''}</option>)}
+              <option value="__nuevo">+ Agregar contacto nuevo…</option>
             </select>
           </Campo>
           {finanzas && (
@@ -429,6 +441,10 @@ function FormServicio({ cliente, servicio, finanzas, onCerrar, onGuardado }) {
         </Ayuda>
         {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
       </div>
+      {nuevoContacto && (
+        <FormContacto cliente={cliente} contacto={{}} hayPrincipal={todosContactos.some((x) => x.principal)}
+          onCerrar={() => setNuevoContacto(false)} onGuardado={() => contactoCreado().catch(setError)} />
+      )}
       {nuevaUbic && (
         <FormUbicacion cliente={cliente} ubicacion={{}} otras={ubic} contactos={todosContactos} editable
           onCerrar={() => setNuevaUbic(false)} onGuardado={() => ubicacionCreada().catch(setError)} />

@@ -477,14 +477,23 @@ export const avisosCalculados = async () => {
   const dias = (f) => Math.round((new Date(f + 'T12:00:00') - hoy) / 864e5)
   const cuando = (f) => { const n = dias(f); return n === 0 ? 'Hoy' : n === 1 ? 'Mañana' : n < 0 ? `Hace ${-n} día(s)` : `En ${n} días` }
   const seguro = (p) => p.catch(() => [])
-  const [ev, cli, man, ins, des] = await Promise.all([
+  const [ev, cli, man, ins, des, doc] = await Promise.all([
     seguro(rows(supabase.from('eventos').select('id, fecha, tipo, titulo').gte('fecha', iso(hoy)).lte('fecha', en(7)).order('fecha'))),
     seguro(rows(supabase.from('clientes').select('id, nombre, fecha_fin_contrato').gte('fecha_fin_contrato', iso(hoy)).lte('fecha_fin_contrato', en(15)))),
     seguro(rows(supabase.from('mantenciones').select('id, tipo, fecha_programada, estado, activos(codigo)').in('estado', ['programada', 'proxima', 'urgente']).lte('fecha_programada', en(7)))),
     seguro(rows(supabase.from('insumos').select('id, nombre, stock_actual, stock_minimo, unidad'))),
     seguro(rows(supabase.from('despachos').select('id, folio, tipo, fecha_programada, clientes(nombre)').eq('estado', 'programado').lte('fecha_programada', iso(hoy)))),
+    seguro(rows(supabase.from('documentos_activo').select('id, titulo, tipo, fecha_vencimiento, activo_id, activos(codigo, tipo, qr_token)')
+      .eq('anulado', false).not('fecha_vencimiento', 'is', null).lte('fecha_vencimiento', en(30)))),
   ])
   const lista = []
+  // Documentos que vencen en 30 días o ya vencieron (revisión técnica, permiso, seguro…)
+  doc.forEach((d) => lista.push({
+    id: 'doc-' + d.id + '-' + d.fecha_vencimiento, fecha: d.fecha_vencimiento, origen: 'Documentos',
+    a: d.activos?.qr_token ? `/activo/${d.activos.qr_token}` : null,
+    nivel: dias(d.fecha_vencimiento) < 0 ? 'alerta' : dias(d.fecha_vencimiento) <= 7 ? 'aviso' : 'info',
+    texto: `${d.titulo} de ${d.activos?.codigo || 'un equipo'} ${dias(d.fecha_vencimiento) < 0 ? 'venció' : 'vence'} ${cuando(d.fecha_vencimiento).toLowerCase()}`,
+  }))
   ev.forEach((e) => lista.push({
     id: 'ev-' + e.id + '-' + e.fecha, fecha: e.fecha, origen: 'Calendario',
     nivel: e.tipo === 'alerta' ? 'alerta' : dias(e.fecha) <= 1 ? 'aviso' : 'info',
@@ -568,6 +577,22 @@ export const asignarClave = async (correo, clave) => {
   if (error) throw error
 }
 // Solo el dueño, con doble confirmación. La persona queda "Sin acceso" y su historial se conserva.
+// Mantenimientos abiertos (programados o en curso), uno por equipo: para mostrarlo en Inventario
+export const mantencionesAbiertas = () => rows(supabase.from('mantenciones').select('activo_id, folio, fecha_programada, iniciada_en')
+  .in('estado', ['programada', 'proxima', 'urgente']).order('fecha_programada'))
+// Cada persona cambia su propia contraseña: se comprueba la actual y luego se guarda la nueva
+export const cambiarMiClave = async (correo, actual, nueva) => {
+  if (!correo) throw new Error('No se encontró tu correo de acceso.')
+  const { error: e1 } = await supabase.auth.signInWithPassword({ email: correo, password: actual })
+  if (e1) throw new Error('La contraseña actual no es correcta.')
+  const { error } = await supabase.auth.updateUser({ password: nueva })
+  if (error) throw error
+}
+// La persona deja de trabajar en FOSAN: se oculta de Personal y de las listas de responsables (no se borra)
+export const darDeBajaPersona = async (id) => {
+  const { error } = await supabase.from('personal').update({ activo: false }).eq('id', id)
+  if (error) throw error
+}
 export const eliminarCuenta = async (correo) => {
   const { error } = await supabase.rpc('eliminar_usuario', { p_correo: correo })
   if (error) throw error
@@ -952,6 +977,32 @@ export const abrirRespaldo = async (r) => {
     if (!a) throw new Error('No se encontró el archivo en Google Drive.')
     if (w) w.location.href = a.url; else window.location.href = a.url
   } catch (x) { if (w) w.close(); throw x }
+}
+
+// ── Documentos de vehículos y equipos (se guardan en Google Drive) ─────────
+export const TIPOS_DOCUMENTO = {
+  revision_tecnica: 'Revisión técnica', permiso_circulacion: 'Permiso de circulación', seguro: 'Seguro / SOAP',
+  certificado: 'Certificado', factura: 'Factura', guia_despacho: 'Guía de despacho', otro: 'Otro',
+}
+export const subirDocumento = async (activo, archivo, { tipo, titulo, vence }) => {
+  if (archivo.size > 10 * 1024 * 1024) throw new Error('El archivo pesa más de 10 MB.')
+  const final = /^image\//.test(archivo.type) ? await comprimirImagen(archivo) : archivo
+  const nombre = `${new Date().toISOString().slice(0, 10)}_${(titulo || final.name || 'documento').replace(/[^A-Za-z0-9 ._-]/g, '_')}${/\.[a-z0-9]{2,4}$/i.test(final.name || '') ? (final.name.match(/\.[a-z0-9]{2,4}$/i)[0]) : ''}`
+  const r = await llamarDrive({ accion: 'subir', carpeta: `DOCUMENTOS ${activo.codigo || activo.id}`, nombre, tipo: final.type || 'application/octet-stream', base64: await aBase64(final) })
+  const { error } = await supabase.rpc('registrar_documento', {
+    p_activo: activo.id, p_tipo: tipo, p_titulo: titulo, p_url: 'drive:' + r.id, p_vence: vence || null, p_kb: Math.round((final.size || 0) / 1024),
+  })
+  if (error) throw error
+}
+export const abrirDocumento = async (d) => {
+  if (String(d.archivo_url).startsWith('drive:')) return abrirRespaldo({ ruta: d.archivo_url })
+  if (/^https?:/.test(d.archivo_url)) return window.open(d.archivo_url, '_blank')
+  const { data } = await supabase.storage.from('fosan').createSignedUrl(d.archivo_url, 3600)
+  if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+}
+export const quitarDocumento = async (id) => {
+  const { error } = await supabase.rpc('quitar_documento', { p_id: id })
+  if (error) throw error
 }
 
 // ── Logística: baños disponibles para despachar ──────────────────────────
