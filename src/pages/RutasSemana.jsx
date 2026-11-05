@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSesion, esDueno } from '../lib/sesion'
+import { useSesion, esDueno, puedeOperar } from '../lib/sesion'
 import {
   rutasDeSemana, avanceSemana, operadores, porProgramar, borrarRutaSemana, duplicarRutaSemana, diasDeRuta,
   DIAS_RUTA, SEMAFORO, lunesDe, fechaDia, diaCorto, etiquetaSemana,
@@ -16,7 +16,8 @@ const miles = (n) => Number(n || 0).toLocaleString('es-CL')
 // Planificación: rutas de lunes a viernes, una por operador y vehículo
 export default function RutasSemana() {
   const { perfil } = useSesion()
-  const planifica = esDueno(perfil) || perfil?.rol === 'administrador'
+  // Planifica quien tenga Operaciones → Registrar en Roles y permisos (igual que es_planificador() en la base, script 44)
+  const planifica = esDueno(perfil) || puedeOperar(perfil, 'rutas')
   const hoy = hoyISO()
   const [lunes, setLunes] = useState(lunesDe(hoy))
   const [rutas, setRutas] = useState(null)
