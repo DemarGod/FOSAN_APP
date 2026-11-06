@@ -75,7 +75,7 @@ export default function FichaVehiculo({ token }) {
           <Chip titulo="Odómetro" fondo="#e6f4ea">{miles(v.kilometraje)}</Chip>
           <Boton tipo="principal" icono={I.lapiz} onClick={() => setModal('editar')} disabled={!editable || baja || !tec}>Editar datos</Boton>
           <Boton onClick={() => setModal('disp')} disabled={!editable || baja}>Cambiar disponibilidad</Boton>
-          <button type="button" className="btn" onClick={() => setModal('baja')} disabled={!editable || baja} style={{ color: C.rojo, borderColor: C.rojo }}>Desactivar</button>
+          <button type="button" className="btn" onClick={() => setModal('baja')} disabled={!editable || baja} style={{ color: C.rojo, borderColor: C.rojo }}>Dar de baja</button>
         </div>
         {baja && <Ayuda tono="atencion" style={{ marginTop: 12 }}>Desactivado{v.fecha_baja ? ` el ${fecha(v.fecha_baja)}` : ''}{v.motivo_baja ? ` · ${v.motivo_baja}` : ''}. Se conserva todo su historial.</Ayuda>}
       </div>

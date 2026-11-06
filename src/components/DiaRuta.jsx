@@ -65,6 +65,7 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
               style={{ flex: '1 1 160px', border: `1px solid ${C.borde}`, font: '600 15px var(--font)', padding: '10px 12px', minHeight: 46, borderRadius: 'var(--radio-sm)' }} />
             <button className="btn btn-azul" onClick={iniciar} disabled={ocupado} style={{ minHeight: 46 }}>Iniciar ruta del día</button>
           </div>
+          <span style={{ font: '400 12px/1.4 var(--font)', color: C.gris }}>Al iniciar el día aparecen en cada parada los botones <b>Realizada</b> y <b>No se pudo</b> para marcarla (con fotos, firma y aviso de baño con falla).</span>
         </div>
       )}
 

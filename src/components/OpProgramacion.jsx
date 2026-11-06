@@ -8,7 +8,7 @@ import BuscarCliente from './BuscarCliente'
 import { RespaldoModal, ConfirmarEjecucion } from './OpRespaldos'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
 import {
-  operaciones, banosDeOperacion, banosAsignados, banosDisponibles, crearDespacho, editarOperacion, cancelarOperacion,
+  operaciones, banosDeOperacion, banosAsignados, banosConRetiroProgramado, banosDisponibles, crearDespacho, editarOperacion, cancelarOperacion,
   ubicacionesDe, serviciosDe, vehiculos, personalActivo, operacionPorFolio, cupoServicio, registrarExceso, operacionesDeServicios,
 } from '../lib/api'
 import { rutasDeSemana, lunesDe } from '../lib/rutasSemana'
@@ -206,6 +206,7 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
   const [rutas, setRutas] = useState([])
   const [libres, setLibres] = useState([])
   const [asignados, setAsignados] = useState([])
+  const [enRetiro, setEnRetiro] = useState({})        // baños que ya tienen un retiro programado (en otra operación)
   const [entregar, setEntregar] = useState([])
   const [retirar, setRetirar] = useState([])
   const [errores, setErrores] = useState({})
@@ -241,10 +242,11 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
     }).catch(setError)
   }, [v.cliente_id])
   useEffect(() => {
-    setAsignados([])
-    if (v.cliente_id) banosAsignados(v.cliente_id, v.ubicacion_id || null).then((a) => {
-      setAsignados(a)
-    }).catch(() => {})
+    setAsignados([]); setEnRetiro({})
+    if (v.cliente_id) {
+      banosAsignados(v.cliente_id, v.ubicacion_id || null).then(setAsignados).catch(() => {})
+      banosConRetiroProgramado(v.cliente_id).then(setEnRetiro).catch(() => setEnRetiro({}))
+    }
   }, [v.cliente_id, v.ubicacion_id])
   useEffect(() => { rutasDeSemana(lunesDe(v.fecha || hoyISO())).then(setRutas).catch(() => setRutas([])) }, [v.fecha])
 
@@ -267,6 +269,9 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
   const libresCupo = conCupo ? Math.max(0, cupo.solicitada - cupo.asignadas - cupo.reservadas + (accion === 'cambio' ? retirar.length : 0)) : Infinity
   const exceso = conCupo ? Math.max(0, entregar.length - libresCupo) : 0
   const servicioSel = servs.find((s) => s.id === v.servicio_id)
+  // Para retirar: solo los que no tienen ya un retiro programado en otra operación
+  const retirables = asignados.filter((a) => !enRetiro[a.id] || enRetiro[a.id].despacho_id === op.id)
+  const yaEnRetiro = asignados.filter((a) => enRetiro[a.id] && enRetiro[a.id].despacho_id !== op.id)
   const finalizado = servicio?.estado && servicio.estado !== 'vigente'
   // Servicio finalizado: solo retiro
   useEffect(() => { if (nueva && finalizado && v.accion !== 'retiro') setV((p) => ({ ...p, accion: 'retiro' })) }, [finalizado])
@@ -281,9 +286,9 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
   // Desde "Solicitar retiro" de la ficha del equipo: el baño queda elegido (y se repone si se cambió el servicio)
   useEffect(() => {
     if (!op._retirar || !conRetiro || retirar.length) return
-    const pre = asignados.find((x) => x.id === op._retirar)
+    const pre = retirables.find((x) => x.id === op._retirar)
     if (pre) setRetirar([pre])
-  }, [asignados, v.servicio_id, accion])
+  }, [asignados, enRetiro, v.servicio_id, accion])
   const set = (k) => (e) => {
     const val = e.target.value
     setV((p) => ({ ...p, [k]: val, ...(k === 'cliente_id' ? { ubicacion_id: '', servicio_id: '' } : {}), ...(k === 'ubicacion_id' ? { servicio_id: '' } : {}) }))
@@ -375,7 +380,9 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
             tope={urgente ? Infinity : libresCupo}
             ayuda={conCupo
               ? `Servicio ${servicioSel?.codigo || ''}: solicita ${cupo.solicitada} · asignadas ${cupo.asignadas} · en otras entregas programadas ${Math.max(0, cupo.reservadas)} · disponibles para esta entrega ${libresCupo}.`
-                + (entregar.length > 0 && entregar.length < libresCupo ? ` Entrega parcial: quedarán ${libresCupo - entregar.length} por entregar en otra operación.` : '')
+                + (entregar.length > 0 ? (entregar.length < libresCupo
+                  ? ` Con esta entrega: ${entregar.length} de ${libresCupo}. Entrega parcial: quedarán ${libresCupo - entregar.length} por entregar en otra operación.`
+                  : ` Con esta entrega se completa lo solicitado.`) : '')
               : 'Solo baños disponibles y no reservados por otra operación.'} />}
           {conCupo && (entregar.length >= libresCupo || urgente) && (
             <div style={{ display: 'grid', gap: 10, padding: 16, border: `3px solid ${C.amarillo}`, background: '#fef7e0', borderRadius: 'var(--radio-md)' }}>
@@ -396,8 +403,9 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
               {exceso > 0 && <strong style={{ font: '700 14px var(--font)', color: C.rojo }}>Esta entrega supera lo solicitado en {exceso} unidad(es).</strong>}
             </div>
           )}
-          {conRetiro && <Unidades titulo={accion === 'cambio' ? 'Unidades a retirar' : 'Unidades'} disponibles={asignados} elegidas={retirar} setElegidas={setRetirar} error={errores.retirar}
-            ayuda="Solo los asignados a este cliente en esta ubicación." />}
+          {conRetiro && <Unidades titulo={accion === 'cambio' ? 'Unidades a retirar' : 'Unidades'} disponibles={retirables} elegidas={retirar} setElegidas={setRetirar} error={errores.retirar}
+            ayuda={'Solo los asignados a este cliente en esta ubicación.' + (yaEnRetiro.length
+              ? ` No aparecen porque ya tienen su retiro programado: ${yaEnRetiro.map((a) => `${a.codigo} (${enRetiro[a.id].folio})`).join(', ')}.` : '')} />}
           {tipoServ && !esArriendo && <Ayuda>{tipoServ === 'limpieza_fosas' ? 'Fosa: no se eligen baños.' : 'Limpieza de baños del cliente: se atienden sus equipos externos.'}</Ayuda>}
         </div>
         <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
@@ -534,7 +542,7 @@ function Cancelar({ o, onCerrar, onListo }) {
 
 // ── 4.4a Exportar ─────────────────────────────────────────────────────────
 function Exportar({ todas, filtradas, onCerrar }) {
-  const [fmt, setFmt] = useState('csv')
+  const [fmt, setFmt] = useState('xlsx')
   const [solo, setSolo] = useState(true)
   const descargar = () => {
     const cols = ['folio', 'fecha', 'servicio_accion', 'cliente', 'ubicacion', 'unidades', 'patente', 'responsable', 'ruta', 'estado']

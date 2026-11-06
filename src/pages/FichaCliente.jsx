@@ -327,8 +327,19 @@ function Ubicaciones({ cliente, editable, onCambio }) {
   )
 }
 
-export function FormUbicacion({ cliente, ubicacion, otras, contactos, editable, onCerrar, onGuardado }) {
+export function FormUbicacion({ cliente, ubicacion, otras, contactos: contactosIni, editable, onCerrar, onGuardado }) {
   const nueva = !ubicacion.id
+  // Contactos del cliente; se puede agregar uno nuevo sin salir del formulario
+  const [contactos, setContactos] = useState(contactosIni || [])
+  const [nuevoContacto, setNuevoContacto] = useState(false)
+  const contactoCreado = async () => {
+    setNuevoContacto(false)
+    const antes = new Set(contactos.map((x) => x.id))
+    const k = (await contactosDe(cliente.id)).filter((x) => x.activo || x.id === ubicacion.contacto_id)
+    setContactos(k)
+    const nuevo = k.find((x) => !antes.has(x.id))
+    if (nuevo) setV((p) => ({ ...p, contacto_id: nuevo.id }))
+  }
   const t = (x) => (x === null || x === undefined ? '' : String(x))
   const inicial = useMemo(() => ({
     nombre: t(ubicacion.nombre), direccion: t(ubicacion.direccion), comuna: t(ubicacion.comuna) || (nueva ? cliente.comuna || '' : ''),
@@ -416,9 +427,10 @@ export function FormUbicacion({ cliente, ubicacion, otras, contactos, editable, 
               <datalist id="comunas-maule-ub">{COMUNAS_MAULE.map((x) => <option key={x} value={x} />)}</datalist>
             </Campo>
             <Campo etiqueta="Contacto en terreno">
-              <select value={v.contacto_id} onChange={set('contacto_id')}>
+              <select value={v.contacto_id} onChange={(e) => (e.target.value === '__nuevo' ? setNuevoContacto(true) : set('contacto_id')(e))} disabled={soloVer}>
                 <option value="">Sin contacto</option>
                 {contactos.map((k) => <option key={k.id} value={k.id}>{k.nombre}{k.cargo ? ` (${k.cargo})` : ''}</option>)}
+                {!soloVer && <option value="__nuevo">+ Agregar contacto nuevo…</option>}
               </select>
             </Campo>
           </div>
@@ -460,6 +472,10 @@ export function FormUbicacion({ cliente, ubicacion, otras, contactos, editable, 
         )}
         {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
       </fieldset>
+      {nuevoContacto && (
+        <FormContacto cliente={cliente} contacto={{}} hayPrincipal={contactos.some((x) => x.principal)}
+          onCerrar={() => setNuevoContacto(false)} onGuardado={() => contactoCreado().catch(setError)} />
+      )}
     </Modal>
   )
 }

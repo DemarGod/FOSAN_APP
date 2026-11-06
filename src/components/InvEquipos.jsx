@@ -388,7 +388,7 @@ const fila = (e) => [e.codigo, e.categoria || '', e.modelo || '', L_SITUACION[e.
   e.ubicacion || '', e.propiedad === 'cliente' ? 'Cliente' : 'Empresa', e.propietario || '', e.fecha_incorporacion || '']
 
 function Exportar({ todos, filtrados, onCerrar }) {
-  const [formato, setFormato] = useState('csv')
+  const [formato, setFormato] = useState('xlsx')
   const [soloFiltrados, setSoloFiltrados] = useState(true)
   const lista = soloFiltrados ? filtrados : todos
   const descargar = () => {

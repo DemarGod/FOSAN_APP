@@ -110,7 +110,7 @@ export default function Mapa({
     setTimeout(() => { const m = marcas.current[centrarEn]; if (m) m.openPopup() }, 500)
   }, [centrarEn])
 
-  return <div ref={caja} style={{ height: alto, width: '100%' }} />
+  return <div ref={caja} style={{ height: alto, width: '100%', position: 'relative', zIndex: 0, isolation: 'isolate' }} />
 }
 
 export function Leyenda({ items = LEYENDA }) {

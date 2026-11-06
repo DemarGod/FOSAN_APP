@@ -36,7 +36,7 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
           const num = texto(r.cod) === '' ? NaN : Number(r.cod)
           const est = ESTADOS[num]
           let problema = null, aviso = null
-          if (!est) problema = 'DISPONIBLES debe ser un número de 0 a 5'
+          if (!est) problema = 'ESTADO (4.ª columna) debe ser un número de 0 a 5'
           else if (vistos.has(r.codigo)) problema = 'Código repetido en el archivo'
           else if (est === 'en_arriendo' && !r.cliente) aviso = 'Arrendado sin cliente'
           else if (est !== 'en_arriendo' && r.cliente) aviso = 'Tiene cliente pero no está arrendado'
@@ -132,7 +132,7 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
               <span style={{ flex: 1 }}>
                 <span style={{ display: 'block', font: '600 13px var(--font)' }}>{archivo || 'Elegir el Excel del inventario'}</span>
                 <span style={{ font: '400 12px var(--font)', color: C.gris }}>
-                  Columnas en este orden: CÓDIGO, MODELO, COLOR, DISPONIBLES, CLIENTE, UBICACIÓN. DISPONIBLES: 0 arriendo · 1 disponible · 2 extraviado · 3 vendido · 4 donación · 5 fuera de servicio.
+                  Columnas en este orden (sin tildes): CODIGO, MODELO, COLOR, ESTADO, CLIENTE, UBICACION. La primera fila puede ser el encabezado. ESTADO es un número: 0 = arrendado · 1 = disponible en bodega · 2 = extraviado · 3 = vendido · 4 = donado · 5 = fuera de servicio. Las tildes del archivo no importan.
                 </span>
               </span>
               <input type="file" accept=".xlsx,.xls,.csv" onChange={(e) => e.target.files[0] && leer(e.target.files[0])} style={{ display: 'none' }} />

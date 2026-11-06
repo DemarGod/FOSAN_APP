@@ -131,7 +131,7 @@ function Listado() {
                   <Menu opciones={[
                     { l: 'Editar datos', d: I.lapiz, onClick: () => setForm(tecnicos[v.id] || v), disabled: !editable || v.estado_flota === 'baja' },
                     { l: 'Cambiar disponibilidad', d: I.check, onClick: () => setDisp(v), disabled: !editable || v.estado_flota === 'baja' },
-                    { l: 'Desactivar vehículo', d: PROHIBIDO, color: C.rojo, onClick: () => setBaja(v), disabled: !editable || v.estado_flota === 'baja' },
+                    { l: 'Dar de baja (vendido, siniestro…)', d: PROHIBIDO, color: C.rojo, onClick: () => setBaja(v), disabled: !editable || v.estado_flota === 'baja' },
                   ]} />
                 </div>
               ),
@@ -199,7 +199,7 @@ export function Desactivar({ v, onCerrar, onListo }) {
     try { await desactivarVehiculo(v.id, motivo.trim()); onListo() } catch (x) { setError(x); setGuardando(false); setPaso(1) }
   }
   return (
-    <Modal titulo="Desactivar vehículo" ancho={480} onCerrar={onCerrar} pie={<>
+    <Modal titulo="Dar de baja el vehículo" ancho={480} onCerrar={onCerrar} pie={<>
       <Boton onClick={onCerrar}>Volver</Boton>
       <Boton tipo="peligro" onClick={confirmar} disabled={guardando}>{guardando ? 'Desactivando…' : paso === 1 ? 'Continuar' : 'Confirmar desactivación'}</Boton>
     </>}>
@@ -208,7 +208,7 @@ export function Desactivar({ v, onCerrar, onListo }) {
         <Campo etiqueta="Motivo" obligatorio><textarea value={motivo} onChange={(e) => { setMotivo(e.target.value); setError(null); setPaso(1) }} maxLength={300} autoFocus placeholder="Vendido, siniestro, fin de vida útil…" /></Campo>
         {paso === 2
           ? <Ayuda tono="atencion">¿Seguro? El vehículo deja de aparecer para elegir en rutas y operaciones. Su historial se conserva y no se borra.</Ayuda>
-          : <Ayuda>Se bloquea si tiene rutas esta semana o futuras, operaciones programadas o insumos a bordo.</Ayuda>}
+          : <Ayuda>Para un vehículo vendido, siniestrado o que ya no se usa. No se borra: sale de las listas y se conserva su historial (rutas, kilómetros y costos para los reportes). Se bloquea si tiene rutas esta semana o futuras, operaciones programadas o insumos a bordo.</Ayuda>}
         {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
       </div>
     </Modal>
@@ -217,7 +217,7 @@ export function Desactivar({ v, onCerrar, onListo }) {
 
 // ── 5.4 Exportar vehículos ────────────────────────────────────────────────
 function Exportar({ todas, filtradas, finanzas, costoKm, onCerrar }) {
-  const [fmt, setFmt] = useState('csv')
+  const [fmt, setFmt] = useState('xlsx')
   const [solo, setSolo] = useState(true)
   const descargar = () => {
     const cols = ['patente', 'codigo', 'tipo', 'marca', 'modelo', 'anio', 'odometro_km', 'estado', 'fecha_registro', ...(finanzas ? ['costo_por_km'] : [])]

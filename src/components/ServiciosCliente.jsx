@@ -324,13 +324,14 @@ function FormServicio({ cliente, servicio, finanzas, onCerrar, onGuardado }) {
             <Campo etiqueta="Fecha de inicio" obligatorio error={errores.fecha_inicio}>
               <input type="date" min={FECHA_MIN} max={FECHA_MAX} value={v.fecha_inicio} onChange={set('fecha_inicio')} />
             </Campo>
-            <Campo etiqueta="Fecha de término" error={errores.fecha_termino}>
+            <Campo etiqueta="Fecha de término" error={errores.fecha_termino} ayuda={v.sin_termino ? 'Escribe una fecha si el servicio tiene término.' : undefined}>
+              {/* Siempre editable: al escribir una fecha se desmarca "Sin fecha de término" */}
               <input type="date" min={v.fecha_inicio || FECHA_MIN} max={FECHA_MAX} value={v.sin_termino ? '' : v.fecha_termino}
-                onChange={set('fecha_termino')} disabled={v.sin_termino} />
+                onChange={(e) => { const x = e.target.value; setV((p) => ({ ...p, fecha_termino: x, sin_termino: !x })); setErrores({}) }} />
             </Campo>
           </div>
           <label style={{ display: 'flex', gap: 8, alignItems: 'center', font: '600 13px var(--font)', alignSelf: 'end', minHeight: 40 }}>
-            <input type="checkbox" checked={v.sin_termino} onChange={set('sin_termino')} /> Sin fecha de término
+            <input type="checkbox" checked={v.sin_termino} onChange={(e) => { const on = e.target.checked; setV((p) => ({ ...p, sin_termino: on, ...(on ? { fecha_termino: '' } : {}) })); setErrores({}) }} /> Sin fecha de término
           </label>
           <Campo etiqueta="Contacto responsable">
             <select value={v.contacto_id} onChange={(e) => (e.target.value === '__nuevo' ? setNuevoContacto(true) : set('contacto_id')(e))}>

@@ -136,7 +136,8 @@ export const crearModelo = async (nombre) => {
 export const buscarGlobal = async (q) => {
   const t = q.replace(/[%,()]/g, ' ').trim()
   const [activos, clientes] = await Promise.all([
-    rows(supabase.from('activos').select('id, codigo, tipo, estado, qr_token, clientes!cliente_id(nombre)').neq('estado', 'baja').ilike('codigo', `%${t}%`).order('codigo').limit(6)),
+    // Equipos y vehículos: por código que EMPIEZA con lo escrito (ej. "10" → 10, 101…)
+    rows(supabase.from('activos').select('id, codigo, tipo, estado, qr_token, clientes!cliente_id(nombre)').neq('estado', 'baja').ilike('codigo', `${t}%`).order('codigo').limit(6)),
     rows(supabase.from('clientes').select('id, nombre, direccion, comuna').or(`nombre.ilike.%${t}%,direccion.ilike.%${t}%,comuna.ilike.%${t}%`).order('nombre').limit(6)),
   ])
   return { activos, clientes }
@@ -491,7 +492,7 @@ export const avisosCalculados = async () => {
   doc.forEach((d) => lista.push({
     id: 'doc-' + d.id + '-' + d.fecha_vencimiento, fecha: d.fecha_vencimiento, origen: 'Documentos',
     a: d.activos?.qr_token ? `/activo/${d.activos.qr_token}` : null,
-    nivel: dias(d.fecha_vencimiento) < 0 ? 'alerta' : dias(d.fecha_vencimiento) <= 7 ? 'aviso' : 'info',
+    nivel: dias(d.fecha_vencimiento) < 0 ? 'alerta' : 'aviso',
     texto: `${d.titulo} de ${d.activos?.codigo || 'un equipo'} ${dias(d.fecha_vencimiento) < 0 ? 'venció' : 'vence'} ${cuando(d.fecha_vencimiento).toLowerCase()}`,
   }))
   ev.forEach((e) => lista.push({
@@ -515,7 +516,7 @@ export const avisosCalculados = async () => {
     texto: `${i.nombre} bajo el mínimo: quedan ${Number(i.stock_actual).toLocaleString('es-CL')} ${i.unidad}`,
   }))
   des.forEach((d) => lista.push({
-    id: 'des-' + d.id + '-' + d.fecha_programada, fecha: d.fecha_programada, origen: 'Despachos', a: '/despachos',
+    id: 'des-' + d.id + '-' + d.fecha_programada, fecha: d.fecha_programada, origen: 'Despachos', a: `/operaciones?tab=programacion&folio=${d.folio}`,
     nivel: dias(d.fecha_programada) < 0 ? 'alerta' : 'info',
     texto: `${dias(d.fecha_programada) < 0 ? 'Atrasado' : 'Hoy'}: ${d.tipo} ${d.folio} · ${d.clientes?.nombre || ''}`,
   }))
@@ -825,6 +826,12 @@ export const banosAsignados = (clienteId, ubicacionId) => {
     .eq('cliente_id', clienteId).eq('estado', 'en_arriendo').eq('propiedad', 'empresa').order('codigo')
   if (ubicacionId) q = q.eq('ubicacion_id', ubicacionId)
   return rows(q)
+}
+// Baños que ya están en un retiro programado: { activo_id: { folio, despacho_id } } (no se repite el retiro)
+export const banosConRetiroProgramado = async (clienteId) => {
+  const r = await rows(supabase.from('despacho_banos').select('activo_id, despacho_id, despachos!inner(folio, estado, cliente_id)')
+    .eq('accion', 'retiro').eq('despachos.estado', 'programado').eq('despachos.cliente_id', clienteId))
+  return Object.fromEntries(r.map((x) => [x.activo_id, { folio: x.despachos.folio, despacho_id: x.despacho_id }]))
 }
 export const editarOperacion = async (id, datos, banos) => {
   const { error } = await supabase.from('despachos').update(datos).eq('id', id).eq('estado', 'programado')

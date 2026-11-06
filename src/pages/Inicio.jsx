@@ -2,7 +2,7 @@
 // 1.1 Vista principal · 1.3 Selector de fecha · 1.4 Actividad reciente · 1.5 Detalle del trabajo.
 // (1.2 Notificaciones y 1.6 Perfil están en la barra superior.)
 // Los indicadores abren listados filtrados. Las existencias muestran la situación actual.
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Modal from '../components/Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda, Pestanas } from '../components/Base'
@@ -43,6 +43,8 @@ export default function Inicio({ onCalendario }) {
   const [d, setD] = useState(null)
   const [actividad, setActividad] = useState(null)
   const [avisos, setAvisos] = useState([])
+  const [verAlertas, setVerAlertas] = useState('alerta')   // filtro de la tarjeta: alerta (críticas) · aviso · todas
+  const tarjetaAlertas = useRef(null)
   const [error, setError] = useState(null)
   const [trabajo, setTrabajo] = useState(null)
   const [registro, setRegistro] = useState(null)
@@ -81,11 +83,19 @@ export default function Inicio({ onCalendario }) {
   const titRango = unDia ? (rango.desde === hoy ? `Hoy · ${fecha(hoy)}` : fecha(rango.desde)) : `${fecha(rango.desde)} – ${fecha(rango.hasta)}`
   const v = (x) => (d ? (x ?? '—') : '…')
 
-  // Alertas: atrasados + avisos calculados (insumos, mantenciones, contratos, eventos)
+  // Alertas: atrasados + avisos calculados (insumos, mantenciones, contratos, eventos, documentos).
+  // Se agrupan para que la lista no se llene de repetidos: las operaciones atrasadas van en una línea
+  // (ya están en "trabajos atrasados") y los mantenimientos atrasados también.
+  const mantAtrasadas = avisos.filter((a) => a.origen === 'Mantenciones' && a.nivel === 'alerta')
   const alertas = [
-    ...(d?.atrasados ? [{ id: 'atr', nivel: 'alerta', texto: `${d.atrasados} trabajo(s) atrasado(s)`, a: '/operaciones?tab=programacion&estado=pendiente', boton: 'Revisar' }] : []),
-    ...avisos.map((a) => ({ ...a, a: corregirRuta(a.a), boton: a.origen === 'Insumos' ? 'Ver insumo' : 'Revisar' })),
-  ].sort((x, y) => ({ alerta: 0, aviso: 1, info: 2 }[x.nivel] - { alerta: 0, aviso: 1, info: 2 }[y.nivel]))
+    ...(d?.atrasados ? [{ id: 'atr', nivel: 'alerta', texto: `${d.atrasados} operación(es) atrasada(s)`, origen: 'Operaciones', a: '/operaciones?tab=programacion&estado=pendiente' }] : []),
+    ...(mantAtrasadas.length ? [{ id: 'mant-atr', nivel: 'alerta', texto: `${mantAtrasadas.length} mantenimiento(s) atrasado(s)`, origen: 'Mantenimiento', a: '/mantenimiento' }] : []),
+    ...avisos.filter((a) => a.origen !== 'Despachos' && !(a.origen === 'Mantenciones' && a.nivel === 'alerta'))
+      .map((a) => ({ ...a, a: corregirRuta(a.a) })),
+  ].sort((x, y) => ({ alerta: 0, aviso: 1, info: 2 }[x.nivel] - { alerta: 0, aviso: 1, info: 2 }[y.nivel]) || String(x.fecha || '').localeCompare(String(y.fecha || '')))
+  const cuentaNivel = (n) => alertas.filter((a) => a.nivel === n).length
+  const alertasVista = verAlertas === 'todas' ? alertas : alertas.filter((a) => (verAlertas === 'aviso' ? a.nivel !== 'alerta' : a.nivel === 'alerta'))
+  const irAlertas = () => { setVerAlertas('alerta'); tarjetaAlertas.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }
 
   // ── Datos de los gráficos ──
   const graf = armarGraficos(g)
@@ -95,7 +105,7 @@ export default function Inicio({ onCalendario }) {
     { l: unDia && rango.desde === hoy ? 'Trabajos del día' : 'Trabajos del período', n: trabajos?.length, d: I.cal, color: C.azul, fondo: C.tinte, ir: '/operaciones?tab=programacion' },
     { l: 'Atrasados', n: d?.atrasados, rojo: !!d?.atrasados, s: 'Operaciones sin realizar', d: I.alert, color: C.rojo, fondo: '#fce8e6', ir: '/operaciones?tab=programacion&estado=pendiente' },
     ...(puedeVer(perfil, 'mantenciones') ? [{ l: 'Mantenimientos pendientes', n: d?.mant, d: I.wrench, color: '#b06000', fondo: '#fef7e0', ir: '/mantenimiento' }] : []),
-    { l: 'Alertas críticas', n: d ? alertas.filter((a) => a.nivel === 'alerta').length : null, rojo: alertas.some((a) => a.nivel === 'alerta'), d: PROHIBIDO, color: C.rojo, fondo: '#fce8e6', ir: '/' },
+    { l: 'Alertas críticas', n: d ? alertas.filter((a) => a.nivel === 'alerta').length : null, rojo: alertas.some((a) => a.nivel === 'alerta'), d: PROHIBIDO, color: C.rojo, fondo: '#fce8e6', ir: irAlertas },
   ]
 
   return (
@@ -112,7 +122,7 @@ export default function Inicio({ onCalendario }) {
       {/* Indicadores */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
         {TILES.map((k) => (
-          <button key={k.l} type="button" onClick={() => navegar(k.ir)} className="card"
+          <button key={k.l} type="button" onClick={() => (typeof k.ir === 'function' ? k.ir() : navegar(k.ir))} className="card"
             style={{ display: 'grid', gap: 6, padding: 14, textAlign: 'left', cursor: 'pointer', border: `1px solid ${C.borde}` }}>
             <span style={{ width: 38, height: 38, borderRadius: 10, display: 'grid', placeItems: 'center', background: k.fondo }}><Icon d={k.d} size={20} color={k.color} /></span>
             <b style={{ font: '800 28px/1 var(--font)', color: k.rojo ? C.rojo : C.tinta }}>{k.n ?? '…'}</b>
@@ -160,10 +170,17 @@ export default function Inicio({ onCalendario }) {
           </TarjetaGrafico>
         )}
 
-        <TarjetaGrafico titulo="Alertas y acciones pendientes" sub={`${alertas.length} pendiente(s)`}>
+        <div ref={tarjetaAlertas} style={{ display: 'grid', minWidth: 0 }}>
+        <TarjetaGrafico titulo="Alertas y acciones pendientes" sub={`${cuentaNivel('alerta')} crítica(s) · ${alertas.length - cuentaNivel('alerta')} aviso(s)`}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {[['alerta', `Críticas (${cuentaNivel('alerta')})`], ['aviso', `Avisos (${alertas.length - cuentaNivel('alerta')})`], ['todas', `Todas (${alertas.length})`]].map(([k, l]) => (
+              <button key={k} type="button" className={verAlertas === k ? 'btn btn-azul' : 'btn'} onClick={() => setVerAlertas(k)}
+                style={{ minHeight: 30, padding: '4px 10px', fontSize: 12 }}>{l}</button>
+            ))}
+          </div>
           <div style={{ display: 'grid', maxHeight: 250, overflowY: 'auto' }}>
-            {alertas.length === 0 && <div className="text-muted" style={{ padding: '12px 0' }}>Sin alertas pendientes.</div>}
-            {alertas.slice(0, 12).map((a) => {
+            {alertasVista.length === 0 && <div className="text-muted" style={{ padding: '12px 0' }}>{verAlertas === 'alerta' ? 'Sin alertas críticas.' : 'Sin avisos pendientes.'}</div>}
+            {alertasVista.map((a) => {
               const nv = NIVEL[a.nivel] || NIVEL.info
               return (
                 <button key={a.id} type="button" onClick={a.a ? () => navegar(a.a) : undefined}
@@ -183,6 +200,7 @@ export default function Inicio({ onCalendario }) {
             <Boton icono={I.cal} onClick={onCalendario} style={{ flex: 1 }}>Ver calendario</Boton>
           </div>
         </TarjetaGrafico>
+        </div>
 
         {puedeVer(perfil, 'ubicaciones') && (
           <div style={{ gridColumn: ancho >= 1100 ? 'span 2' : 'auto', minWidth: 0, display: 'grid' }}>

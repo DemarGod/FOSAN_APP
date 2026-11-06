@@ -312,7 +312,7 @@ function FichaArticulo({ i, ubic, editable, exporta, onCerrar, onEditar, onMover
   const [tab, setTab] = useState('existencias')
   const [movs, setMovs] = useState(null)
   const [tipo, setTipo] = useState('')
-  const [fmt, setFmt] = useState('csv')
+  const [fmt, setFmt] = useState('xlsx')
   const [soloFiltrados, setSoloFiltrados] = useState(true)
   useEffect(() => { movimientosInsumoDe(i.id).then(setMovs).catch(() => setMovs([])) }, [i.id, i.stock_actual])
   const nombreUbic = (id) => ubic.find((u) => u.id === id)?.nombre || '—'

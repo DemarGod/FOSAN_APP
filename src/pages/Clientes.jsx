@@ -170,7 +170,7 @@ export default function Clientes() {
       </section>
 
       <Ayuda>
-        Desactivar conserva el historial: el cliente deja de aparecer para elegir en rutas y despachos nuevos, pero sigue en los que ya existen.
+        Los clientes no se eliminan: se <b>desactivan</b> (⋮ → Desactivar), porque borrar uno haría perder su historial de operaciones, cobros, respaldos y reportes. Desactivado deja de aparecer para elegir en rutas y operaciones nuevas, y se puede reactivar.
         {datos.some((c) => !c.activo) && filtro.estado === 'activos' && <> <a href="#" onClick={(e) => { e.preventDefault(); verInactivos() }}>Ver inactivos</a>.</>}
       </Ayuda>
 

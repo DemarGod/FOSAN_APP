@@ -43,7 +43,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
   useEffect(() => {
     const q = busqueda.trim()
     if (q.length < 2) { setRes(null); return }
-    const t = sinTilde(q)
+    const t = sinTilde(q).replace(/^\/+/, '')   // "/banos" también busca la sección
     const paginas = NAV.filter((n) => n.to && n.to !== '/' && (sinTilde(n.label).includes(t) || (SINONIMOS[n.to] || '').split(' ').some((w) => w.startsWith(t))))
     setRes((r) => ({ paginas, activos: r?.activos || [], clientes: r?.clientes || [] }))
     const id = setTimeout(() => buscarGlobal(q).then((x) => setRes({ paginas, ...x })).catch(() => {}), 250)
@@ -82,7 +82,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
   const leerTodas = async () => {
     try { await marcarLeidas() } catch { /* solo lectura */ }
     const leidos = leidosLocal()
-    avisos.forEach((a) => { if (typeof a.id === 'string' && /^(ev|cto|man|ins|des)-/.test(a.id)) leidos.add(a.id) })
+    avisos.forEach((a) => { if (typeof a.id === 'string' && /^(ev|cto|man|ins|des|doc)-/.test(a.id)) leidos.add(a.id) })
     localStorage.setItem(CLAVE, JSON.stringify([...leidos].slice(-300)))
     setAvisos((v) => v.map((a) => ({ ...a, leida: true })))
     setAbierto(false)
@@ -91,7 +91,10 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
   const buscar = (e) => {
     e.preventDefault()
     if (!res) return
-    const primero = res.activos[0] ? '/activo/' + res.activos[0].qr_token
+    // Enter: si escribió una palabra (sin números) y calza con una sección, va a la sección; si no, al primer equipo o cliente
+    const palabra = !/\d/.test(busqueda)
+    const primero = palabra && res.paginas[0] ? res.paginas[0].to
+      : res.activos[0] ? '/activo/' + res.activos[0].qr_token
       : res.clientes[0] ? '/clientes?q=' + encodeURIComponent(res.clientes[0].nombre)
       : res.paginas[0]?.to
     if (primero) ir(primero)
