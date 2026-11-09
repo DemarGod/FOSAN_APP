@@ -101,7 +101,7 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
       const nuevas = obrasNuevas(arrendados, clientes, obras)
       if (nuevas.length) {
         const { data, error } = await supabase.from('ubicaciones')
-          .insert(nuevas.map((o) => ({ nombre: o.nombre, tipo: 'faena', cliente_id: clientes[norm(o.cliente)] })))
+          .insert(nuevas.map((o) => ({ nombre: o.nombre, tipo: 'cliente', cliente_id: clientes[norm(o.cliente)] })))
           .select('id, nombre, cliente_id')
         if (error) throw error
         data.forEach((x) => { obras[clave(x.cliente_id, x.nombre)] = x.id })
@@ -125,6 +125,28 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
         const { error } = await supabase.from('activos').upsert(filasDb.slice(i, i + 200), { onConflict: 'codigo' })
         if (error) throw error
       }
+      // Servicio de arriendo por cliente y obra, con sus baños asignados (si ya hay uno vigente, se usa ese)
+      const grupos = {}
+      filasDb.filter((x) => x.cliente_id).forEach((x) => { (grupos[x.cliente_id + '|' + (x.ubicacion_id || '')] ||= []).push(x.codigo) })
+      const ids = [...new Set(filasDb.map((x) => x.cliente_id).filter(Boolean))]
+      const vigentes = ids.length ? await q(supabase.from('servicios_cliente').select('id, cliente_id, ubicacion_id')
+        .eq('tipo', 'arriendo_limpieza').eq('estado', 'vigente').in('cliente_id', ids)) : []
+      for (const [k, codigos] of Object.entries(grupos)) {
+        setEstado('Creando los servicios de arriendo…')
+        const [clienteId, ubicacionId] = k.split('|')
+        let sid = vigentes.find((x) => x.cliente_id === clienteId && (x.ubicacion_id || '') === ubicacionId)?.id
+        if (!sid) {
+          const { data, error } = await supabase.from('servicios_cliente').insert({
+            cliente_id: clienteId, ubicacion_id: ubicacionId || null, tipo: 'arriendo_limpieza',
+            categoria_id: cat.bano, cantidad: codigos.length, fecha_inicio: hoyISO(),
+          }).select('id').single()
+          if (error) throw error
+          sid = data.id
+        }
+        const { error } = await supabase.from('activos').update({ servicio_id: sid }).in('codigo', codigos)
+        if (error) throw error
+      }
+      
       setEstado(null)
       setResultado({ creados: ok.length - actualizan, actualizados: actualizan, omitidos: malas.length, ...Object.fromEntries(Object.entries(crearan).map(([k, v]) => [k, v.length])) })
     } catch (e) {
