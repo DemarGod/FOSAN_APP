@@ -119,7 +119,7 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
           fecha_incorporacion: hoyISO(), notas: f.nota,
         }
       })
-      
+
       for (let i = 0; i < filasDb.length; i += 200) {
         setEstado(`Importando ${Math.min(i + 200, filasDb.length)} de ${filasDb.length}…`)
         const { error } = await supabase.from('activos').upsert(filasDb.slice(i, i + 200), { onConflict: 'codigo' })
@@ -178,7 +178,7 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
                 <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', font: '600 12px var(--font)' }}>
                   <span style={{ color: C.verde }}>{ok.length} válidos</span>
                   <span>{ok.length - actualizan} nuevos · {actualizan} ya existen (se actualizan)</span>
-                  {Object.entries(porEstado).map(([k, n]) => <span key={k}>{L_ESTADO_ACTIVO[k]}: {n}</span>)}
+                  {Object.entries(porEstado).map(([k, n]) => <span key={k}>{SITUACION[k]}: {n}</span>)}
                   {malas.length > 0 && <span style={{ color: C.rojo }}>{malas.length} con problema (se omiten)</span>}
                   {conAviso.length > 0 && <span style={{ color: '#FBBF24' }}>{conAviso.length} para revisar (se importan igual)</span>}
                 </div>
@@ -199,7 +199,7 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
                       {[...malas, ...conAviso, ...ok.filter((f) => !f.aviso)].slice(0, 60).map((f) => (
                         <tr key={f.n} style={{ background: f.problema ? 'rgba(239,98,93,.2)' : f.aviso ? 'rgba(235,170,66,.2)' : undefined }}>
                           <td>{f.n}</td><td>{f.codigo}</td><td>{f.modelo || '—'}</td><td>{f.color || '—'}</td>
-                          <td>{f.estado ? L_ESTADO_ACTIVO[f.estado] : '—'}</td><td>{f.cliente || '—'}</td><td>{f.ubicacion || '—'}</td>
+                          <td>{f.estado ? SITUACION[f.estado] : '—'}</td><td>{f.cliente || '—'}</td><td>{f.ubicacion || '—'}</td>
                           <td>{f.problema || f.aviso || ''}</td>
                         </tr>
                       ))}
