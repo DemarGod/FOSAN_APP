@@ -67,7 +67,7 @@ export default function Analisis() {
       <div style={{ display: 'flex', gap: 2, marginTop: 16, border: `1px solid ${C.borde}`, width: 'fit-content', maxWidth: '100%', flexWrap: 'wrap', borderRadius: 'var(--radio-md)' }}>
         {VISTAS.map((x) => (
           <button key={x.v} onClick={() => setVista(x.v)} style={{
-            border: 0, background: vista === x.v ? C.tinte : 'var(--panel)', color: vista === x.v ? '#7CC4FF' : '#CBD7E6',
+            border: 0, background: vista === x.v ? C.tinte : 'var(--panel)', color: vista === x.v ? '#7CC4FF' : '#DCE6F2',
             font: '600 13px var(--font)', padding: '10px 16px', minHeight: 42, cursor: 'pointer',
           }}>{x.l}</button>
         ))}
@@ -97,7 +97,7 @@ export default function Analisis() {
             {detalle.resumen && <div style={{ font: '400 13px/1.5 var(--font)' }}>{detalle.resumen}</div>}
             <Tabla min={620} filas={detalle.lineas} cols={[
               { k: 'concepto', l: 'Concepto' },
-              { k: 'formula', l: 'Cálculo', f: (x) => <span style={{ whiteSpace: 'normal', color: '#CBD7E6' }}>{x.formula}</span> },
+              { k: 'formula', l: 'Cálculo', f: (x) => <span style={{ whiteSpace: 'normal', color: '#DCE6F2' }}>{x.formula}</span> },
               { k: 'monto', l: 'Monto', der: true, f: (x) => <span style={{ color: x.ingreso ? '#6EE7B7' : undefined, fontWeight: 600 }}>{x.ingreso ? '+' : '−'}{$(x.monto)}</span> },
             ]} />
           </div>
@@ -309,7 +309,7 @@ function GraficoEquilibrio({ e }) {
         <text x={X(actual) + 6} y={T + 12} fontFamily="Archivo" fontSize="12" fontWeight="700" fill={C.verde}>Hoy · {etq(actual)}</text>
         <text x={W - R} y={H - 4} textAnchor="end" fontFamily="Archivo" fontSize="11" fill={C.gris}>{porAseo ? 'Aseos al mes' : 'Ingreso al mes'}</text>
       </svg>
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8, font: '400 12px var(--font)', color: '#CBD7E6' }}>
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8, font: '400 12px var(--font)', color: '#DCE6F2' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 14, height: 3, background: C.azul }} />Ingresos</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 14, height: 3, background: C.amarillo }} />Costo total (fijos + variables)</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 14, height: 0, borderTop: `2px dashed ${C.gris}` }} />Costos fijos</span>
@@ -482,7 +482,7 @@ function Tendencia({ t }) {
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${t.length}, minmax(0, 120px))`, gap: 12, marginTop: 6 }}>
           {t.map((x) => <div key={x.mes} style={{ font: '400 10px var(--font)', color: C.gris, textAlign: 'center' }}>{mesLargo(x.mes).slice(0, 3)} {x.mes.slice(2, 4)}</div>)}
         </div>
-        <div style={{ display: 'flex', gap: 16, marginTop: 10, font: '400 12px var(--font)', color: '#CBD7E6' }}>
+        <div style={{ display: 'flex', gap: 16, marginTop: 10, font: '400 12px var(--font)', color: '#DCE6F2' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 11, height: 11, background: C.azul }} />Contratos vigentes</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 11, height: 11, background: C.amarillo }} />Costos registrados</span>
         </div>

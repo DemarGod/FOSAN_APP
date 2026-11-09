@@ -116,7 +116,7 @@ function Ondas() {
         <filter id="onda-brillo" x="-10%" y="-50%" width="120%" height="200%"><feGaussianBlur stdDeviation="3" /></filter>
         <radialGradient id="onda-luz" cx=".75" cy=".35" r=".6">
           <stop offset="0" stopColor="#078BFA" stopOpacity=".28" />
-          <stop offset="1" stopColor="#0C1829" stopOpacity="0" />
+          <stop offset="1" stopColor="#16305A" stopOpacity="0" />
         </radialGradient>
       </defs>
       <rect width="1440" height="900" fill="url(#onda-luz)" />

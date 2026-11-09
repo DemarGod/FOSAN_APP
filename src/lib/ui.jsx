@@ -7,19 +7,19 @@ export const C = {
   azul: '#078BFA',      // azul eléctrico: botones, selección, enlaces
   azulClaro: '#18B8FF', // azul luminoso: íconos, foco, acentos
   azulOscuro: '#064B9B',
-  blanco: '#15263F',    // fondo de tarjetas y paneles
+  blanco: '#1E3B68',    // fondo de tarjetas y paneles
   verde: '#00C98D',
   amarillo: '#F59E0B',
   rojo: '#EF4444',
-  borde: '#2F4F77',
+  borde: '#4069A0',
   tinte: 'rgba(7,139,250,.18)',   // fondo azul translúcido (selección, ayuda)
-  suave: '#1A2D49',     // fondo secundario
-  fila: '#213856',      // separadores y pistas de barras
-  thead: '#1A2D49',
-  gris: '#CBD7E6',      // texto secundario
+  suave: '#234473',     // fondo secundario
+  fila: '#2A4D7E',      // separadores y pistas de barras
+  thead: '#234473',
+  gris: '#DCE6F2',      // texto secundario
   tinta: '#F1F5FA',     // texto principal
-  fondo: '#0C1829',
-  lateral: '#112038',
+  fondo: '#16305A',
+  lateral: '#1A3663',
 }
 
 export const I = {

@@ -144,12 +144,12 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
           </div>
           <div style={{
             padding: '11px 13px', background: C.suave, border: `1px solid ${C.borde}`,
-            font: '400 12px/1.45 var(--font)', color: '#CBD7E6', borderRadius: 'var(--radio-md)' }}>
+            font: '400 12px/1.45 var(--font)', color: '#DCE6F2', borderRadius: 'var(--radio-md)' }}>
             Con estos datos cada ruta calcula su costo: diésel según los km y el peso que lleva,
             más desgaste y costos fijos por kilómetro. Los campos vacíos cuentan como cero.
           </div>
           </> : (
-            <div style={{ padding: '11px 13px', background: C.suave, border: `1px solid ${C.borde}`, font: '400 12px/1.45 var(--font)', color: '#CBD7E6', borderRadius: 'var(--radio-md)' }}>
+            <div style={{ padding: '11px 13px', background: C.suave, border: `1px solid ${C.borde}`, font: '400 12px/1.45 var(--font)', color: '#DCE6F2', borderRadius: 'var(--radio-md)' }}>
               Patente única: se guarda en mayúsculas y sin guiones ni espacios. Rendimiento y costos los completa quien tiene permiso "Ver montos".
             </div>
           )}

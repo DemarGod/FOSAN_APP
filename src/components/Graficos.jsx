@@ -64,7 +64,7 @@ function useTip() {
   }
   const Tip = () => (tip ? (
     <div style={{ position: 'absolute', left: tip.x, top: tip.y - 10, transform: 'translate(-50%, -100%)', pointerEvents: 'none',
-      background: 'rgba(12,24,41,.95)', color: '#F1F5FA', border: '1px solid rgba(24,184,255,.55)', boxShadow: '0 8px 24px rgba(0,0,0,.5), 0 0 12px rgba(7,139,250,.25)',
+      background: 'rgba(22,48,90,.95)', color: '#F1F5FA', border: '1px solid rgba(24,184,255,.55)', boxShadow: '0 8px 24px rgba(0,0,0,.5), 0 0 12px rgba(7,139,250,.25)',
       padding: '7px 10px', borderRadius: 8, font: '600 12px/1.4 var(--font)', whiteSpace: 'pre', zIndex: 5 }}>{tip.texto}</div>
   ) : null)
   return { mostrar, ocultar: () => setTip(null), Tip }
@@ -206,12 +206,12 @@ export function Lineas({ etiquetas, series, alto = 210, fmt = n, onPunto }) {
           return <circle key={'u' + j} cx={x} cy={y} r="3.5" fill={s.c} style={{ filter: `drop-shadow(0 0 5px ${s.c})` }} />
         })}
         {sel != null && series.map((s, j) => (
-          <circle key={'p' + j} cx={pts[j][sel][0]} cy={pts[j][sel][1]} r="5" fill="#0C1829" stroke={s.c} strokeWidth="2.5" />
+          <circle key={'p' + j} cx={pts[j][sel][0]} cy={pts[j][sel][1]} r="5" fill="#16305A" stroke={s.c} strokeWidth="2.5" />
         ))}
       </svg>
       {sel != null && (
         <div style={{ position: 'absolute', left: `${(X(sel) / ancho) * 100}%`, top: 24, transform: `translateX(${sel > etiquetas.length / 2 ? 'calc(-100% - 12px)' : '12px'})`, pointerEvents: 'none',
-          background: 'rgba(12,24,41,.95)', color: '#F1F5FA', border: '1px solid rgba(24,184,255,.55)', boxShadow: '0 8px 24px rgba(0,0,0,.5), 0 0 12px rgba(7,139,250,.25)',
+          background: 'rgba(22,48,90,.95)', color: '#F1F5FA', border: '1px solid rgba(24,184,255,.55)', boxShadow: '0 8px 24px rgba(0,0,0,.5), 0 0 12px rgba(7,139,250,.25)',
           padding: '8px 11px', borderRadius: 8, font: '600 12px/1.5 var(--font)', whiteSpace: 'nowrap', zIndex: 5 }}>
           <div style={{ color: C.gris, fontWeight: 500 }}>{etiquetas[sel]}</div>
           {series.map((s) => (
