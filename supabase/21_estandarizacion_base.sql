@@ -1,10 +1,5 @@
 -- 21 · ESTANDARIZACIÓN · ETAPA 1: base de datos y catálogos
 -- Solo agrega tablas y columnas y copia los datos actuales a la nueva estructura.
--- No borra nada: la app actual sigue funcionando con "estado" mientras se migran las pantallas.
--- Correr completo en Supabase → SQL Editor. Se puede correr más de una vez.
-
--- ═══ 0. Revisión previa (opcional): RUT repetidos que impedirían el índice único ═══
--- select upper(regexp_replace(rut,'[^0-9kK]','','g')) r, count(*) from clientes where rut is not null group by 1 having count(*) > 1;
 
 -- ═══ 1. Catálogos (Administración → Catálogos) ═══════════════════════════════
 create table if not exists categorias (
@@ -226,11 +221,3 @@ do $$ declare t text; sec text; begin
   end loop;
 end $$;
 
--- ═══ 8. Control: revisar que la migración cuadre ═════════════════════════════
-select 'baños' que, count(*) total, count(*) filter (where situacion = 'asignado') asignados, count(*) filter (where situacion = 'disponible') disponibles,
-       count(*) filter (where situacion = 'en_mantenimiento') mantenimiento, count(*) filter (where situacion in ('no_localizado','baja')) otros
-from activos where tipo = 'bano_quimico'
-union all select 'clientes', count(*), null, null, null, null from clientes
-union all select 'contactos', count(*), null, null, null, null from cliente_contactos
-union all select 'ubicaciones de clientes', count(*), null, null, null, null from ubicaciones where tipo = 'cliente'
-union all select 'servicios', count(*), count(*) filter (where tipo = 'arriendo_limpieza'), count(*) filter (where tipo = 'limpieza_cliente'), null, null from servicios_cliente;

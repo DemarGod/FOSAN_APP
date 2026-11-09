@@ -2,7 +2,7 @@
 // Formulario común + UNO de los apartados A, B o C según el tipo.
 // Guardar registra el acuerdo: no reserva equipos, no crea entregas ni limpiezas.
 // La base recalcula sola los días de limpieza, baños propios y valor mensual del cliente (script 24).
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Modal from './Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
@@ -14,8 +14,9 @@ import { formatoPesos, numeroDe, decimalDe, fechaValida, FECHA_MIN, FECHA_MAX } 
 import { DIAS, hoyISO } from '../lib/costos'
 import { C, Icon, I, fecha, clp } from '../lib/ui'
 import { FormUbicacion, FormContacto } from '../pages/FichaCliente'
+import Menu from './Menu'
 
-export const L_TIPO_SERV = {
+const L_TIPO_SERV = {
   arriendo_limpieza: 'Arriendo de baños con limpieza',
   limpieza_cliente: 'Limpieza de baños del cliente',
   limpieza_fosas: 'Limpieza de fosas sépticas',
@@ -60,7 +61,7 @@ export default function ServiciosCliente({ cliente, editable, finanzas, onCambio
                   <Boton onClick={() => (editable && x.estado === 'vigente' ? setForm(x) : setDetalle(x))} style={chico}>
                     {editable && x.estado === 'vigente' ? 'Ver / Editar' : 'Ver'}
                   </Boton>
-                  <Menu opciones={[
+                  <Menu altoFila={44} opciones={[
                     { l: 'Ver detalle', d: I.ojo, onClick: () => setDetalle(x) },
                     { l: 'Editar acuerdo', d: I.lapiz, onClick: () => setForm(x), disabled: !editable || x.estado !== 'vigente' },
                     { l: 'Crear orden', d: I.doc, disabled: !editable || x.estado !== 'vigente' || !cliente.activo,
@@ -80,57 +81,6 @@ export default function ServiciosCliente({ cliente, editable, finanzas, onCambio
       {form && <FormServicio cliente={cliente} servicio={form} finanzas={finanzas} onCerrar={() => setForm(null)} onGuardado={listo} />}
       {detalle && <DetalleServicio servicio={detalle} finanzas={finanzas} onCerrar={() => setDetalle(null)} />}
       {finalizar && <Finalizar servicio={finalizar} onCerrar={() => setFinalizar(null)} onListo={listo} />}
-    </div>
-  )
-}
-
-// ── Menú ▾ de cada fila (posición fija para que la tabla no lo recorte) ───
-function Menu({ opciones }) {
-  const [abierto, setAbierto] = useState(null)
-  const ref = useRef(null)
-  useEffect(() => {
-    if (!abierto) return
-    const fuera = (e) => { if (ref.current && !ref.current.contains(e.target)) setAbierto(null) }
-    const cerrar = () => setAbierto(null)
-    document.addEventListener('mousedown', fuera)
-    window.addEventListener('scroll', cerrar, true)
-    window.addEventListener('resize', cerrar)
-    return () => {
-      document.removeEventListener('mousedown', fuera)
-      window.removeEventListener('scroll', cerrar, true)
-      window.removeEventListener('resize', cerrar)
-    }
-  }, [abierto])
-  const alternar = (e) => {
-    if (abierto) { setAbierto(null); return }
-    const r = e.currentTarget.getBoundingClientRect()
-    const alto = opciones.length * 44 + 10
-    const top = r.bottom + 4 + alto > window.innerHeight ? r.top - 4 - alto : r.bottom + 4
-    setAbierto({ top, right: window.innerWidth - r.right })
-  }
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button type="button" className="btn" aria-label="Más acciones" onClick={alternar} style={{ minHeight: 34, padding: '6px 8px' }}>
-        <Icon d={ABAJO} size={16} />
-      </button>
-      {abierto && (
-        <div role="menu" style={{
-          position: 'fixed', right: abierto.right, top: abierto.top, zIndex: 1100, minWidth: 200, padding: 4,
-          background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(19,41,75,.14)',
-        }}>
-          {opciones.map((o) => (
-            <button key={o.l} type="button" role="menuitem" disabled={o.disabled} title={o.nota}
-              onClick={() => { setAbierto(null); o.onClick() }} style={{
-                display: 'flex', alignItems: 'center', gap: 10, width: '100%', border: 0, background: 'transparent',
-                padding: '9px 10px', borderRadius: 'var(--radio-sm)', font: '400 14px var(--font)', textAlign: 'left',
-                color: o.color || C.tinta, cursor: o.disabled ? 'not-allowed' : 'pointer', opacity: o.disabled ? 0.45 : 1,
-              }}>
-              <Icon d={o.d} size={16} color={o.color || C.gris} />
-              <span style={{ flex: 1 }}>{o.l}{o.nota && <small style={{ display: 'block', color: C.gris }}>{o.nota}</small>}</span>
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   )
 }

@@ -1,31 +1,26 @@
 // Operaciones → Programación (láminas 4.1 Vista general, 4.2 Nueva operación, 4.3 Detalle, 4.4a Exportar, 4.4b Cancelar).
 // Programar NO ejecuta: no mueve baños ni consume insumos. La ejecución se confirma en Mi ruta (o en la operación, paquete 8b).
 // Cada operación es un despacho; las Rutas semanales la ven en "Por programar" para ubicarla en un día.
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Modal from './Modal'
 import BuscarCliente from './BuscarCliente'
-import { RespaldoModal, ConfirmarEjecucion } from './OpRespaldos'
+import { RespaldoModal, ConfirmarEjecucion, L_SERV, L_ACCION, servicioYAccion } from './OpRespaldos'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
 import {
   operaciones, banosDeOperacion, banosAsignados, banosConRetiroProgramado, banosDisponibles, crearDespacho, editarOperacion, cancelarOperacion,
   ubicacionesDe, serviciosDe, vehiculos, personalActivo, operacionPorFolio, cupoServicio, registrarExceso, operacionesDeServicios,
 } from '../lib/api'
 import { rutasDeSemana, lunesDe } from '../lib/rutasSemana'
-import { exportarTabla } from '../lib/excel'
+import { exportarTabla, exportarCSV } from '../lib/excel'
 import { useSesion, puedeOperar, esDueno } from '../lib/sesion'
-import { hoyISO, sumarDias } from '../lib/costos'
+import { hoyISO } from '../lib/costos'
 import { C, Icon, I, fecha } from '../lib/ui'
+import Menu from './Menu'
 
-export const L_ESTADO_OP = { programada: 'Programada', realizada: 'Realizada', pendiente: 'Atrasada', cancelada: 'Cancelada' }
-export const TONO_OP = { programada: 'info', realizada: 'ok', pendiente: 'atencion', cancelada: 'neutro' }
-const L_SERV = { arriendo_limpieza: 'Arriendo de baños químicos', limpieza_cliente: 'Limpieza de baños', limpieza_fosas: 'Limpieza de fosa' }
-const L_ACCION = { entrega: 'Entrega', retiro: 'Retiro', cambio: 'Cambio', limpieza: 'Limpieza' }
-export const servicioYAccion = (o) => {
-  const s = L_SERV[o.servicio_tipo]
-  if (!s) return L_ACCION[o.tipo] || o.tipo
-  return o.servicio_tipo === 'arriendo_limpieza' ? `${s} · ${L_ACCION[o.tipo] || o.tipo}` : s
-}
+const L_ESTADO_OP = { programada: 'Programada', realizada: 'Realizada', pendiente: 'Atrasada', cancelada: 'Cancelada' }
+const TONO_OP = { programada: 'info', realizada: 'ok', pendiente: 'atencion', cancelada: 'neutro' }
+
 const chico = { minHeight: 34, padding: '6px 12px' }
 const PUNTOS = 'M6 9l6 6 6-6'
 const PROHIBIDO = 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM5.6 5.6l12.8 12.8'
@@ -158,38 +153,6 @@ export default function OpProgramacion({ irARutas }) {
   )
 }
 
-// ── Menú ▾ (posición fija para que la tabla no lo recorte) ────────────────
-function Menu({ opciones }) {
-  const [abierto, setAbierto] = useState(null)
-  const ref = useRef(null)
-  useEffect(() => {
-    if (!abierto) return
-    const fuera = (e) => { if (ref.current && !ref.current.contains(e.target)) setAbierto(null) }
-    const cerrar = () => setAbierto(null)
-    document.addEventListener('mousedown', fuera); window.addEventListener('scroll', cerrar, true); window.addEventListener('resize', cerrar)
-    return () => { document.removeEventListener('mousedown', fuera); window.removeEventListener('scroll', cerrar, true); window.removeEventListener('resize', cerrar) }
-  }, [abierto])
-  const alternar = (e) => {
-    if (abierto) { setAbierto(null); return }
-    const r = e.currentTarget.getBoundingClientRect(), alto = opciones.length * 40 + 10
-    setAbierto({ top: r.bottom + 4 + alto > window.innerHeight ? r.top - 4 - alto : r.bottom + 4, right: window.innerWidth - r.right })
-  }
-  return (
-    <div ref={ref}>
-      <button type="button" className="btn" aria-label="Más acciones" onClick={alternar} style={{ minHeight: 34, padding: '6px 8px' }}><Icon d={PUNTOS} size={16} /></button>
-      {abierto && (
-        <div role="menu" style={{ position: 'fixed', right: abierto.right, top: abierto.top, zIndex: 1100, minWidth: 200, padding: 4, background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(19,41,75,.14)' }}>
-          {opciones.map((o) => (
-            <button key={o.l} type="button" role="menuitem" disabled={o.disabled} onClick={() => { setAbierto(null); o.onClick() }}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', border: 0, background: 'transparent', padding: '9px 10px', borderRadius: 'var(--radio-sm)', font: '400 14px var(--font)', textAlign: 'left', color: o.color || C.tinta, cursor: o.disabled ? 'not-allowed' : 'pointer', opacity: o.disabled ? 0.45 : 1 }}>
-              <Icon d={o.d} size={16} color={o.color || C.gris} />{o.l}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
 
 // ── 4.2 Nueva operación / Editar programación ─────────────────────────────
 function FormOperacion({ op, onCerrar, onGuardado }) {
@@ -548,12 +511,7 @@ function Exportar({ todas, filtradas, onCerrar }) {
     const cols = ['folio', 'fecha', 'servicio_accion', 'cliente', 'ubicacion', 'unidades', 'patente', 'responsable', 'ruta', 'estado']
     const filas = (solo ? filtradas : todas).map((o) => [o.folio, o.fecha_programada, servicioYAccion(o), o.cliente, o.ubicacion || '', o.unidades || '', o.patente || '', o.responsable || '', o.ruta || '', L_ESTADO_OP[o.estado_op]])
     if (fmt === 'xlsx') exportarTabla(cols, filas, 'Operaciones')
-    else {
-      const esc = (x) => (/[";\n]/.test(String(x)) ? `"${String(x).replace(/"/g, '""')}"` : String(x))
-      const url = URL.createObjectURL(new Blob(['﻿' + [cols, ...filas].map((r) => r.map(esc).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' }))
-      const a = document.createElement('a'); a.href = url; a.download = `operaciones_${hoyISO()}.csv`; a.click()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
-    }
+    else exportarCSV(cols, filas, `operaciones_${hoyISO()}`)
     onCerrar()
   }
   return (

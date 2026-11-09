@@ -1,23 +1,10 @@
 -- 42 · ESTANDARIZACIÓN · Paquete 19: seguridad (parte 2) · el operador solo lee lo de SU ruta.
---   Hoy casi todas las tablas dejan leer a cualquier usuario activo (tiene_acceso()); solo la app esconde lo demás.
---   Esto agrega un "límite" (regla restrictiva) que aplica SOLO al rol operador:
 --     · Ve sus rutas semanales, sus días de ruta, sus paradas, sus clientes, sus equipos y su vehículo.
 --     · No ve costos, ventas, compras, inventario, mantenciones, personal, notificaciones ni otros clientes.
 --   Dueño, secretaria, ventas y demás roles quedan EXACTAMENTE igual.
---   Las vistas que solo usan tablas abiertas pasan a respetar las reglas (para el resto de roles no cambia nada).
---   Se puede deshacer con el PASO 5.
--- Correr PASO POR PASO en Supabase → SQL Editor.
 
 
--- ══ PASO 1 · Revisión (solo lectura) · mandar captura ══════════════════════════
--- Si alguna función dice "invoker", NO sigas: mándame la captura.
-select p.proname as funcion, case when p.prosecdef then 'definer' else 'invoker' end as seguridad
-  from pg_proc p join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public'
- where p.proname in ('iniciar_dia', 'cerrar_dia', 'marcar_parada_ruta', 'marcar_parada_ruta2')
- order by 1;
-
-
--- ══ PASO 2 · Cambios (seleccionar hasta el PASO 3) ══════════════════════════════
+-- ══ PASO 1 · Cambios (seleccionar hasta el PASO 3) ══════════════════════════════
 begin;
 
 -- A. ¿Quién es operador y qué es "lo suyo"?
@@ -104,7 +91,7 @@ end $$;
 commit;
 
 
--- ══ PASO 3 · Control (solo lectura) ══════════════════════════════════════════════
+-- ══ PASO 2 · Control (solo lectura) ══════════════════════════════════════════════
 -- Esperado: limites ≈ 37, funciones = 5. La lista muestra qué vistas cambiaron y cuáles quedaron igual.
 select (select count(*) from pg_policies where schemaname = 'public' and policyname = 'op_limite') as limites,
        (select count(*) from pg_proc where proname in ('es_operador','op_rutas','op_salidas','op_clientes','op_activos')) as funciones;
@@ -116,20 +103,3 @@ select c.relname as vista,
   from pg_class c join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
  where c.relkind = 'v' order by 2, 1;
 
-
--- ══ PASO 4 · Prueba con el operador (en la app) ═════════════════════════════════
--- Entra con un usuario operador: Mi ruta debe verse igual que antes (días, paradas, marcar, fotos, firma).
-
-
--- ══ PASO 5 · SOLO SI ALGO FALLA: deshacer todo (seleccionar el bloque y Run) ═════
--- do $$
--- declare t text; v text;
--- begin
---   for t in select tablename from pg_policies where schemaname = 'public' and policyname = 'op_limite' loop
---     execute format('drop policy if exists op_limite on %I', t);
---   end loop;
---   for v in select vista from _vistas_42 loop
---     execute format('alter view %I set (security_invoker = off)', v);
---   end loop;
---   delete from _vistas_42;
--- end $$;

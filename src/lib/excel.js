@@ -15,7 +15,7 @@ const hoy = () => new Date().toISOString().slice(0, 10)
 
 // Ancho de cada columna según su contenido (mín. 8, máx. 60 caracteres), para que los textos largos
 // (motivos, observaciones) no se monten sobre las columnas vecinas al abrir en Excel.
-export function ajustarAnchos(hoja) {
+function ajustarAnchos(hoja) {
   if (!hoja || !hoja['!ref']) return hoja
   const r = XLSX.utils.decode_range(hoja['!ref'])
   const cols = []
@@ -34,7 +34,6 @@ export function guardarLibro(libro, nombre) {
   libro.SheetNames.forEach((n) => ajustarAnchos(libro.Sheets[n]))
   XLSX.writeFile(libro, nombre)
 }
-function descargar(libro, nombre) { guardarLibro(libro, nombre) }
 
 /** Libro completo: una pestaña por vista. */
 export async function exportarLibro() {
@@ -45,7 +44,7 @@ export async function exportarLibro() {
     const hoja = XLSX.utils.json_to_sheet(datos.length ? datos : [{ aviso: 'Sin datos' }])
     XLSX.utils.book_append_sheet(libro, hoja, p.hoja.slice(0, 31))
   }
-  descargar(libro, `FOSAN_reporte_${hoy()}.xlsx`)
+  guardarLibro(libro, `FOSAN_reporte_${hoy()}.xlsx`)
 }
 
 /** Una sola pestaña. */
@@ -54,7 +53,7 @@ export async function exportarVista(vista, hoja) {
   const libro = XLSX.utils.book_new()
   const h = XLSX.utils.json_to_sheet(datos.length ? datos : [{ aviso: 'Sin datos' }])
   XLSX.utils.book_append_sheet(libro, h, hoja.slice(0, 31))
-  descargar(libro, `FOSAN_${hoja.replace(/\s+/g, '_')}_${hoy()}.xlsx`)
+  guardarLibro(libro, `FOSAN_${hoja.replace(/\s+/g, '_')}_${hoy()}.xlsx`)
 }
 
 /** Lo que está en pantalla, tal cual se ve. */
@@ -66,5 +65,14 @@ export function exportarTabla(columnas, filas, nombre) {
   })
   const libro = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(libro, XLSX.utils.json_to_sheet(datos), nombre.slice(0, 31))
-  descargar(libro, `FOSAN_${nombre.replace(/\s+/g, '_')}_${hoy()}.xlsx`)
+  guardarLibro(libro, `FOSAN_${nombre.replace(/\s+/g, '_')}_${hoy()}.xlsx`)
+}
+
+// CSV: separador ";", UTF-8 con BOM (abre bien en Excel)
+export function exportarCSV(columnas, filas, nombre) {
+  const esc = (x) => (/[";\n]/.test(String(x)) ? `"${String(x).replace(/"/g, '""')}"` : String(x))
+  const texto = '﻿' + [columnas, ...filas].map((r) => r.map(esc).join(';')).join('\r\n')
+  const url = URL.createObjectURL(new Blob([texto], { type: 'text/csv;charset=utf-8' }))
+  const a = document.createElement('a'); a.href = url; a.download = `${nombre}.csv`; a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

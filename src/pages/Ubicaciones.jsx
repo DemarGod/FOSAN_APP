@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Mapa, { Leyenda, COLORES, colorPunto } from '../components/Mapa'
 import { Kpis, Aviso } from '../components/Listado'
-import { Campo } from '../components/FormCliente'
+import { Campo } from '../components/Base'
 import {
   mapaPuntos, clientesResumen, limpiezasCliente, ubicarClienteEnMapa, crearUbicacion,
 } from '../lib/api'
-import { useSesion, puedeEditar, puedeOperar } from '../lib/sesion'
+import { useSesion, puedeOperar } from '../lib/sesion'
 import { DIAS } from '../lib/costos'
 import { C, Icon, I, L_TIPO_UBIC } from '../lib/ui'
 
@@ -217,7 +217,7 @@ function NuevoPunto({ punto, clientes, onCancelar, onGuardado }) {
           ))}
         </div>
         {modo === 'cliente' ? (
-          <Campo l="Cliente">
+          <Campo etiqueta="Cliente">
             <select value={clienteId} onChange={(e) => setClienteId(e.target.value)}>
               <option value="">Elegir cliente…</option>
               {ordenados.map((c) => <option key={c.id} value={c.id}>{c.nombre}{c.georreferenciado ? ' · mover ubicación' : ' · sin ubicar'}</option>)}
@@ -225,15 +225,15 @@ function NuevoPunto({ punto, clientes, onCancelar, onGuardado }) {
           </Campo>
         ) : (
           <>
-            <Campo l="Nombre"><input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={80} placeholder="Faena Ruta 5 km 250" /></Campo>
-            <Campo l="Tipo">
+            <Campo etiqueta="Nombre"><input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={80} placeholder="Faena Ruta 5 km 250" /></Campo>
+            <Campo etiqueta="Tipo">
               <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
                 {['faena', 'bodega', 'taller'].map((t) => <option key={t} value={t}>{L_TIPO_UBIC[t]}</option>)}
               </select>
             </Campo>
           </>
         )}
-        <Campo l="Dirección"><input value={direccion} onChange={(e) => setDireccion(e.target.value)} maxLength={160} placeholder="Se completa sola al hacer clic" /></Campo>
+        <Campo etiqueta="Dirección"><input value={direccion} onChange={(e) => setDireccion(e.target.value)} maxLength={160} placeholder="Se completa sola al hacer clic" /></Campo>
         {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `1px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#7c1405', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button className="btn" onClick={onCancelar}>Cancelar</button>

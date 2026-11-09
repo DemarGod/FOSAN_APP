@@ -9,11 +9,10 @@ import { useSesion } from '../lib/sesion'
 import { hoyISO, sumarDias } from '../lib/costos'
 import { C, I, fecha, fechaHora } from '../lib/ui'
 
-const L_SERV = { arriendo_limpieza: 'Arriendo de baños químicos', limpieza_cliente: 'Limpieza de baños', limpieza_fosas: 'Limpieza de fosa' }
-const L_ACCION = { entrega: 'Entrega', retiro: 'Retiro', cambio: 'Cambio', limpieza: 'Limpieza' }
-const servAcc = (o) => (L_SERV[o.servicio_tipo] ? (o.servicio_tipo === 'arriendo_limpieza' ? `${L_SERV[o.servicio_tipo]} · ${L_ACCION[o.tipo] || o.tipo}` : L_SERV[o.servicio_tipo]) : L_ACCION[o.tipo] || o.tipo)
+export const L_SERV = { arriendo_limpieza: 'Arriendo de baños químicos', limpieza_cliente: 'Limpieza de baños', limpieza_fosas: 'Limpieza de fosa' }
+export const L_ACCION = { entrega: 'Entrega', retiro: 'Retiro', cambio: 'Cambio', limpieza: 'Limpieza' }
+export const servicioYAccion = (o) => (L_SERV[o.servicio_tipo] ? (o.servicio_tipo === 'arriendo_limpieza' ? `${L_SERV[o.servicio_tipo]} · ${L_ACCION[o.tipo] || o.tipo}` : L_SERV[o.servicio_tipo]) : L_ACCION[o.tipo] || o.tipo)
 const chico = { minHeight: 34, padding: '6px 12px' }
-const ahoraLocal = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16) }
 const MAX_MB = 10
 
 export default function OpRespaldos() {
@@ -55,7 +54,7 @@ export default function OpRespaldos() {
           <Tabla filas={filas} vacio="Sin operaciones realizadas en este período." columnas={[
             { k: 'f', label: 'Realizada', render: (o) => (o.fecha_realizada ? fechaHora(o.fecha_realizada) : fecha(o.fecha_programada)) },
             { k: 'folio', label: 'Folio', render: (o) => <b>{o.folio}</b> },
-            { k: 's', label: 'Servicio y acción', render: servAcc },
+            { k: 's', label: 'Servicio y acción', render: servicioYAccion },
             { k: 'c', label: 'Cliente y ubicación', render: (o) => <div><div style={{ fontWeight: 600 }}>{o.cliente}</div><div className="text-muted" style={{ fontSize: 12 }}>{o.ubicacion || '—'}</div></div> },
             {
               k: 'r', label: 'Respaldos', render: (o) => (
@@ -106,7 +105,7 @@ export function RespaldoModal({ o, onCerrar }) {
     </>}>
       <div style={{ padding: 18, display: 'grid', gap: 14 }}>
         <div style={{ font: '400 14px/1.7 var(--font)' }}>
-          <b>{servAcc(o)}</b> · {o.cliente} · {o.ubicacion || '—'}<br />
+          <b>{servicioYAccion(o)}</b> · {o.cliente} · {o.ubicacion || '—'}<br />
           Realizada: {o.fecha_realizada ? fechaHora(o.fecha_realizada) : '—'} · Unidades: {o.unidades || '—'} · Patente: {o.patente || '—'}<br />
           Responsable: {o.responsable || '—'} · Recibió: {o.recibido_por || '—'}{o.resultado ? ` · ${o.resultado}` : ''}
         </div>
@@ -244,7 +243,7 @@ export function ConfirmarEjecucion({ o, onCerrar, onListo }) {
       {paso === 1 ? <Boton tipo="principal" onClick={revisar}>Revisar</Boton> : <Boton tipo="principal" onClick={confirmar} disabled={guardando}>{guardando ? 'Confirmando…' : 'Confirmar ejecución'}</Boton>}
     </>}>
       <div style={{ padding: 18, display: 'grid', gap: 12 }}>
-        <span style={{ font: '600 14px var(--font)' }}>{servAcc(o)} · {o.cliente} · {o.ubicacion || '—'}{o.unidades ? ` · ${o.unidades}` : ''}</span>
+        <span style={{ font: '600 14px var(--font)' }}>{servicioYAccion(o)} · {o.cliente} · {o.ubicacion || '—'}{o.unidades ? ` · ${o.unidades}` : ''}</span>
         <div className="cols2" style={{ gap: 12 }}>
           <Campo etiqueta="Fecha y hora de ejecución" obligatorio><input type="datetime-local" value={v.fecha} max={ahoraLocal()} onChange={set('fecha')} /></Campo>
           <Campo etiqueta="Recibió en terreno"><input value={v.recibido} onChange={set('recibido')} maxLength={80} placeholder="Nombre del encargado" /></Campo>
@@ -265,7 +264,7 @@ export function ConfirmarEjecucion({ o, onCerrar, onListo }) {
 
 // ── Constancia imprimible (se abre en una ventana y se imprime o guarda como PDF) ──
 const esc = (s) => String(s ?? '—').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
-export function imprimirConstancia(o, firmas = []) {
+function imprimirConstancia(o, firmas = []) {
   const w = window.open('', '_blank', 'width=820,height=1000')
   if (!w) { window.alert('El navegador bloqueó la ventana. Permite ventanas emergentes para imprimir la constancia.'); return }
   const fila = (l, v) => `<tr><th>${esc(l)}</th><td>${esc(v)}</td></tr>`
@@ -281,7 +280,7 @@ export function imprimirConstancia(o, firmas = []) {
   .firma img{max-height:110px;display:block;margin:0 auto 4px} small{color:#5f6368}
   @media print{button{display:none}}
 </style></head><body>
-<header><div><h1>FOSAN</h1><small>Constancia de operación</small></div><div style="text-align:right"><h2>${esc(o.folio)}</h2><small>${esc(servAcc(o))}</small></div></header>
+<header><div><h1>FOSAN</h1><small>Constancia de operación</small></div><div style="text-align:right"><h2>${esc(o.folio)}</h2><small>${esc(servicioYAccion(o))}</small></div></header>
 <table>
 ${fila('Cliente', o.cliente)}${fila('RUT', o.rut)}${fila('Ubicación', o.ubicacion)}${fila('Servicio', o.servicio_codigo ? `${o.servicio_codigo} · ${L_SERV[o.servicio_tipo] || ''}` : null)}
 ${fila('Acción', L_ACCION[o.tipo] || o.tipo)}${fila('Unidades', o.unidades)}${fila('Patente', o.patente)}${fila('Responsable', o.responsable)}

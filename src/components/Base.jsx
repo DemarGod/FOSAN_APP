@@ -14,28 +14,6 @@ export function Boton({ tipo = 'secundario', icono, children, className = '', ..
   )
 }
 
-// ── Tarjeta blanca ────────────────────────────────────────────────────────
-// titulo y acciones van en el encabezado; bajada es una línea de ayuda bajo el título.
-export function Tarjeta({ titulo, bajada, acciones, children, sinPadding = false, style }) {
-  return (
-    <section className="card" style={style}>
-      {(titulo || acciones) && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-          padding: '14px 18px', borderBottom: `1px solid ${C.borde}`,
-        }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {titulo && <h6 style={{ margin: 0 }}>{titulo}</h6>}
-            {bajada && <div className="text-muted" style={{ fontSize: 12, marginTop: 2 }}>{bajada}</div>}
-          </div>
-          {acciones && <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{acciones}</div>}
-        </div>
-      )}
-      <div style={{ padding: sinPadding ? 0 : 18 }}>{children}</div>
-    </section>
-  )
-}
-
 // ── Campo de formulario ───────────────────────────────────────────────────
 // Envuelve un input/select/textarea: <Campo etiqueta="RUT" obligatorio ayuda="12.345.678-5"><input …/></Campo>
 export function Campo({ etiqueta, obligatorio = false, ayuda, error, children, style }) {

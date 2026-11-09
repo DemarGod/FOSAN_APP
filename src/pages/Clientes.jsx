@@ -1,7 +1,7 @@
 // Clientes · Listado y registro (láminas 2.1 a 2.3).
 // Un registro por cliente (RUT normalizado); sus obras y servicios se cuentan desde
 // ubicaciones y servicios_cliente. Los clientes no se borran: se desactivan con motivo.
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import Modal from '../components/Modal'
 import FormCliente from '../components/FormCliente'
@@ -10,6 +10,7 @@ import { clientesListado, desactivarCliente, reactivarCliente, procesarVencidos,
 import { exportarTabla } from '../lib/excel'
 import { useSesion, puedeOperar, esDueno } from '../lib/sesion'
 import { C, Icon, I, fecha } from '../lib/ui'
+import Menu from '../components/Menu'
 
 const POR_PAGINA = 20
 const PUNTOS = 'M12 5.5v.1M12 12v.1M12 18.5v.1'
@@ -101,7 +102,7 @@ export default function Clientes() {
       k: 'acciones', label: 'Acciones', alinear: 'right', render: (c) => (
         <div style={{ display: 'inline-flex', gap: 6 }}>
           <Boton onClick={() => navegar(`/clientes/${c.id}`)} style={{ minHeight: 34, padding: '6px 12px' }}>Ver ficha</Boton>
-          <Menu opciones={[
+          <Menu icono={PUNTOS} tam={18} grosor={3} ancho={180} resaltar opciones={[
             { l: 'Ver ficha', d: I.ojo, onClick: () => navegar(`/clientes/${c.id}`) },
             { l: 'Editar datos', d: I.lapiz, onClick: () => setForm(c.id), disabled: !editable },
             c.activo
@@ -186,57 +187,6 @@ export default function Clientes() {
   )
 }
 
-// ── Menú ⋮ de cada fila ────────────────────────────────────────────────────
-function Menu({ opciones }) {
-  // Posición fija para que la tabla (con scroll) no recorte el menú
-  const [abierto, setAbierto] = useState(null)   // { top, right } o null
-  const ref = useRef(null)
-  useEffect(() => {
-    if (!abierto) return
-    const fuera = (e) => { if (ref.current && !ref.current.contains(e.target)) setAbierto(null) }
-    const cerrar = () => setAbierto(null)
-    document.addEventListener('mousedown', fuera)
-    window.addEventListener('scroll', cerrar, true)
-    window.addEventListener('resize', cerrar)
-    return () => {
-      document.removeEventListener('mousedown', fuera)
-      window.removeEventListener('scroll', cerrar, true)
-      window.removeEventListener('resize', cerrar)
-    }
-  }, [abierto])
-  const alternar = (e) => {
-    if (abierto) { setAbierto(null); return }
-    const r = e.currentTarget.getBoundingClientRect()
-    const alto = opciones.length * 40 + 10
-    const top = r.bottom + 4 + alto > window.innerHeight ? r.top - 4 - alto : r.bottom + 4
-    setAbierto({ top, right: window.innerWidth - r.right })
-  }
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button type="button" className="btn" aria-label="Más acciones" onClick={alternar}
-        style={{ minHeight: 34, padding: '6px 8px' }}><Icon d={PUNTOS} size={18} w={3} /></button>
-      {abierto && (
-        <div role="menu" style={{
-          position: 'fixed', right: abierto.right, top: abierto.top, zIndex: 1100, minWidth: 180, padding: 4,
-          background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(19,41,75,.14)',
-        }}>
-          {opciones.map((o) => (
-            <button key={o.l} type="button" role="menuitem" disabled={o.disabled}
-              onClick={() => { setAbierto(null); o.onClick() }} style={{
-                display: 'flex', alignItems: 'center', gap: 10, width: '100%', border: 0, background: 'transparent',
-                padding: '9px 10px', borderRadius: 'var(--radio-sm)', font: '400 14px var(--font)', textAlign: 'left',
-                color: o.color || C.tinta, cursor: o.disabled ? 'not-allowed' : 'pointer', opacity: o.disabled ? 0.45 : 1,
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = C.suave }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}>
-              <Icon d={o.d} size={16} color={o.color || C.gris} />{o.l}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
 
 // ── Desactivar con motivo ─────────────────────────────────────────────────
 function Desactivar({ cliente, onCerrar, onListo }) {

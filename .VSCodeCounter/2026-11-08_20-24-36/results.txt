@@ -1,0 +1,140 @@
+Date : 2026-11-08 20:24:36
+Directory : c:\Users\Asus\FOSAN_APP
+Total : 97 files,  17648 codes, 988 comments, 1319 blanks, all 19955 lines
+
+Languages
++----------------+------------+------------+------------+------------+------------+
+| language       | files      | code       | comment    | blank      | total      |
++----------------+------------+------------+------------+------------+------------+
+| JavaScript JSX |         48 |     10,682 |        294 |        657 |     11,633 |
+| MS SQL         |         30 |      3,059 |        543 |        456 |      4,058 |
+| JSON           |          2 |      2,024 |          0 |          2 |      2,026 |
+| JavaScript     |         11 |      1,615 |        141 |        136 |      1,892 |
+| Markdown       |          2 |        128 |          0 |         43 |        171 |
+| PostCSS        |          1 |        114 |         10 |         20 |        144 |
+| HTML           |          1 |         17 |          0 |          1 |         18 |
+| TOML           |          1 |          9 |          0 |          3 |         12 |
+| YAML           |          1 |          0 |          0 |          1 |          1 |
++----------------+------------+------------+------------+------------+------------+
+
+Directories
++-------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                    | files      | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                       |         97 |     17,648 |        988 |      1,319 |     19,955 |
+| . (Files)                                                               |          6 |      2,117 |          0 |         31 |      2,148 |
+| .github                                                                 |          1 |          0 |          0 |          1 |          1 |
+| .github\.github                                                         |          1 |          0 |          0 |          1 |          1 |
+| .github\.github\workflows                                               |          1 |          0 |          0 |          1 |          1 |
+| .github\.github\workflows\deploy.yml                                    |          1 |          0 |          0 |          1 |          1 |
+| src                                                                     |         59 |     12,406 |        445 |        811 |     13,662 |
+| src (Files)                                                             |          3 |        268 |         12 |         41 |        321 |
+| src\components                                                          |         27 |      5,794 |        172 |        349 |      6,315 |
+| src\lib                                                                 |         13 |      1,904 |        163 |        162 |      2,229 |
+| src\pages                                                               |         16 |      4,440 |         98 |        259 |      4,797 |
+| supabase                                                                |         31 |      3,125 |        543 |        476 |      4,144 |
++-------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| filename                                                                | language       | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| c:\Users\Asus\FOSAN_APP\.github\.github\workflows\deploy.yml\deploy.yml | YAML           |          0 |          0 |          1 |          1 |
+| c:\Users\Asus\FOSAN_APP\README.md                                       | Markdown       |         62 |          0 |         23 |         85 |
+| c:\Users\Asus\FOSAN_APP\index.html                                      | HTML           |         17 |          0 |          1 |         18 |
+| c:\Users\Asus\FOSAN_APP\netlify.toml                                    | TOML           |          9 |          0 |          3 |         12 |
+| c:\Users\Asus\FOSAN_APP\package-lock.json                               | JSON           |      2,001 |          0 |          1 |      2,002 |
+| c:\Users\Asus\FOSAN_APP\package.json                                    | JSON           |         23 |          0 |          1 |         24 |
+| c:\Users\Asus\FOSAN_APP\src\App.jsx                                     | JavaScript JSX |        142 |          2 |         19 |        163 |
+| c:\Users\Asus\FOSAN_APP\src\components\AdminPersonal.jsx                | JavaScript JSX |        418 |         10 |         20 |        448 |
+| c:\Users\Asus\FOSAN_APP\src\components\AdminRoles.jsx                   | JavaScript JSX |        255 |          9 |         16 |        280 |
+| c:\Users\Asus\FOSAN_APP\src\components\Base.jsx                         | JavaScript JSX |        116 |         17 |         10 |        143 |
+| c:\Users\Asus\FOSAN_APP\src\components\BuscarCliente.jsx                | JavaScript JSX |         52 |          2 |          3 |         57 |
+| c:\Users\Asus\FOSAN_APP\src\components\Calendario.jsx                   | JavaScript JSX |        179 |          0 |         18 |        197 |
+| c:\Users\Asus\FOSAN_APP\src\components\DiaRuta.jsx                      | JavaScript JSX |        290 |          9 |         18 |        317 |
+| c:\Users\Asus\FOSAN_APP\src\components\Documentos.jsx                   | JavaScript JSX |         98 |          2 |          4 |        104 |
+| c:\Users\Asus\FOSAN_APP\src\components\FormCliente.jsx                  | JavaScript JSX |        203 |          8 |         18 |        229 |
+| c:\Users\Asus\FOSAN_APP\src\components\FormRutaSemana.jsx               | JavaScript JSX |        258 |          7 |         18 |        283 |
+| c:\Users\Asus\FOSAN_APP\src\components\FormVehiculo.jsx                 | JavaScript JSX |        162 |          1 |          8 |        171 |
+| c:\Users\Asus\FOSAN_APP\src\components\Graficos.jsx                     | JavaScript JSX |        168 |          9 |         10 |        187 |
+| c:\Users\Asus\FOSAN_APP\src\components\ImportarInventario.jsx           | JavaScript JSX |        172 |          3 |         12 |        187 |
+| c:\Users\Asus\FOSAN_APP\src\components\InvEquipos.jsx                   | JavaScript JSX |        404 |          8 |         19 |        431 |
+| c:\Users\Asus\FOSAN_APP\src\components\InvInsumos.jsx                   | JavaScript JSX |        533 |          9 |         24 |        566 |
+| c:\Users\Asus\FOSAN_APP\src\components\Listado.jsx                      | JavaScript JSX |         50 |          0 |          6 |         56 |
+| c:\Users\Asus\FOSAN_APP\src\components\Login.jsx                        | JavaScript JSX |         76 |          1 |          8 |         85 |
+| c:\Users\Asus\FOSAN_APP\src\components\Mapa.jsx                         | JavaScript JSX |        116 |          5 |         13 |        134 |
+| c:\Users\Asus\FOSAN_APP\src\components\Modal.jsx                        | JavaScript JSX |         67 |          8 |          8 |         83 |
+| c:\Users\Asus\FOSAN_APP\src\components\OpProgramacion.jsx               | JavaScript JSX |        539 |         19 |         18 |        576 |
+| c:\Users\Asus\FOSAN_APP\src\components\OpRespaldos.jsx                  | JavaScript JSX |        281 |          8 |         12 |        301 |
+| c:\Users\Asus\FOSAN_APP\src\components\ParametrosCosto.jsx              | JavaScript JSX |        186 |          1 |         14 |        201 |
+| c:\Users\Asus\FOSAN_APP\src\components\ResumenFinanciero.jsx            | JavaScript JSX |        180 |          1 |         13 |        194 |
+| c:\Users\Asus\FOSAN_APP\src\components\SelectorBanos.jsx                | JavaScript JSX |         51 |          1 |          4 |         56 |
+| c:\Users\Asus\FOSAN_APP\src\components\ServiciosCliente.jsx             | JavaScript JSX |        567 |         18 |         23 |        608 |
+| c:\Users\Asus\FOSAN_APP\src\components\Sidebar.jsx                      | JavaScript JSX |         71 |         11 |          7 |         89 |
+| c:\Users\Asus\FOSAN_APP\src\components\Tabbar.jsx                       | JavaScript JSX |         75 |          3 |          4 |         82 |
+| c:\Users\Asus\FOSAN_APP\src\components\Topbar.jsx                       | JavaScript JSX |        227 |          2 |         21 |        250 |
+| c:\Users\Asus\FOSAN_APP\src\index.css                                   | PostCSS        |        114 |         10 |         20 |        144 |
+| c:\Users\Asus\FOSAN_APP\src\lib\ajustes.js                              | JavaScript     |         27 |          2 |          2 |         31 |
+| c:\Users\Asus\FOSAN_APP\src\lib\analisis.js                             | JavaScript     |        370 |         22 |         23 |        415 |
+| c:\Users\Asus\FOSAN_APP\src\lib\api.js                                  | JavaScript     |        783 |         72 |         57 |        912 |
+| c:\Users\Asus\FOSAN_APP\src\lib\auditoria.jsx                           | JavaScript JSX |         82 |          6 |          6 |         94 |
+| c:\Users\Asus\FOSAN_APP\src\lib\costos.js                               | JavaScript     |         98 |          9 |         10 |        117 |
+| c:\Users\Asus\FOSAN_APP\src\lib\drive.js                                | JavaScript     |          1 |          2 |          1 |          4 |
+| c:\Users\Asus\FOSAN_APP\src\lib\excel.js                                | JavaScript     |         58 |          6 |          7 |         71 |
+| c:\Users\Asus\FOSAN_APP\src\lib\roles.js                                | JavaScript     |         50 |          4 |          5 |         59 |
+| c:\Users\Asus\FOSAN_APP\src\lib\rutasSemana.js                          | JavaScript     |        147 |         17 |         17 |        181 |
+| c:\Users\Asus\FOSAN_APP\src\lib\sesion.jsx                              | JavaScript JSX |         40 |          6 |          4 |         50 |
+| c:\Users\Asus\FOSAN_APP\src\lib\supabase.js                             | JavaScript     |         16 |          0 |          5 |         21 |
+| c:\Users\Asus\FOSAN_APP\src\lib\ui.jsx                                  | JavaScript JSX |        172 |         10 |         18 |        200 |
+| c:\Users\Asus\FOSAN_APP\src\lib\validar.js                              | JavaScript     |         60 |          7 |          7 |         74 |
+| c:\Users\Asus\FOSAN_APP\src\main.jsx                                    | JavaScript JSX |         12 |          0 |          2 |         14 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Administracion.jsx                    | JavaScript JSX |        370 |          4 |         25 |        399 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Analisis.jsx                          | JavaScript JSX |        480 |          0 |         23 |        503 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Clientes.jsx                          | JavaScript JSX |        268 |          7 |         19 |        294 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Configuracion.jsx                     | JavaScript JSX |         68 |          3 |          4 |         75 |
+| c:\Users\Asus\FOSAN_APP\src\pages\FichaCliente.jsx                      | JavaScript JSX |        480 |          9 |         29 |        518 |
+| c:\Users\Asus\FOSAN_APP\src\pages\FichaEquipo.jsx                       | JavaScript JSX |        514 |          8 |         19 |        541 |
+| c:\Users\Asus\FOSAN_APP\src\pages\FichaVehiculo.jsx                     | JavaScript JSX |        232 |          8 |         14 |        254 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Flota.jsx                             | JavaScript JSX |        262 |          8 |         15 |        285 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Inicio.jsx                            | JavaScript JSX |        332 |         17 |         27 |        376 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Inventario.jsx                        | JavaScript JSX |         27 |          3 |          3 |         33 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Mantenimiento.jsx                     | JavaScript JSX |        436 |         10 |         17 |        463 |
+| c:\Users\Asus\FOSAN_APP\src\pages\MiRuta.jsx                            | JavaScript JSX |        132 |          3 |         13 |        148 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Operaciones.jsx                       | JavaScript JSX |         24 |          2 |          3 |         29 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Reportes.jsx                          | JavaScript JSX |        386 |         12 |         14 |        412 |
+| c:\Users\Asus\FOSAN_APP\src\pages\RutasSemana.jsx                       | JavaScript JSX |        166 |          4 |         13 |        183 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Ubicaciones.jsx                       | JavaScript JSX |        263 |          0 |         21 |        284 |
+| c:\Users\Asus\FOSAN_APP\supabase\01_schema.sql                          | MS SQL         |        424 |         34 |         50 |        508 |
+| c:\Users\Asus\FOSAN_APP\supabase\02_rls.sql                             | MS SQL         |         48 |         11 |          8 |         67 |
+| c:\Users\Asus\FOSAN_APP\supabase\03_seed.sql                            | MS SQL         |        129 |         24 |         19 |        172 |
+| c:\Users\Asus\FOSAN_APP\supabase\04_logistica.sql                       | MS SQL         |        376 |         24 |         35 |        435 |
+| c:\Users\Asus\FOSAN_APP\supabase\05_historial.sql                       | MS SQL         |         87 |         13 |          8 |        108 |
+| c:\Users\Asus\FOSAN_APP\supabase\21_estandarizacion_base.sql            | MS SQL         |        194 |         22 |         21 |        237 |
+| c:\Users\Asus\FOSAN_APP\supabase\22_limpiar_datos_prueba.sql            | MS SQL         |         40 |         10 |          8 |         58 |
+| c:\Users\Asus\FOSAN_APP\supabase\23_clientes_servicios.sql              | MS SQL         |        155 |         30 |         23 |        208 |
+| c:\Users\Asus\FOSAN_APP\supabase\24_servicios_cliente.sql               | MS SQL         |        177 |         23 |         19 |        219 |
+| c:\Users\Asus\FOSAN_APP\supabase\25_personal_usuarios.sql               | MS SQL         |         28 |         15 |         10 |         53 |
+| c:\Users\Asus\FOSAN_APP\supabase\26_inventario_equipos.sql              | MS SQL         |         69 |         20 |         12 |        101 |
+| c:\Users\Asus\FOSAN_APP\supabase\27_ficha_equipo.sql                    | MS SQL         |         78 |         16 |         13 |        107 |
+| c:\Users\Asus\FOSAN_APP\supabase\28_insumos_epp.sql                     | MS SQL         |        172 |         31 |         21 |        224 |
+| c:\Users\Asus\FOSAN_APP\supabase\29_operaciones.sql                     | MS SQL         |         97 |         19 |         15 |        131 |
+| c:\Users\Asus\FOSAN_APP\supabase\30_completar_operaciones.sql           | MS SQL         |         17 |         10 |          8 |         35 |
+| c:\Users\Asus\FOSAN_APP\supabase\31_respaldos.sql                       | MS SQL         |         84 |         17 |         12 |        113 |
+| c:\Users\Asus\FOSAN_APP\supabase\32_respaldos_ruta.sql                  | MS SQL         |         12 |         10 |          7 |         29 |
+| c:\Users\Asus\FOSAN_APP\supabase\33_flota.sql                           | MS SQL         |        122 |         23 |         20 |        165 |
+| c:\Users\Asus\FOSAN_APP\supabase\34_correcciones_equipo.sql             | MS SQL         |        109 |         20 |         13 |        142 |
+| c:\Users\Asus\FOSAN_APP\supabase\35_mantenimiento.sql                   | MS SQL         |        159 |         26 |         18 |        203 |
+| c:\Users\Asus\FOSAN_APP\supabase\36_revision_cierre.sql                 | MS SQL         |         31 |          6 |          7 |         44 |
+| c:\Users\Asus\FOSAN_APP\supabase\37_ajustes.sql                         | MS SQL         |         14 |          7 |          5 |         26 |
+| c:\Users\Asus\FOSAN_APP\supabase\38_roles.sql                           | MS SQL         |         74 |         15 |         13 |        102 |
+| c:\Users\Asus\FOSAN_APP\supabase\39_diagnostico.sql                     | MS SQL         |         32 |          8 |          9 |         49 |
+| c:\Users\Asus\FOSAN_APP\supabase\40_seguridad_anon.sql                  | MS SQL         |         28 |         14 |         11 |         53 |
+| c:\Users\Asus\FOSAN_APP\supabase\41_limpieza_pruebas.sql                | MS SQL         |         28 |         14 |         14 |         56 |
+| c:\Users\Asus\FOSAN_APP\supabase\42_seguridad_operador.sql              | MS SQL         |         82 |         34 |         20 |        136 |
+| c:\Users\Asus\FOSAN_APP\supabase\43_correcciones_revision.sql           | MS SQL         |        118 |         22 |         18 |        158 |
+| c:\Users\Asus\FOSAN_APP\supabase\44_planificar_rutas.sql                | MS SQL         |         16 |         10 |          7 |         33 |
+| c:\Users\Asus\FOSAN_APP\supabase\45_operaciones_duplicadas.sql          | MS SQL         |         59 |         15 |         12 |         86 |
+| c:\Users\Asus\FOSAN_APP\supabase\README.md                              | Markdown       |         66 |          0 |         20 |         86 |
+| c:\Users\Asus\FOSAN_APP\vite.config.js                                  | JavaScript     |          5 |          0 |          2 |          7 |
+| Total                                                                   |                |     17,648 |        988 |      1,319 |     19,955 |
++-------------------------------------------------------------------------+----------------+------------+------------+------------+------------+

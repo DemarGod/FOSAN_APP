@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import * as XLSX from 'xlsx'
-import { guardarLibro } from '../lib/excel'
+import { guardarLibro, exportarCSV } from '../lib/excel'
 import Modal from '../components/Modal'
 import { Boton, Campo, Tabla, Ayuda, Pestanas } from '../components/Base'
 import Analisis from './Analisis'
@@ -350,12 +350,8 @@ function Exportar({ inf, columnas, filas, totales, filtros, onCerrar }) {
   const descargar = () => {
     if (fmt === 'csv') {
       // CSV: solo datos (sin títulos ni totales), separador ";", fechas AAAA-MM-DD
-      const esc = (x) => (/[";\n]/.test(String(x)) ? `"${String(x).replace(/"/g, '""')}"` : String(x))
       const iso = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v) ? v.slice(0, 16).replace('T', ' ') : v)
-      const txt = [columnas.map((c) => c.k), ...filas.map((r) => columnas.map((c) => esc(iso(r[c.k]) ?? '')))].map((r) => r.join(';')).join('\r\n')
-      const url = URL.createObjectURL(new Blob(['﻿' + txt], { type: 'text/csv;charset=utf-8' }))
-      const a = document.createElement('a'); a.href = url; a.download = `${limpio}.csv`; a.click()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      exportarCSV(columnas.map((c) => c.k), filas.map((r) => columnas.map((c) => iso(r[c.k]) ?? '')), limpio)
     } else if (fmt === 'xlsx') {
       const libro = XLSX.utils.book_new()
       const hoja = XLSX.utils.json_to_sheet(filas.map((r) => Object.fromEntries(columnas.map((c) => [c.l, typeof r[c.k] === 'number' ? r[c.k] : (c.fmt ? c.fmt(r[c.k]) : r[c.k]) ?? '']))))

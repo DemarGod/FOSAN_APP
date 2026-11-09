@@ -18,14 +18,12 @@ import Operaciones from './pages/Operaciones'
 import MiRuta from './pages/MiRuta'
 import Clientes from './pages/Clientes'
 import FichaCliente from './pages/FichaCliente'
-import Ubicaciones from './pages/Ubicaciones'
 import Reportes from './pages/Reportes'
 import Configuracion from './pages/Configuracion'
 import FichaEquipo from './pages/FichaEquipo'
-import Historial from './pages/Historial'
 import Administracion from './pages/Administracion'
 import { C } from './lib/ui'
-import { puedeOperar, puedeVer, esDueno, verAdministracion, esOperador } from './lib/sesion'
+import { puedeOperar, puedeVer, verAdministracion, esOperador } from './lib/sesion'
 
 export default function App() {
   const [usuario, setUsuario] = useState(null)
@@ -121,7 +119,7 @@ export default function App() {
   return (
     <SesionCtx.Provider value={{ usuario, perfil }}>
       <div className="shell">
-        <Sidebar onCalendario={() => setCal(true)} />
+        <Sidebar onCalendario />
         <main style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           <Topbar perfil={perfil} onCalendario={() => setCal(true)} version={calVersion} />
           <div className="pad">
@@ -136,33 +134,22 @@ export default function App() {
             <Routes>
               <Route path="/" element={puedeVer(perfil, 'inicio') ? <Inicio onCalendario={() => setCal(true)} /> : <Navigate to="/mi-ruta" replace />} />
               <Route path="/inventario" element={puedeVer(perfil, 'banos') || puedeVer(perfil, 'insumos') || puedeVer(perfil, 'ubicaciones') ? <Inventario /> : <SinAcceso />} />
-              <Route path="/banos" element={<Navigate to="/inventario" replace />} />
-              <Route path="/camiones" element={<Navigate to="/flota" replace />} />
               <Route path="/flota" element={puedeVer(perfil, 'transporte') ? <Flota /> : <SinAcceso />} />
-              <Route path="/transporte" element={puedeVer(perfil, 'transporte') ? <Flota /> : <SinAcceso />} />
               <Route path="/mantenimiento" element={puedeVer(perfil, 'mantenciones') ? <Mantenimiento /> : <SinAcceso />} />
-              <Route path="/insumos" element={<Navigate to="/inventario?tab=insumos" replace />} />
               <Route path="/operaciones" element={puedeVer(perfil, 'rutas') ? <Operaciones /> : <SinAcceso />} />
               <Route path="/rutas-semanales" element={puedeVer(perfil, 'rutas') ? <RutasSemana /> : <SinAcceso />} />
               <Route path="/mi-ruta" element={<MiRuta />} />
-              <Route path="/despachos" element={<Navigate to="/rutas-semanales" replace />} />
-              <Route path="/rutas" element={<Navigate to="/rutas-semanales" replace />} />
               <Route path="/clientes" element={puedeVer(perfil, 'clientes') ? <Clientes /> : <SinAcceso />} />
               <Route path="/clientes/:id" element={puedeVer(perfil, 'clientes') ? <FichaCliente /> : <SinAcceso />} />
-              <Route path="/utilidades" element={<Navigate to="/reportes?tab=analisis" replace />} />
-              <Route path="/mantenciones" element={<Navigate to="/mantenimiento" replace />} />
-              <Route path="/ubicaciones" element={puedeVer(perfil, 'ubicaciones') ? <Ubicaciones /> : <SinAcceso />} />
               <Route path="/reportes" element={puedeVer(perfil, 'reportes') || puedeVer(perfil, 'analisis') ? <Reportes /> : <SinAcceso />} />
-              <Route path="/analisis" element={<Navigate to="/reportes?tab=analisis" replace />} />
               <Route path="/configuracion" element={<Configuracion />} />
-              <Route path="/historial" element={esDueno(perfil) ? <Historial /> : <SinAcceso />} />
               <Route path="/administracion" element={verAdministracion(perfil) ? <Administracion /> : <SinAcceso />} />
               <Route path="/activo/:token" element={<FichaEquipo />} />
               <Route path="*" element={<p className="text-muted">Esta página no existe.</p>} />
             </Routes>
             )}
           </div>
-          <Tabbar onCalendario={() => setCal(true)} />
+          <Tabbar />
         </main>
       </div>
       {cal && !esOperador(perfil) && <Calendario puedeEditar={puedeOperar(perfil, 'calendario')} onCerrar={() => { setCal(false); setCalVersion((n) => n + 1) }} />}

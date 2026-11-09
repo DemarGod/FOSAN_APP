@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Modal from './Modal'
-import { Campo } from './FormCliente'
+import { Campo } from './Base'
 import { guardarVehiculo } from '../lib/api'
 import { TIPOS_VEHICULO, hoyISO } from '../lib/costos'
 import { useSesion, verFinanzas } from '../lib/sesion'
@@ -85,35 +85,35 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
         <div style={{ display: 'grid', gap: 14, alignContent: 'start' }}>
           <Titulo>Vehículo</Titulo>
           <div style={par}>
-            <Campo l="Código"><input value={v.codigo} onChange={set('codigo', limpiarCodigo)} placeholder="CAM-05" /></Campo>
-            <Campo l="Patente *"><input value={v.patente} onChange={set('patente')} maxLength={10} placeholder="ABCD12" /></Campo>
+            <Campo etiqueta="Código"><input value={v.codigo} onChange={set('codigo', limpiarCodigo)} placeholder="CAM-05" /></Campo>
+            <Campo etiqueta="Patente *"><input value={v.patente} onChange={set('patente')} maxLength={10} placeholder="ABCD12" /></Campo>
           </div>
-          <Campo l="Tipo">
+          <Campo etiqueta="Tipo">
             <select value={v.tipo_vehiculo} onChange={set('tipo_vehiculo')}>
               {Object.entries(TIPOS_VEHICULO).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
             </select>
           </Campo>
           <div style={par}>
-            <Campo l="Marca"><input value={v.marca} onChange={set('marca')} maxLength={40} placeholder="Hino" /></Campo>
-            <Campo l="Modelo"><input value={v.modelo} onChange={set('modelo')} maxLength={40} placeholder="500 FC" /></Campo>
+            <Campo etiqueta="Marca"><input value={v.marca} onChange={set('marca')} maxLength={40} placeholder="Hino" /></Campo>
+            <Campo etiqueta="Modelo"><input value={v.modelo} onChange={set('modelo')} maxLength={40} placeholder="500 FC" /></Campo>
           </div>
           <div style={par}>
-            <Campo l="Año"><input value={v.anio} onChange={set('anio', (x) => num(x).slice(0, 4))} inputMode="numeric" placeholder="2019" /></Campo>
-            <Campo l={nuevo ? 'Odómetro inicial (km) *' : 'Odómetro (km)'}><input value={v.kilometraje} onChange={set('kilometraje', num)} inputMode="numeric" placeholder="184500" /></Campo>
+            <Campo etiqueta="Año"><input value={v.anio} onChange={set('anio', (x) => num(x).slice(0, 4))} inputMode="numeric" placeholder="2019" /></Campo>
+            <Campo etiqueta={nuevo ? 'Odómetro inicial (km) *' : 'Odómetro (km)'}><input value={v.kilometraje} onChange={set('kilometraje', num)} inputMode="numeric" placeholder="184500" /></Campo>
           </div>
           <Titulo>Capacidad</Titulo>
           <div style={par}>
-            <Campo l="Carga máxima (kg)"><input value={v.capacidad_kg} onChange={set('capacidad_kg', num)} inputMode="numeric" placeholder="3500" /></Campo>
-            <Campo l="Baños que caben"><input value={v.capacidad_banos} onChange={set('capacidad_banos', (x) => num(x).slice(0, 3))} inputMode="numeric" placeholder="8" /></Campo>
+            <Campo etiqueta="Carga máxima (kg)"><input value={v.capacidad_kg} onChange={set('capacidad_kg', num)} inputMode="numeric" placeholder="3500" /></Campo>
+            <Campo etiqueta="Baños que caben"><input value={v.capacidad_banos} onChange={set('capacidad_banos', (x) => num(x).slice(0, 3))} inputMode="numeric" placeholder="8" /></Campo>
           </div>
           {limpiafosas && (
-            <Campo l="Estanque de residuos (L)"><input value={v.capacidad_litros} onChange={set('capacidad_litros', num)} inputMode="numeric" placeholder="4000" /></Campo>
+            <Campo etiqueta="Estanque de residuos (L)"><input value={v.capacidad_litros} onChange={set('capacidad_litros', num)} inputMode="numeric" placeholder="4000" /></Campo>
           )}
           <Titulo>Registro</Titulo>
           <div style={par}>
-            <Campo l="Fecha de registro *"><input type="date" value={extra.fecha_registro} max={hoyISO()} onChange={(ev) => setExtra((p) => ({ ...p, fecha_registro: ev.target.value }))} /></Campo>
+            <Campo etiqueta="Fecha de registro *"><input type="date" value={extra.fecha_registro} max={hoyISO()} onChange={(ev) => setExtra((p) => ({ ...p, fecha_registro: ev.target.value }))} /></Campo>
             {nuevo && (
-              <Campo l="Estado inicial *">
+              <Campo etiqueta="Estado inicial *">
                 <select value={extra.estado} onChange={(ev) => setExtra((p) => ({ ...p, estado: ev.target.value }))}>
                   <option value="disponible">Disponible</option>
                   <option value="mantencion">En mantenimiento</option>
@@ -122,25 +122,25 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
               </Campo>
             )}
           </div>
-          <Campo l="Observaciones"><textarea value={extra.observaciones} onChange={(ev) => setExtra((p) => ({ ...p, observaciones: ev.target.value }))} maxLength={500} style={{ minHeight: 60 }} placeholder="Vehículo incorporado en buen estado." /></Campo>
+          <Campo etiqueta="Observaciones"><textarea value={extra.observaciones} onChange={(ev) => setExtra((p) => ({ ...p, observaciones: ev.target.value }))} maxLength={500} style={{ minHeight: 60 }} placeholder="Vehículo incorporado en buen estado." /></Campo>
         </div>
 
         <div style={{ display: 'grid', gap: 14, alignContent: 'start' }}>
           {finanzas ? <>
           <Titulo>Consumo</Titulo>
           <div style={par}>
-            <Campo l="Rendimiento vacío (km/L)"><input value={v.rend_vacio} onChange={set('rend_vacio', dec)} inputMode="decimal" placeholder="7,5" /></Campo>
-            <Campo l="Rendimiento cargado (km/L)"><input value={v.rend_cargado} onChange={set('rend_cargado', dec)} inputMode="decimal" placeholder="5,2" /></Campo>
+            <Campo etiqueta="Rendimiento vacío (km/L)"><input value={v.rend_vacio} onChange={set('rend_vacio', dec)} inputMode="decimal" placeholder="7,5" /></Campo>
+            <Campo etiqueta="Rendimiento cargado (km/L)"><input value={v.rend_cargado} onChange={set('rend_cargado', dec)} inputMode="decimal" placeholder="5,2" /></Campo>
           </div>
           <Titulo>Desgaste y costos</Titulo>
           <div style={par}>
-            <Campo l="Valor de compra"><input value={v.valor_compra} onChange={set('valor_compra', formatoPesos)} inputMode="numeric" placeholder="$38.000.000" /></Campo>
-            <Campo l="Vida útil (km)"><input value={v.vida_util_km} onChange={set('vida_util_km', num)} inputMode="numeric" placeholder="600000" /></Campo>
+            <Campo etiqueta="Valor de compra"><input value={v.valor_compra} onChange={set('valor_compra', formatoPesos)} inputMode="numeric" placeholder="$38.000.000" /></Campo>
+            <Campo etiqueta="Vida útil (km)"><input value={v.vida_util_km} onChange={set('vida_util_km', num)} inputMode="numeric" placeholder="600000" /></Campo>
           </div>
-          <Campo l="Mantención por km"><input value={v.costo_mant_km} onChange={set('costo_mant_km', formatoPesos)} inputMode="numeric" placeholder="$45" /></Campo>
+          <Campo etiqueta="Mantención por km"><input value={v.costo_mant_km} onChange={set('costo_mant_km', formatoPesos)} inputMode="numeric" placeholder="$45" /></Campo>
           <div style={par}>
-            <Campo l="Seguro + permiso + revisión (año)"><input value={v.costo_fijo_anual} onChange={set('costo_fijo_anual', formatoPesos)} inputMode="numeric" placeholder="$1.200.000" /></Campo>
-            <Campo l="Km recorridos al año"><input value={v.km_anual} onChange={set('km_anual', num)} inputMode="numeric" placeholder="40000" /></Campo>
+            <Campo etiqueta="Seguro + permiso + revisión (año)"><input value={v.costo_fijo_anual} onChange={set('costo_fijo_anual', formatoPesos)} inputMode="numeric" placeholder="$1.200.000" /></Campo>
+            <Campo etiqueta="Km recorridos al año"><input value={v.km_anual} onChange={set('km_anual', num)} inputMode="numeric" placeholder="40000" /></Campo>
           </div>
           <div style={{
             padding: '11px 13px', background: C.suave, border: `1px solid ${C.borde}`,

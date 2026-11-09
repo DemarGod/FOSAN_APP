@@ -13,21 +13,12 @@ const one = async (q) => {
 }
 
 // ── Inicio ────────────────────────────────────────────────────────────────
-export const resumenInventario = () => one(supabase.from('v_resumen_inventario').select('*'))
-export const estadoActivos = () => rows(supabase.from('v_estado_activos').select('*'))
-export const serviciosMes = () => rows(supabase.from('v_servicios_mes').select('*'))
 export const mapaPuntos = () => rows(supabase.from('v_mapa_puntos').select('*').order('activos', { ascending: false }))
 
 
 export const utilidadMensual = () => rows(supabase.from('v_utilidad_mensual').select('*'))
-export const utilidadPorServicio = () => rows(supabase.from('v_utilidad_por_servicio').select('*').order('mes', { ascending: false }))
 export const topClientes = () => rows(supabase.from('v_top_clientes').select('*').limit(5))
 
-export const actividadReciente = (n = 8) => rows(
-  supabase.from('movimientos_activo')
-    .select('id, fecha, tipo, detalle, activos(codigo), clientes(nombre)')
-    .order('fecha', { ascending: false }).limit(n)
-)
 
 // ── Notificaciones ────────────────────────────────────────────────────────
 export const notificaciones = () => rows(
@@ -39,10 +30,7 @@ export const marcarLeidas = async () => {
 }
 
 // ── Inventario y activos ──────────────────────────────────────────────────
-export const inventario = () => rows(supabase.from('v_inventario').select('*').order('codigo'))
-export const banosKpi = () => one(supabase.from('v_banos_kpi').select('*'))
 
-// Ojo: desde el script 33, activos y ubicaciones tienen 2 relaciones (ubicacion_id y ubicaciones.vehiculo_id): usar ubicaciones!ubicacion_id(...)
 // Por defecto solo vehículos activos (los desactivados no se eligen en rutas ni operaciones)
 export const vehiculos = (todos = false) => rows(
   supabase.from('vehiculos')
@@ -64,16 +52,6 @@ export const ubicacionesInsumo = () => rows(
   supabase.from('ubicaciones').select('id, nombre, tipo, descripcion, activa').in('tipo', ['bodega', 'taller', 'vehiculo']).order('tipo').order('nombre')
 )
 
-export const activoPorQr = (token) => one(
-  supabase.from('activos')
-    .select('*, modelos_bano(nombre, tipo), clientes!cliente_id(nombre), ubicaciones!ubicacion_id(nombre, lat, lng, tipo)')
-    .eq('qr_token', token)
-)
-export const activoPorCodigo = (codigo) => one(
-  supabase.from('activos')
-    .select('*, modelos_bano(nombre, tipo), clientes!cliente_id(nombre), ubicaciones!ubicacion_id(nombre, lat, lng, tipo)')
-    .eq('codigo', codigo)
-)
 
 export const movimientosDe = (activoId) => rows(
   supabase.from('movimientos_activo')
@@ -91,11 +69,6 @@ export const agregarObservacion = async (activoId, texto) => {
   if (error) throw error
 }
 
-export const eliminarActivos = async (ids) => {
-  const { data, error } = await supabase.rpc('eliminar_activos', { p_ids: ids })
-  if (error) throw error
-  return data
-}
 
 // clases: ['camion','camioneta'] para vehículos o ['bano','equipo'] para equipos (sin clases = todas)
 export const tiposMantencion = (clases) => {
@@ -104,33 +77,10 @@ export const tiposMantencion = (clases) => {
   return rows(q).then((r) => [...new Set(r.map((x) => x.tipo).filter(Boolean))])
 }
 
-
-export const crearActivo = async (datos) => {
-  const { error } = await supabase.from('activos').insert(datos)
-  if (error) throw error
-}
-
 // ── Catálogos para los formularios ────────────────────────────────────────
-export const modelos = () => rows(supabase.from('modelos_bano').select('*').order('nombre'))
-export const ubicaciones = () => rows(supabase.from('ubicaciones').select('id, nombre, tipo, lat, lng').eq('activa', true).neq('tipo', 'vehiculo').order('nombre'))
+
 // Solo clientes activos: los desactivados no se eligen en despachos ni equipos nuevos
 export const clientesLista = () => rows(supabase.from('clientes').select('id, nombre, direccion').eq('activo', true).order('nombre'))
-// Clientes para armar rutas: con días de limpieza, comuna y baños (arrendados + propios)
-export const clientesParaRuta = async () => {
-  const [c, a] = await Promise.all([
-    rows(supabase.from('clientes').select('*').order('nombre')),
-    rows(supabase.from('activos').select('cliente_id').eq('estado', 'en_arriendo').not('cliente_id', 'is', null)),
-  ])
-  const n = {}
-  a.forEach((x) => { n[x.cliente_id] = (n[x.cliente_id] || 0) + 1 })
-  return c.map((x) => ({ ...x, banos_arriendo: n[x.id] || 0, banos_propios: x.banos_propios || 0 }))
-}
-
-export const crearModelo = async (nombre) => {
-  const { data, error } = await supabase.from('modelos_bano').insert({ nombre, tipo: nombre }).select('*').single()
-  if (error) throw error.code === '23505' ? new Error('Ese modelo ya existe.') : error
-  return data
-}
 
 
 export const buscarGlobal = async (q) => {
@@ -142,7 +92,6 @@ export const buscarGlobal = async (q) => {
   ])
   return { activos, clientes }
 }
-export const activosLista = () => rows(supabase.from('activos').select('id, codigo, tipo').neq('estado', 'baja').order('codigo'))
 
 export const crearUbicacion = async (nombre, tipo = 'faena', extra = {}) => {
   const { data, error } = await supabase.from('ubicaciones').insert({ nombre, tipo, ...extra }).select('id, nombre, tipo').single()
@@ -154,30 +103,13 @@ export const ubicarClienteEnMapa = async (clienteId, lat, lng, direccion) => {
   const { error } = await supabase.rpc('ubicar_cliente', { p_cliente: clienteId, p_lat: lat, p_lng: lng, p_direccion: direccion || null })
   if (error) throw error
 }
-export const moverUbicacion = async (id, lat, lng) => {
-  const { error } = await supabase.from('ubicaciones').update({ lat, lng }).eq('id', id)
-  if (error) throw error
-}
+
 
 // ── Clientes ──────────────────────────────────────────────────────────────
 export const clientesResumen = () => rows(supabase.from('v_clientes_resumen').select('*').order('nombre'))
-export const crearCliente = async (datos) => {
-  const { data, error } = await supabase.from('clientes').insert(datos).select('id').single()
-  if (error) throw error
-  return data
-}
+
 export const clientePorId = (id) => one(supabase.from('clientes').select('*').eq('id', id))
-export const actualizarCliente = async (id, datos) => {
-  const { error } = await supabase.from('clientes').update(datos).eq('id', id)
-  if (error) throw error
-  await supabase.from('ubicaciones').update({ nombre: datos.nombre, direccion: datos.direccion, lat: datos.lat, lng: datos.lng })
-    .eq('cliente_id', id).eq('tipo', 'cliente')
-  return { id }
-}
-export const eliminarCliente = async (id) => {
-  const { error } = await supabase.rpc('eliminar_cliente', { p_id: id })
-  if (error) throw error
-}
+
 // ── Clientes (etapa 2): listado, datos generales y desactivación ─────────
 export const normalizarRut = (rut) => String(rut || '').replace(/[^0-9kK]/g, '').toUpperCase()
 export const clientesListado = async () => {
@@ -338,17 +270,8 @@ export const crearRubro = async (nombre) => {
   if (error) throw error.code === '23505' ? new Error('Ese rubro ya existe.') : error
   return data
 }
-export const ubicarCliente = async (id, lat, lng) => {
-  const { error } = await supabase.from('clientes').update({ lat, lng }).eq('id', id)
-  if (error) throw error
-}
 
-// ── Mantenciones ──────────────────────────────────────────────────────────
-export const mantenciones = () => rows(
-  supabase.from('mantenciones')
-  .select('id, activo_id, clase, tipo, fecha_programada, fecha_realizada, responsable_ext, costo, estado, detalle, activos(codigo, tipo), perfiles:responsable_id(nombre)')
-  .order('fecha_programada', { ascending: false })
-)
+
 // ── Mantenimiento (lámina 6) ──────────────────────────────────────────────
 export const mantenimiento = () => rows(supabase.from('v_mantenimiento').select('*').order('fecha_programada', { ascending: false }).limit(3000))
 const rpcM = async (fn, args) => { const { data, error } = await supabase.rpc(fn, args); if (error) throw error; return data }
@@ -363,22 +286,10 @@ export const registrarResultadoMantencion = (id, d) => rpcM('registrar_resultado
   p_id: id, p_fecha: d.fecha, p_resultado: d.resultado, p_trabajo: d.trabajo, p_condicion: d.condicion, p_obs: d.observaciones || null, p_costo: d.costo ?? null,
 })
 export const cancelarMantencion = (id, motivo) => rpcM('cancelar_mantencion', { p_id: id, p_motivo: motivo })
-export const mantencionesKpi = () => one(supabase.from('v_mantenciones_kpi').select('*'))
 export const crearMantencion = async (datos) => {
   const { error } = await supabase.from('mantenciones').insert(datos)
   if (error) throw error
 }
-
-// Completar: el trigger cerrar_mantencion devuelve el activo a su estado de trabajo
-export const completarMantencion = async (id, datos) => {
-  const { error } = await supabase.from('mantenciones').update({ ...datos, estado: 'completada' }).eq('id', id)
-  if (error) throw error
-}
-export const anularMantencion = async (id) => {
-  const { error } = await supabase.from('mantenciones').update({ estado: 'anulada' }).eq('id', id)
-  if (error) throw error
-}
-
 
 
 // ── Calendario ────────────────────────────────────────────────────────────
@@ -397,78 +308,6 @@ export const borrarEvento = async (id) => {
   if (error) throw error
 }
 
-// ── Ficha del baño: mantenciones y reparaciones ──────────────────────────
-export const mantencionesDe = (activoId) => rows(
-  supabase.from('mantenciones').select('*').eq('activo_id', activoId).order('fecha_programada', { ascending: false })
-)
-
-// ── Clientes: última visita y próximo servicio (rutas + despachos) ─────────
-export const clientesOperacion = async () => {
-  const hoy = new Date().toISOString().slice(0, 10)
-  const seguro = (p) => p.catch(() => [])
-  const [par, des, cli] = await Promise.all([
-    seguro(rows(supabase.from('salida_paradas').select('cliente_id, salidas!inner(fecha, estado)').in('salidas.estado', ['cerrada', 'planificada']))),
-    seguro(rows(supabase.from('despachos').select('cliente_id, estado, fecha_programada, fecha_realizada').in('estado', ['hecho', 'programado']))),
-    seguro(rows(supabase.from('clientes').select('id, dias_limpieza'))),
-  ])
-  const m = {}
-  cli.forEach((c) => { m[c.id] = { ultima: null, proxima: null, dias: c.dias_limpieza || [] } })
-  const ini = hoy.slice(0, 8) + '01'
-  const reg = (id, f, hecho) => {
-    if (!id || !f) return
-    const x = (m[id] ||= { ultima: null, proxima: null, dias: [] })
-    x.servicios ??= 0; x.despachos ??= 0; x.aTiempo ??= 0
-    if (hecho && f >= ini) x.servicios++
-    if (hecho) { if (!x.ultima || f > x.ultima) x.ultima = f }
-    else if (f >= hoy && (!x.proxima || f < x.proxima)) x.proxima = f
-  }
-  par.forEach((p) => reg(p.cliente_id, p.salidas?.fecha, p.salidas?.estado === 'cerrada'))
-  des.forEach((d) => {
-    const f = d.estado === 'hecho' ? (d.fecha_realizada || '').slice(0, 10) : d.fecha_programada
-    reg(d.cliente_id, f, d.estado === 'hecho')
-    if (d.estado === 'hecho' && f >= ini && m[d.cliente_id]) { m[d.cliente_id].despachos++; if (f <= d.fecha_programada) m[d.cliente_id].aTiempo++ }
-  })
-  return m
-}
-
-// ── Tablero de Inicio: operación diaria, activos y transporte ───────────────
-export const tableroInicio = async () => {
-  const hoy = new Date().toISOString().slice(0, 10)
-  const en7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10)
-  const seguro = (p) => p.catch(() => [])
-  const [act, des, salHoy, man] = await Promise.all([
-    rows(supabase.from('activos').select('id, codigo, tipo, estado').neq('estado', 'baja')),
-    seguro(rows(supabase.from('despachos').select('id, tipo, fecha_programada, vehiculo_id').eq('estado', 'programado'))),
-    seguro(rows(supabase.from('salidas').select('id, vehiculo_id, salida_paradas(id)').eq('estado', 'planificada').eq('fecha', hoy).is('salida_paradas.despacho_id', null))),
-    seguro(rows(supabase.from('mantenciones').select('id, fecha_programada, activos!inner(codigo, tipo)').in('estado', ['programada', 'proxima', 'urgente']))),
-  ])
-  const banos = act.filter((x) => x.tipo === 'bano_quimico')
-  const flota = act.filter((x) => ['camion', 'camioneta'].includes(x.tipo))
-  const n = (l, e) => l.filter((x) => e.includes(x.estado)).length
-  const enRuta = new Set([...salHoy.map((s) => s.vehiculo_id), ...des.filter((d) => d.fecha_programada === hoy).map((d) => d.vehiculo_id)].filter(Boolean))
-  const manVeh = man.filter((m) => ['camion', 'camioneta'].includes(m.activos?.tipo))
-  return {
-    operacion: {
-      hoy: des.filter((d) => d.fecha_programada === hoy).length + salHoy.reduce((t, s) => t + (s.salida_paradas?.length || 0), 0),
-      atrasados: des.filter((d) => d.fecha_programada < hoy).length,
-      retiros: des.filter((d) => d.tipo === 'retiro').length,
-      mantenciones: man.filter((m) => m.fecha_programada <= en7).length,
-    },
-    banos: {
-      total: banos.length, disponibles: n(banos, ['disponible']), arrendados: n(banos, ['en_arriendo']),
-      limpieza: n(banos, ['en_limpieza']), fuera: n(banos, ['mantencion', 'fuera_de_servicio']),
-    },
-    transporte: {
-      total: flota.length,
-      operando: flota.filter((v) => enRuta.has(v.id) || v.estado === 'en_servicio').length,
-      disponibles: flota.filter((v) => !enRuta.has(v.id) && ['disponible', 'en_servicio'].includes(v.estado) && v.estado !== 'en_servicio').length,
-      taller: n(flota, ['mantencion', 'fuera_de_servicio']),
-      mantPendientes: manVeh.length,
-    },
-    banosFuera: banos.filter((b) => b.estado === 'fuera_de_servicio'),
-    vehiculosDetenidos: flota.filter((v) => ['mantencion', 'fuera_de_servicio'].includes(v.estado)),
-  }
-}
 
 // ── Avisos calculados (calendario, contratos, mantenciones, insumos, despachos) ──
 export const avisosCalculados = async () => {
@@ -512,7 +351,7 @@ export const avisosCalculados = async () => {
     texto: `${dias(m.fecha_programada) < 0 ? 'Atrasada' : cuando(m.fecha_programada)}: ${m.tipo} · ${m.activos?.codigo || ''}`,
   }))
   ins.filter((i) => Number(i.stock_actual) <= Number(i.stock_minimo) && Number(i.stock_minimo) > 0).forEach((i) => lista.push({
-    id: 'ins-' + i.id + '-' + i.stock_actual, fecha: iso(hoy), origen: 'Insumos', a: '/insumos', nivel: 'aviso',
+    id: 'ins-' + i.id + '-' + i.stock_actual, fecha: iso(hoy), origen: 'Insumos', a: '/inventario?tab=insumos', nivel: 'aviso',
     texto: `${i.nombre} bajo el mínimo: quedan ${Number(i.stock_actual).toLocaleString('es-CL')} ${i.unidad}`,
   }))
   des.forEach((d) => lista.push({
@@ -524,18 +363,7 @@ export const avisosCalculados = async () => {
 }
 
 // ── Configuración ─────────────────────────────────────────────────────────
-export const perfiles = () => rows(supabase.from('perfiles').select('*').order('nombre'))
 export const todosPermisos = () => rows(supabase.from('permisos_rol').select('*'))
-export const guardarPermiso = (rol, seccion, ver, editar) => rows(
-  supabase.from('permisos_rol').upsert({ rol, seccion, ver, editar }, { onConflict: 'rol,seccion' }).select()
-)
-export const guardarPerfil = async (u, cambios) => {
-  await rows(supabase.from('perfiles').update(cambios).eq('id', u.id).select())
-  if (cambios.rol && u.correo) await supabase.from('accesos_autorizados').update({ rol: cambios.rol }).eq('correo', u.correo.toLowerCase())
-}
-export const accesosAutorizados = () => rows(supabase.from('accesos_autorizados').select('*').order('nombre'))
-export const autorizarCorreo = (a) => rows(supabase.from('accesos_autorizados').upsert({ ...a, correo: a.correo.trim().toLowerCase() }).select())
-export const quitarAutorizacion = (correo) => rows(supabase.from('accesos_autorizados').delete().eq('correo', correo).select())
 
 // ── Administración → Personal y usuarios (láminas 8.1 a 8.3) ─────────────
 // Persona = fila de "personal". Si tiene acceso, está unida a su cuenta en "perfiles".
@@ -577,7 +405,6 @@ export const asignarClave = async (correo, clave) => {
   const { error } = await supabase.rpc('cambiar_clave_usuario', { p_correo: correo, p_clave: clave })
   if (error) throw error
 }
-// Solo el dueño, con doble confirmación. La persona queda "Sin acceso" y su historial se conserva.
 // Mantenimientos abiertos (programados o en curso), uno por equipo: para mostrarlo en Inventario
 export const mantencionesAbiertas = () => rows(supabase.from('mantenciones').select('activo_id, folio, fecha_programada, iniciada_en')
   .in('estado', ['programada', 'proxima', 'urgente']).order('fecha_programada'))
@@ -649,12 +476,6 @@ export const actividadPeriodo = (desde, hasta) => rows(
   supabase.from('auditoria').select('*').gte('fecha', desde).lte('fecha', hasta + 'T23:59:59').order('fecha', { ascending: false }).limit(200)
 )
 
-// ── Historial de cambios (solo dueños) ───────────────────────────────────
-export const historial = (desde) => {
-  let q = supabase.from('auditoria').select('*').order('fecha', { ascending: false }).limit(1000)
-  if (desde) q = q.gte('fecha', desde)
-  return rows(q)
-}
 
 // ── Administración: historial con rango de fechas ────────────────────────
 export const historialRango = (desde, hasta) => {
@@ -1023,30 +844,6 @@ export const banosDisponibles = async () => {
   const tomados = new Set(ocupados.map((o) => o.activo_id))
   return lista.filter((b) => !tomados.has(b.id))
 }
-// Todos los baños con su estado, cliente y si están reservados en un despacho pendiente
-export const banosEstado = async () => {
-  const [lista, reservas] = await Promise.all([
-    rows(supabase.from('activos').select('id, codigo, estado, clientes!cliente_id(nombre), modelos_bano(nombre, tipo)')
-      .eq('tipo', 'bano_quimico').neq('estado', 'baja').order('codigo')),
-    rows(supabase.from('despacho_banos').select('activo_id, despachos!inner(folio, estado)')
-      .eq('accion', 'entrega').eq('despachos.estado', 'programado')),
-  ])
-  const res = Object.fromEntries(reservas.map((r) => [r.activo_id, r.despachos?.folio]))
-  return lista.map((b) => ({ ...b, reservado: res[b.id] || null }))
-}
-export const agregarParadaRuta = async (rutaId, clienteId) => {
-  const { data } = await supabase.from('ruta_paradas').select('orden').eq('ruta_id', rutaId).order('orden', { ascending: false }).limit(1)
-  const orden = (data?.[0]?.orden || 0) + 1
-  const { error } = await supabase.from('ruta_paradas').insert({ ruta_id: rutaId, cliente_id: clienteId, tarea: 'limpieza', orden })
-  if (error) throw error
-  const hoy = new Date().toISOString().slice(0, 10)
-  await supabase.from('salidas').delete().eq('ruta_id', rutaId).eq('estado', 'planificada').gte('fecha', hoy)
-  await supabase.rpc('generar_salidas', { dias: 14 })
-}
-export const banosDeCliente = (clienteId) => rows(
-  supabase.from('activos').select('id, codigo, modelos_bano(nombre, tipo)')
-    .eq('cliente_id', clienteId).eq('estado', 'en_arriendo').order('codigo')
-)
 
 // ── Transporte ────────────────────────────────────────────────────────────
 export const guardarVehiculo = async (activoId, activo, vehiculo) => {
@@ -1067,7 +864,6 @@ export const guardarVehiculo = async (activoId, activo, vehiculo) => {
 }
 
 // ── Insumos ───────────────────────────────────────────────────────────────
-export const insumosLista = () => rows(supabase.from('insumos').select('*, receta_limpieza(cantidad)').order('nombre'))
 export const guardarInsumo = async (id, datos, receta) => {
   let iid = id
   if (iid) {
@@ -1085,30 +881,9 @@ export const guardarInsumo = async (id, datos, receta) => {
     await supabase.from('receta_limpieza').delete().eq('insumo_id', iid)
   }
 }
-// Movimiento de insumo: suma o resta stock y deja registro (fecha, usuario, tipo, motivo)
-export const TIPOS_MOV_INSUMO = {
-  compra: { l: 'Compra', signo: 1 }, devolucion: { l: 'Devolución', signo: 1 },
-  consumo: { l: 'Consumo', signo: -1 }, merma: { l: 'Merma', signo: -1 }, ajuste: { l: 'Ajuste', signo: 0 },
-}
-export const movimientoInsumo = async (insumo, tipo, cantidad, motivo) => {
-  const { data } = await supabase.rpc('mover_insumo', { p_insumo: insumo.id, p_tipo: tipo, p_cantidad: cantidad, p_motivo: motivo || null })
-    .then((r) => { if (r.error) throw r.error; return r })
-  return data
-}
-export const movimientosInsumo = (insumoId) => rows(
-  supabase.from('movimientos_insumo').select('id, fecha, tipo, cantidad, motivo, usuario:usuario_id(nombre)')
-    .eq('insumo_id', insumoId).order('fecha', { ascending: false }).limit(200)
-)
-export const ingresoInsumo = async (insumo, cantidad, motivo) => {
-  const { error } = await supabase.from('insumos')
-    .update({ stock_actual: Number(insumo.stock_actual) + cantidad }).eq('id', insumo.id)
-  if (error) throw error
-  await supabase.from('movimientos_insumo').insert({ insumo_id: insumo.id, cantidad, motivo })
-}
 
 
 // ── Despachos ─────────────────────────────────────────────────────────────
-export const despachos = () => rows(supabase.from('v_despachos').select('*').order('fecha_programada', { ascending: false }))
 export const crearDespacho = async (datos, banos) => {
   const { data, error } = await supabase.from('despachos').insert(datos).select('id').single()
   if (error) throw error
@@ -1118,59 +893,6 @@ export const crearDespacho = async (datos, banos) => {
     if (e2) { await supabase.from('despachos').delete().eq('id', data.id); throw e2 }
   }
   return data.id
-}
-export const estadoDespacho = async (id, estado) => {
-  const cambios = { estado }
-  if (estado === 'hecho') cambios.fecha_realizada = new Date().toISOString()
-  const { error } = await supabase.from('despachos').update(cambios).eq('id', id)
-  if (error) throw error
-}
-
-// ── Rutas y salidas ───────────────────────────────────────────────────────
-export const rutasLista = () => rows(
-  supabase.from('rutas').select('*, activos(codigo), ruta_paradas(id, cliente_id, orden, tarea, clientes(nombre))').order('nombre')
-)
-export const guardarRuta = async (id, datos, paradas) => {
-  let rid = id
-  if (rid) {
-    const { error } = await supabase.from('rutas').update(datos).eq('id', rid)
-    if (error) throw error
-    await supabase.from('ruta_paradas').delete().eq('ruta_id', rid)
-    const hoy = new Date().toISOString().slice(0, 10)
-    await supabase.from('salidas').delete().eq('ruta_id', rid).eq('estado', 'planificada').gte('fecha', hoy)
-  } else {
-    const { data, error } = await supabase.from('rutas').insert(datos).select('id').single()
-    if (error) throw error
-    rid = data.id
-  }
-  if (paradas.length) {
-    const { error } = await supabase.from('ruta_paradas')
-      .insert(paradas.map((p, i) => ({ ruta_id: rid, cliente_id: p.cliente_id, tarea: p.tarea, orden: i + 1 })))
-    if (error) throw error
-  }
-  await supabase.rpc('generar_salidas', { dias: 14 })
-}
-export const borrarRuta = async (id) => {
-  const { error } = await supabase.from('rutas').delete().eq('id', id)
-  if (error) throw error
-}
-export const generarSalidas = () => supabase.rpc('generar_salidas', { dias: 14 }).then(() => null, () => null)
-export const salidas = (desde, hasta) => rows(
-  supabase.from('v_salidas').select('*').gte('fecha', desde).lte('fecha', hasta).order('fecha')
-)
-export const paradasDe = (salidaId) => rows(
-  supabase.from('salida_paradas').select('*, clientes(nombre, direccion, comuna)').eq('salida_id', salidaId).order('orden')
-)
-export const despachosDeSalida = (salidaId) => rows(supabase.from('v_despachos').select('*').eq('salida_id', salidaId))
-export const salidasDelDia = (fecha) => rows(supabase.from('v_salidas').select('id, ruta, fecha, vehiculo').eq('fecha', fecha))
-export const actualizarSalida = async (id, cambios) => {
-  const { error } = await supabase.from('salidas').update(cambios).eq('id', id)
-  if (error) throw error
-}
-export const marcarParada = async (id, hecha) => {
-  const { error } = await supabase.from('salida_paradas')
-    .update({ hecha, hecha_en: hecha ? new Date().toISOString() : null }).eq('id', id)
-  if (error) throw error
 }
 
 // ── Parámetros de costo ───────────────────────────────────────────────────

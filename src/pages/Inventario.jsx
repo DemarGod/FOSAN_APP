@@ -1,6 +1,6 @@
 // Inventario (lámina 3): Equipos · Insumos y EPP · Mapa.
 // Equipos (3.1 a 3.8) · Insumos y EPP (3.9 a 3.12) · Mapa (el de siempre).
-import { Navigate, useSearchParams } from 'react-router-dom'
+import {useSearchParams } from 'react-router-dom'
 import { Pestanas } from '../components/Base'
 import InvEquipos from '../components/InvEquipos'
 import InvInsumos from '../components/InvInsumos'
@@ -17,7 +17,6 @@ export default function Inventario() {
   const { perfil } = useSesion()
   const [params, setParams] = useSearchParams()
   // Mantenciones ahora es el módulo Mantenimiento (lámina 6)
-  if (params.get('tab') === 'mantenciones') return <Navigate to="/mantenimiento?tab=equipos" replace />
   const pestanas = TODAS.filter((p) => puedeVer(perfil, p.s))
   const tab = pestanas.some((p) => p.v === params.get('tab')) ? params.get('tab') : pestanas[0]?.v
   return (

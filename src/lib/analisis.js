@@ -12,7 +12,7 @@ const fn = (x, d = 0) => (Number(x) || 0).toLocaleString('es-CL', { maximumFract
 const fp = (x) => Math.round((x || 0) * 100) + '%'
 
 // Supuestos cuando el parámetro no está cargado (editables en Parámetros de costo)
-export const SUPUESTOS = {
+const SUPUESTOS = {
   factor_recorrido: 1.3,      // la ruta real es ~30% más larga que la línea recta
   bano_valor_compra: 450000,  // supuesto: validar con cotización del proveedor
   bano_valor_residual: 45000, // 10% del valor de compra
@@ -21,14 +21,14 @@ export const SUPUESTOS = {
 }
 const sup = (par, k) => (par[k] === null || par[k] === undefined ? SUPUESTOS[k] : n(par[k]))
 
-export const GRUPO_ESTADO = {
+const GRUPO_ESTADO = {
   en_arriendo: 'arriendo',
   disponible: 'disponible', en_limpieza: 'disponible',
   mantencion: 'mantencion', fuera_de_servicio: 'mantencion',
 }
 const grupo = (e) => GRUPO_ESTADO[e] || 'otros'
 
-export const rangoMes = (mes) => {
+const rangoMes = (mes) => {
   const [y, m] = mes.split('-').map(Number)
   const fin = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10)
   return { ini: `${mes}-01`, fin, dias: new Date(Date.UTC(y, m, 0)).getUTCDate() }
@@ -37,7 +37,7 @@ export const mesActual = () => hoyISO().slice(0, 7)
 
 // ── Distancias ────────────────────────────────────────────────────────────
 const coord = (x) => (x && Number(x.lat) && Number(x.lng) ? { lat: Number(x.lat), lng: Number(x.lng) } : null)
-export const distKm = (a, b) => {
+const distKm = (a, b) => {
   if (!a || !b) return null
   const r = Math.PI / 180
   const h = Math.sin(((b.lat - a.lat) * r) / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(((b.lng - a.lng) * r) / 2) ** 2

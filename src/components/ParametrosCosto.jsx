@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Modal from './Modal'
-import { parametros, guardarParametro, modelos, guardarPesoModelo } from '../lib/api'
+import { parametros, guardarParametro, catModelos, guardarPesoModelo } from '../lib/api'
 import { supabase } from '../lib/supabase'
 import { costoKmVehiculo, costoServicioBano, mapaParametros } from '../lib/costos'
 import { decimalDe } from '../lib/validar'
@@ -48,7 +48,7 @@ function Costos({ editable }) {
   const [sim, setSim] = useState({ km: '100', banos: '20' })
   useEffect(() => {
     parametros().then(setPars).catch(setMsg)
-    modelos().then(setMods).catch(setMsg)
+    catModelos().then(setMods).catch(setMsg)
     Promise.all([supabase.from('receta_limpieza').select('*'), supabase.from('insumos').select('id, costo_unitario')])
       .then(([r, i]) => {
         const cu = Object.fromEntries((i.data || []).map((x) => [x.id, Number(x.costo_unitario) || 0]))

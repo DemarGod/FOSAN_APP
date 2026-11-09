@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Modal from './Modal'
 import SelectorBanos from './SelectorBanos'
 import BuscarCliente from './BuscarCliente'
-import { Campo } from './FormCliente'
+import { Campo } from './Base'
 import { Chip } from './DiaRuta'
 import { vehiculos, banosDisponibles } from '../lib/api'
 import {
@@ -135,17 +135,17 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
       {!datos ? <div style={{ padding: 18, color: C.gris }}>{error ? String(error.message || error) : 'Cargando…'}</div> : (
         <>
           <div style={{ padding: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-            <Campo l="Nombre"><input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={60} placeholder="RUTA NORTE" style={{ textTransform: 'uppercase' }} /></Campo>
-            <Campo l={`Semana · ${etiquetaSemana(semana)}`}>
+            <Campo etiqueta="Nombre"><input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={60} placeholder="RUTA NORTE" style={{ textTransform: 'uppercase' }} /></Campo>
+            <Campo etiqueta={`Semana · ${etiquetaSemana(semana)}`}>
               <input type="date" value={semana} disabled={bloq.size > 0} onChange={(e) => e.target.value && setSemana(lunesDe(e.target.value))} />
             </Campo>
-            <Campo l="Operador">
+            <Campo etiqueta="Operador">
               <select value={operador} onChange={(e) => setOperador(e.target.value)}>
                 <option value="">Elegir…</option>
                 {datos.ops.map((o) => <option key={o.id} value={o.id}>{o.nombre}{o.rol !== 'operador' ? ` · ${o.rol}` : ''}</option>)}
               </select>
             </Campo>
-            <Campo l="Vehículo">
+            <Campo etiqueta="Vehículo">
               <select value={vehiculo} onChange={(e) => setVehiculo(e.target.value)}>
                 <option value="">Elegir…</option>
                 {datos.flota.map((f) => {
@@ -154,7 +154,7 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
                 })}
               </select>
             </Campo>
-            <Campo l="Notas para el operador"><input value={notas} onChange={(e) => setNotas(e.target.value)} maxLength={300} placeholder="Salir 7:30 desde bodega" /></Campo>
+            <Campo etiqueta="Notas para el operador"><input value={notas} onChange={(e) => setNotas(e.target.value)} maxLength={300} placeholder="Salir 7:30 desde bodega" /></Campo>
           </div>
 
           {/* Barra para agregar filas */}

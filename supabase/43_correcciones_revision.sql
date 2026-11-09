@@ -5,25 +5,12 @@
 --   B. Operaciones: la fecha debe estar dentro del servicio (desde su inicio; hasta su término salvo retiros).
 --   C. MAYÚSCULAS en nombres propios: clientes (ya estaba), ubicaciones, contactos y rutas semanales.
 --   D. Documentos de vehículos y equipos: fecha de vencimiento, subir y quitar desde la app.
--- No borra nada. Correr PASO POR PASO en Supabase → SQL Editor. El PASO 2 va SOLO.
 
-
--- ══ PASO 1 · Revisión previa (solo lectura) · mandar captura ═════════════════════
-select (select count(*) from activos a where a.estado = 'mantencion'
-          and not exists (select 1 from mantenciones m where m.activo_id = a.id and m.estado in ('programada','proxima','urgente'))) as en_mantencion_sin_orden,
-       (select count(*) from despachos d join servicios_cliente s on s.id = d.servicio_id
-         where d.estado = 'programado' and d.fecha_programada < s.fecha_inicio)                                    as operaciones_antes_del_servicio,
-       (select count(*) from ubicaciones where nombre <> upper(trim(nombre)))                                       as ubicaciones_a_mayusculas,
-       (select count(*) from cliente_contactos where nombre <> upper(trim(nombre)))                                 as contactos_a_mayusculas,
-       (select count(*) from rutas_semana where nombre <> upper(trim(nombre)))                                      as rutas_a_mayusculas,
-       (select count(*) from information_schema.columns where table_name = 'documentos_activo' and column_name = 'fecha_vencimiento') as ya_tiene_vencimiento;
-
-
--- ══ PASO 2 · Tipo de documento nuevo (seleccionar SOLO esta línea y Run) ══════════
+-- ══ PASO 1 · Tipo de documento nuevo (seleccionar SOLO esta línea y Run) ══════════
 alter type tipo_documento add value if not exists 'permiso_circulacion';
 
 
--- ══ PASO 3 · Cambios (seleccionar hasta el PASO 4) ══════════════════════════════
+-- ══ PASO 2 · Cambios (seleccionar hasta el PASO 4) ══════════════════════════════
 begin;
 
 -- A. Mantenimiento: orden abierta obligatoria ------------------------------------
@@ -141,17 +128,3 @@ $$ language plpgsql security definer set search_path = public;
 
 commit;
 
-
--- ══ PASO 4 · Control (solo lectura) ══════════════════════════════════════════════
--- Esperado: en_mantencion_sin_orden = 0 · operaciones_antes_del_servicio = las mismas del PASO 1 (no se tocan)
---           mayúsculas = 0 · ya_tiene_vencimiento = 1 · funciones = 4 · ordenes_creadas = las del PASO 1
-select (select count(*) from activos a where a.estado = 'mantencion'
-          and not exists (select 1 from mantenciones m where m.activo_id = a.id and m.estado in ('programada','proxima','urgente'))) as en_mantencion_sin_orden,
-       (select count(*) from despachos d join servicios_cliente s on s.id = d.servicio_id
-         where d.estado = 'programado' and d.fecha_programada < s.fecha_inicio)                                    as operaciones_antes_del_servicio,
-       (select count(*) from ubicaciones where nombre <> upper(trim(nombre)))
-     + (select count(*) from cliente_contactos where nombre <> upper(trim(nombre)))
-     + (select count(*) from rutas_semana where nombre <> upper(trim(nombre)))                                      as mayusculas_pendientes,
-       (select count(*) from information_schema.columns where table_name = 'documentos_activo' and column_name = 'fecha_vencimiento') as ya_tiene_vencimiento,
-       (select count(*) from pg_proc where proname in ('asegurar_orden_mantencion','validar_fecha_operacion','registrar_documento','quitar_documento')) as funciones,
-       (select count(*) from mantenciones where observaciones like 'Creada automáticamente%')                       as ordenes_creadas;

@@ -9,7 +9,7 @@ import { C, Icon, I, fecha } from '../lib/ui'
 
 const CON_VENCIMIENTO = new Set(['revision_tecnica', 'permiso_circulacion', 'seguro', 'certificado'])
 const diasA = (f) => Math.round((new Date(f + 'T12:00:00') - new Date(hoyISO() + 'T12:00:00')) / 864e5)
-export const estadoVence = (f) => {
+const estadoVence = (f) => {
   if (!f) return null
   const n = diasA(f)
   return n < 0 ? { tono: 'error', l: `Vencido (${fecha(f)})` } : n <= 30 ? { tono: 'atencion', l: `Vence ${fecha(f)}` } : { tono: 'ok', l: `Vigente hasta ${fecha(f)}` }

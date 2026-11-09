@@ -2,7 +2,7 @@
 // 6.1 Pendientes / Historial · 6.2 Programar · 6.3 Detalle MANT-### · 6.4 Registrar resultado · Exportar.
 // "En curso" = trabajo iniciado. Programar no completa el trabajo. Nada se borra: se cancela con motivo.
 // La mantención reportada desde Mi ruta (función de Cata) aparece aquí como Programada.
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import Modal from '../components/Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda, Pestanas } from '../components/Base'
@@ -10,10 +10,11 @@ import {
   mantenimiento, programarMantencion, editarMantencion, iniciarMantencion, registrarResultadoMantencion, cancelarMantencion,
   equiposLista, flota, personalActivo, tiposMantencion,
 } from '../lib/api'
-import { exportarTabla } from '../lib/excel'
+import { exportarTabla, exportarCSV } from '../lib/excel'
 import { hoyISO } from '../lib/costos'
 import { useSesion, puedeOperar, verFinanzas } from '../lib/sesion'
 import { C, Icon, I, fecha, clp } from '../lib/ui'
+import Menu from '../components/Menu'
 
 const L_EST = { programado: 'Programado', en_curso: 'En curso', completado: 'Completado', cancelado: 'Cancelado' }
 const TONO = { programado: 'info', en_curso: 'atencion', completado: 'ok', cancelado: 'neutro' }
@@ -139,7 +140,7 @@ export default function Mantenimiento() {
               k: 'acc', label: 'Acción', alinear: 'right', render: (m) => (
                 <div style={{ display: 'inline-flex', gap: 6 }}>
                   <Boton onClick={() => setDetalle(m)} style={chico}>Ver</Boton>
-                  {abierto(m) && <Menu opciones={[
+                  {abierto(m) && <Menu ancho={210} opciones={[
                     { l: 'Ver detalle', d: I.ojo, onClick: () => setDetalle(m) },
                     { l: 'Editar programación', d: I.lapiz, onClick: () => setForm(m), disabled: !editable || m.estado_m !== 'programado' },
                     { l: 'Cancelar', d: I.alert, color: C.rojo, onClick: () => setDetalle({ ...m, _cancelar: true }), disabled: !editable },
@@ -401,12 +402,7 @@ function Exportar({ todas, filtradas, finanzas, onCerrar }) {
     const filas = (solo ? filtradas : todas).map((m) => [m.folio, m.clase === 'vehiculo' ? 'Vehículo' : 'Equipo', m.identificacion, m.tipo, m.fecha_programada, m.responsable || '', L_EST[m.estado_m], m.vencido ? 'Sí' : 'No',
       m.fecha_realizada || '', L_RES[m.resultado] || '', m.trabajo_requerido || '', m.trabajo_realizado || '', L_COND[m.condicion_final] || '', m.motivo_cancelacion || '', ...(finanzas ? [m.costo || 0] : [])])
     if (fmt === 'xlsx') exportarTabla(cols, filas, 'Mantenimiento')
-    else {
-      const esc = (x) => (/[";\n]/.test(String(x)) ? `"${String(x).replace(/"/g, '""')}"` : String(x))
-      const url = URL.createObjectURL(new Blob(['﻿' + [cols, ...filas].map((r) => r.map(esc).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' }))
-      const a = document.createElement('a'); a.href = url; a.download = `mantenimiento_${hoyISO()}.csv`; a.click()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
-    }
+    else exportarCSV(cols, filas, `mantenimiento_${hoyISO()}`)
     onCerrar()
   }
   return (
@@ -425,38 +421,5 @@ function Exportar({ todas, filtradas, finanzas, onCerrar }) {
         </label>
       </div>
     </Modal>
-  )
-}
-
-// ── Menú ▾ (posición fija para que la tabla no lo recorte) ────────────────
-function Menu({ opciones }) {
-  const [abiertoM, setAbierto] = useState(null)
-  const ref = useRef(null)
-  useEffect(() => {
-    if (!abiertoM) return
-    const fuera = (e) => { if (ref.current && !ref.current.contains(e.target)) setAbierto(null) }
-    const cerrar = () => setAbierto(null)
-    document.addEventListener('mousedown', fuera); window.addEventListener('scroll', cerrar, true); window.addEventListener('resize', cerrar)
-    return () => { document.removeEventListener('mousedown', fuera); window.removeEventListener('scroll', cerrar, true); window.removeEventListener('resize', cerrar) }
-  }, [abiertoM])
-  const alternar = (e) => {
-    if (abiertoM) { setAbierto(null); return }
-    const r = e.currentTarget.getBoundingClientRect(), alto = opciones.length * 40 + 10
-    setAbierto({ top: r.bottom + 4 + alto > window.innerHeight ? r.top - 4 - alto : r.bottom + 4, right: window.innerWidth - r.right })
-  }
-  return (
-    <div ref={ref}>
-      <button type="button" className="btn" aria-label="Más acciones" onClick={alternar} style={{ minHeight: 34, padding: '6px 8px' }}><Icon d={PUNTOS} size={16} /></button>
-      {abiertoM && (
-        <div role="menu" style={{ position: 'fixed', right: abiertoM.right, top: abiertoM.top, zIndex: 1100, minWidth: 210, padding: 4, background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(19,41,75,.14)' }}>
-          {opciones.map((o) => (
-            <button key={o.l} type="button" role="menuitem" disabled={o.disabled} onClick={() => { setAbierto(null); o.onClick() }}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', border: 0, background: 'transparent', padding: '9px 10px', borderRadius: 'var(--radio-sm)', font: '400 14px var(--font)', textAlign: 'left', color: o.color || C.tinta, cursor: o.disabled ? 'not-allowed' : 'pointer', opacity: o.disabled ? 0.45 : 1 }}>
-              <Icon d={o.d} size={16} color={o.color || C.gris} />{o.l}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
   )
 }

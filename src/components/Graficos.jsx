@@ -42,7 +42,7 @@ function TablaSimple({ columnas, filas }) {
   )
 }
 
-export function Leyenda({ items }) {
+function Leyenda({ items }) {
   return (
     <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', font: '400 12px var(--font)', color: C.gris }}>
       {items.map((it) => (

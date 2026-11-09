@@ -31,7 +31,6 @@ const L_MOV = {
 const L_MOTIVO_BAJA = { venta: 'Venta', donacion: 'Donación', perdida: 'Pérdida definitiva', otro: 'Otro' }
 const VOLVER = 'M19 12H5M11 6l-6 6 6 6'
 const chico = { minHeight: 34, padding: '6px 12px' }
-const ahoraLocal = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16) }
 
 export default function FichaEquipo() {
   const { token } = useParams()

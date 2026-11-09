@@ -25,8 +25,7 @@ export default function Tabbar({ onCalendario }) {
   useEffect(() => { setAbierto(false) }, [pathname])
   const tabs = TABS.filter((t) => permitido(perfil, t))
   // Grupos del menú lateral, sin grupos vacíos
-  const items = NAV.filter((n) => n.grupo || permitido(perfil, n))
-    .filter((n, i, l) => !n.grupo || (l[i + 1] && !l[i + 1].grupo))
+  const items = NAV.filter((n) => permitido(perfil, n))
   const estilo = (activo) => ({
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, minHeight: 58,
     textDecoration: 'none', border: 0, cursor: 'pointer', background: activo ? C.tinte : '#fff',
@@ -40,13 +39,7 @@ export default function Tabbar({ onCalendario }) {
             position: 'absolute', left: 0, right: 0, bottom: 60, maxHeight: '75vh', overflowY: 'auto',
             background: '#13294b', borderRadius: '12px 12px 0 0', padding: '8px 0 12px',
           }}>
-            {items.map((n) => n.grupo ? (
-              <div key={n.grupo} style={{ padding: '12px 20px 4px', font: '700 10px var(--font)', textTransform: 'uppercase', letterSpacing: '.08em', color: '#8fa3c2' }}>{n.grupo}</div>
-            ) : n.calendario ? (
-              <button key="cal" type="button" onClick={() => { setAbierto(false); onCalendario?.() }} style={item(false)}>
-                <Icon d={n.d} size={18} w={1.7} /><span>{n.label}</span>
-              </button>
-            ) : (
+            {items.map((n) => (
               <NavLink key={n.to} to={n.to} end={n.fin} style={({ isActive }) => item(isActive)}>
                 <Icon d={n.d} size={18} w={1.7} /><span>{n.label}</span>
               </NavLink>

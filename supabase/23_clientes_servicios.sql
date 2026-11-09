@@ -1,28 +1,11 @@
 -- 23 · ESTANDARIZACIÓN · ETAPA 2 · Paquete 1: base de Clientes y servicios
--- Solo agrega. No borra columnas ni datos: valor_mensual, dias_limpieza, banos_propios, lat y lng
--- de "clientes" se mantienen porque Análisis y Rutas semanales los siguen leyendo.
--- Hace cuatro cosas:
 --   A. Clientes se DESACTIVAN con motivo (ya no se eliminan).
 --   B. Equipos externos (baños del cliente) con su propia serie EXT-001, EXT-002…,
 --      nunca con números de baños FOSAN, y con el identificador del cliente opcional.
 --   C. Historial (auditoría) también para contactos, servicios, catálogos y personal.
 --   D. Función historial_cliente() para la pestaña Historial de la ficha.
--- Correr en Supabase → SQL Editor, paso por paso. El PASO 2 se puede correr más de una vez.
 
-
--- ══ PASO 1 · Revisión previa (solo lectura): correr solo esto ═══════════════════
--- Esperado: codigos_ext_existentes = 0 y equipos_cliente_existentes = 0.
--- clientes_ya_inactivos: si es mayor que 0, avísame antes del paquete 3 (dejarán de salir para elegir).
-select (select count(*) from clientes)                                   as clientes,
-       (select count(*) from clientes where not activo)                  as clientes_ya_inactivos,
-       (select count(*) from activos where codigo ilike 'EXT-%')         as codigos_ext_existentes,
-       (select count(*) from activos where propiedad = 'cliente')        as equipos_cliente_existentes,
-       (select count(*) from servicios_cliente where estado = 'vigente') as servicios_vigentes,
-       to_regclass('public.rutas_semana_lineas') is not null             as existe_rutas_semana,
-       to_regclass('public.auditoria') is not null                       as existe_auditoria;
-
-
--- ══ PASO 2 · Cambios: seleccionar desde aquí hasta el PASO 3 y correr junto ══════
+-- ══ PASO 1 · Cambios: seleccionar desde aquí hasta el PASO 3 y correr junto ══════
 
 -- ─── A. Clientes: desactivar con motivo ───────────────────────────────────────
 alter table clientes add column if not exists motivo_desactivacion text;
@@ -178,30 +161,3 @@ begin
 end;
 $$ language plpgsql stable security definer set search_path = public;
 
-
--- ══ PASO 3 · Control: correr solo esto ══════════════════════════════════════════
--- Esperado: columnas_nuevas = 4, funciones = 7, triggers_historial = 5, regla_ext = 1.
-select (select count(*) from information_schema.columns
-         where table_name = 'clientes' and column_name in ('motivo_desactivacion','desactivado_en','desactivado_por')
-            or table_name = 'activos' and column_name = 'codigo_cliente')                      as columnas_nuevas,
-       (select count(distinct proname) from pg_proc where proname in
-         ('permiso_seccion','desactivar_cliente','reactivar_cliente','eliminar_cliente',
-          'preparar_equipo_externo','sincronizar_situacion','historial_cliente'))              as funciones,
-       (select count(*) from pg_trigger where tgname in
-         ('auditoria_cliente_contactos','auditoria_servicios_cliente','auditoria_categorias',
-          'auditoria_unidades_medida','auditoria_personal'))                                   as triggers_historial,
-       (select count(*) from pg_constraint where conname = 'activos_externo_chk')               as regla_ext,
-       (select count(*) from clientes where activo)                                             as clientes_activos,
-       (select count(*) from activos where tipo = 'bano_quimico' and propiedad = 'empresa')     as banos_fosan;
-
-
--- ══ PASO 4 · Prueba de equipo externo (no guarda nada): correr solo esto ═════════
--- Crea un baño externo de prueba y lo deshace al tiro. Va a aparecer en ROJO como error;
--- eso es lo esperado. El mensaje debe decir: PRUEBA OK … código EXT-001 … situación asignado … habilitado false
-do $$ declare r record; begin
-  perform set_config('fosan.silencio', '1', true);
-  insert into activos (codigo, tipo, propiedad, propietario_id, codigo_cliente)
-  values (null, 'bano_quimico', 'cliente', (select id from clientes order by creado_en limit 1), 'PRUEBA')
-  returning codigo, situacion, habilitado into r;
-  raise exception 'PRUEBA OK (no se guardó): código %, situación %, habilitado %', r.codigo, r.situacion, r.habilitado;
-end $$;

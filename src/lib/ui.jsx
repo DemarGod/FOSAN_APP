@@ -55,10 +55,6 @@ export function Icon({ d, size = 18, color = 'currentColor', w = 1.8, style }) {
 }
 
 // ── Etiquetas de los enum de PostgreSQL ────────────────────────────────────
-export const L_TIPO_ACTIVO = {
-  bano_quimico: 'Baño químico', camion: 'Camión', camioneta: 'Camioneta',
-  generador: 'Generador', lavamanos: 'Lavamanos', accesorio: 'Accesorio',
-}
 // Estados normalizados: se usan iguales en toda la app
 export const L_ESTADO_ACTIVO = {
   disponible: 'Disponible', en_arriendo: 'Arrendado', en_limpieza: 'En limpieza', en_servicio: 'En operación',
@@ -67,82 +63,28 @@ export const L_ESTADO_ACTIVO = {
 }
 
 // Despachos: Planificado → Asignado → En ejecución → Finalizado; o Cancelado
-export const etiquetaDespacho = (d, hoy = new Date().toISOString().slice(0, 10)) => {
-  if (d.estado === 'hecho') return 'Finalizado'
-  if (d.estado === 'cancelado') return 'Cancelado'
-  const dia = d.fecha_salida || d.fecha_programada
-  if ((d.vehiculo_id || d.salida_id) && dia === hoy) return 'En ejecución'
-  return d.vehiculo_id || d.salida_id ? 'Asignado' : 'Planificado'
-}
-export const L_ESTADO_DESPACHO = { programado: 'Planificado', hecho: 'Finalizado', cancelado: 'Cancelado' }
+
 export const L_ESTADO_MANT = {
   programada: 'Programada', proxima: 'Próxima', urgente: 'Urgente',
   completada: 'Completada', anulada: 'Anulada',
 }
-export const L_CLASE_MANT = { bano: 'Baño', camion: 'Camión', camioneta: 'Camioneta', equipo: 'Equipo' }
-export const L_TIPO_SERVICIO = {
-  arriendo_bano: 'Arriendo de baños', limpieza_bano: 'Limpieza de baños',
-  limpieza_fosa: 'Limpieza de fosas sépticas', instalacion: 'Instalación',
-  retiro: 'Retiro', traslado: 'Traslado', otro: 'Otro',
-}
-export const L_RUBRO = {
-  construccion: 'Construcción', agricola: 'Agrícola', eventos: 'Eventos',
-  mineria: 'Minería', publico: 'Público', otro: 'Otro',
-}
+
+
 export const L_TIPO_UBIC = {
   bodega: 'Bodega', faena: 'Faena', taller: 'Taller', transito: 'En tránsito', cliente: 'Cliente',
 }
 export const L_TIPO_EVENTO = {
   mantencion: 'Mantención', pago: 'Pago', servicio: 'Servicio', alerta: 'Alerta', reunion: 'Reunión',
 }
-export const L_VIGENCIA = { vigente: 'Activo', vencido: 'Vencido', indefinido: 'Indefinido' }
-export const L_TIPO_DOC = {
-  factura: 'Factura', certificado: 'Certificado', guia_despacho: 'Guía de despacho',
-  revision_tecnica: 'Revisión técnica', seguro: 'Seguro', otro: 'Otro',
-}
-export const L_MOVIMIENTO = {
-  instalacion: 'Instalado', traslado: 'Traslado', retiro: 'Retiro',
-  limpieza: 'Limpieza', mantencion: 'Mantención', ingreso: 'Ingreso',
-}
 export const COLORES_BANO = ['Azul', 'Verde', 'Rojo', 'Amarillo', 'Naranjo', 'Blanco', 'Gris', 'Negro', 'Café', 'Celeste', 'Rosado']
-
 export const COLOR_EVENTO = {
   mantencion: C.amarillo, pago: C.verde, servicio: C.azul, alerta: C.rojo, reunion: C.navy,
-}
-
-// ── Badges ─────────────────────────────────────────────────────────────────
-const FUERTE = { bg: C.navy, fg: '#eef2f9' }
-const SUAVE = { bg: C.thead, fg: C.navy }
-const ALERTA = { bg: '#ffe0d9', fg: '#7c1405' }
-
-export function tono(valor) {
-  const v = String(valor || '').toLowerCase()
-  if (/en_arriendo|en arriendo|en_servicio|en servicio|completad|vigente|activo|activa|hecho|cerrada/.test(v)) return FUERTE
-  if (/disponible|programad|indefinido|planificada|vendido|donaci/.test(v)) return SUAVE
-  return ALERTA
-}
-
-export function Badge({ children }) {
-  const t = tono(children)
-  return (
-    <span style={{
-      display: 'inline-block', font: '600 10px var(--font)', textTransform: 'uppercase',
-      letterSpacing: '.06em', padding: '3px 8px', background: t.bg, color: t.fg, borderRadius: 'var(--radio-sm)',
-    }}>{children}</span>
-  )
 }
 
 // ── Formateadores ──────────────────────────────────────────────────────────
 export const clp = (n) =>
   n === null || n === undefined || n === '' ? '—'
     : '$' + Number(n).toLocaleString('es-CL', { maximumFractionDigits: 0 })
-
-export const millones = (n) => {
-  const v = Number(n || 0)
-  if (Math.abs(v) >= 1e6) return '$' + (v / 1e6).toLocaleString('es-CL', { maximumFractionDigits: 1 }) + 'M'
-  if (Math.abs(v) >= 1e3) return '$' + Math.round(v / 1e3) + 'K'
-  return '$' + v
-}
 
 // Las fechas sin hora ('2026-08-31') se leen como hora local para no correrse un día
 const aFecha = (d) => new Date(/^\d{4}-\d{2}-\d{2}$/.test(String(d)) ? d + 'T12:00:00' : d)
@@ -170,30 +112,4 @@ export const mesLargo = (iso) => {
   if (!iso) return '—'
   const [y, m] = String(iso).split('-')
   return (MESES[Number(m) - 1] || '') + ' ' + y
-}
-
-// Cuadrícula determinista para dibujar el QR de una unidad.
-export function qrCeldas(txt) {
-  const n = 19, size = 8, off = 4, cells = []
-  let h = 2166136261
-  const s = String(txt || '')
-  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) }
-  const rnd = (i) => { const x = Math.imul(h ^ (i * 2654435761), 2246822519); return ((x >>> 8) & 1023) / 1023 }
-  const finder = (cx, cy, x, y) => {
-    const dx = x - cx, dy = y - cy
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) return null
-    const r = Math.max(Math.abs(dx), Math.abs(dy))
-    return r === 3 || r === 1 || r === 0
-  }
-  for (let y = 0; y < n; y++) {
-    for (let x = 0; x < n; x++) {
-      let on = null
-      ;[[3, 3], [n - 4, 3], [3, n - 4]].forEach((p) => {
-        const f = finder(p[0], p[1], x, y); if (f !== null) on = f
-      })
-      if (on === null) on = rnd(y * n + x) > 0.5
-      if (on) cells.push({ x: off + x * size, y: off + y * size })
-    }
-  }
-  return cells
 }

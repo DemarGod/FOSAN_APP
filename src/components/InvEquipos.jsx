@@ -10,7 +10,7 @@ import {
   equiposLista, mantencionesAbiertas, siguienteNumeroUnidad, equipoPorNumero, crearEquipo,
   catCategorias, catModelos, catUbicacionesInternas, clientesLista, ubicacionesDe,
 } from '../lib/api'
-import { exportarTabla } from '../lib/excel'
+import { exportarTabla, exportarCSV } from '../lib/excel'
 import { useSesion, puedeOperar, esDueno } from '../lib/sesion'
 import { hoyISO } from '../lib/costos'
 import { C, I, COLORES_BANO, fecha } from '../lib/ui'
@@ -394,14 +394,7 @@ function Exportar({ todos, filtrados, onCerrar }) {
   const descargar = () => {
     const nombre = `equipos_${hoyISO()}`
     if (formato === 'xlsx') exportarTabla(COLUMNAS, lista.map(fila), 'Equipos')
-    else {
-      // CSV: separador ";", UTF-8 con BOM (abre bien en Excel), fechas AAAA-MM-DD
-      const esc = (x) => (/[";\n]/.test(String(x)) ? `"${String(x).replace(/"/g, '""')}"` : String(x))
-      const texto = '﻿' + [COLUMNAS, ...lista.map(fila)].map((r) => r.map(esc).join(';')).join('\r\n')
-      const url = URL.createObjectURL(new Blob([texto], { type: 'text/csv;charset=utf-8' }))
-      const a = document.createElement('a'); a.href = url; a.download = nombre + '.csv'; a.click()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
-    }
+    else exportarCSV(COLUMNAS, lista.map(fila), nombre)
     onCerrar()
   }
   return (

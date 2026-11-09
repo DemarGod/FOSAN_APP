@@ -4,7 +4,6 @@ import { useSesion, puedeVer, verMiRuta, verAdministracion, esOperador } from '.
 import { useAjustes } from '../lib/ajustes'
 
 const DESPACHO = 'M3 7h11v9H3zM14 10h4l3 3v3h-7zM7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM6 4h5M8.5 1.5 11 4 8.5 6.5'
-const HISTORIAL = 'M12 21a9 9 0 1 0-9-9M3 4v5h5M12 7v5l3 2'
 const RUTA = 'M5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM19 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM7 17h6a3 3 0 0 0 0-6h-2a3 3 0 0 1 0-6h6'
 
 // Orden del menú: Inicio · Clientes · Inventario · Operaciones · (Mi ruta) · Flota · Mantenimiento · Reportes · Administración.
@@ -42,7 +41,7 @@ const item = (activo) => ({
   font: `${activo ? 600 : 400} 14px/1.2 var(--font)`, textDecoration: 'none', borderRadius: 4,
 })
 
-export default function Sidebar({ onCalendario }) {
+export default function Sidebar() {
   const { perfil } = useSesion()
   const ajustes = useAjustes()
   return (
@@ -59,22 +58,6 @@ export default function Sidebar({ onCalendario }) {
 
       <nav style={{ flex: 1, overflowY: 'auto', padding: '10px 0' }}>
         {NAV.filter((n) => itemVisible(perfil, ajustes, n)).map((n, i) => {
-          if (n.grupo) {
-            return (
-              <div key={n.grupo} style={{
-                margin: i ? '10px 0 4px' : '0 0 4px', padding: '10px 18px 4px',
-                borderTop: '1px solid rgba(255,255,255,.12)', font: '700 10px var(--font)',
-                textTransform: 'uppercase', letterSpacing: '.08em', color: '#8fa3c2',
-              }}>{n.grupo}</div>
-            )
-          }
-          if (n.calendario) {
-            return (
-              <button key="cal" onClick={onCalendario} style={item(false)}>
-                <Icon d={n.d} size={17} w={1.7} /><span>{n.label}</span>
-              </button>
-            )
-          }
           return (
             <NavLink key={n.to} to={n.to} end={n.fin} style={({ isActive }) => item(isActive)}>
               <Icon d={n.d} size={17} w={1.7} />

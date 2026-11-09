@@ -90,13 +90,13 @@ export default function Inicio({ onCalendario }) {
   const alertas = [
     ...(d?.atrasados ? [{ id: 'atr', nivel: 'alerta', texto: `${d.atrasados} operación(es) atrasada(s)`, origen: 'Operaciones', a: '/operaciones?tab=programacion&estado=pendiente' }] : []),
     ...(mantAtrasadas.length ? [{ id: 'mant-atr', nivel: 'alerta', texto: `${mantAtrasadas.length} mantenimiento(s) atrasado(s)`, origen: 'Mantenimiento', a: '/mantenimiento' }] : []),
-    ...avisos.filter((a) => a.origen !== 'Despachos' && !(a.origen === 'Mantenciones' && a.nivel === 'alerta'))
-      .map((a) => ({ ...a, a: corregirRuta(a.a) })),
+    ...avisos.filter((a) => a.origen !== 'Despachos' && !(a.origen === 'Mantenciones' && a.nivel === 'alerta')),
   ].sort((x, y) => ({ alerta: 0, aviso: 1, info: 2 }[x.nivel] - { alerta: 0, aviso: 1, info: 2 }[y.nivel]) || String(x.fecha || '').localeCompare(String(y.fecha || '')))
   const cuentaNivel = (n) => alertas.filter((a) => a.nivel === n).length
   const alertasVista = verAlertas === 'todas' ? alertas : alertas.filter((a) => (verAlertas === 'aviso' ? a.nivel !== 'alerta' : a.nivel === 'alerta'))
   const irAlertas = () => { setVerAlertas('alerta'); tarjetaAlertas.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }
 
+  
   // ── Datos de los gráficos ──
   const graf = armarGraficos(g)
   const TILES = [
@@ -256,12 +256,6 @@ export default function Inicio({ onCalendario }) {
   )
 }
 
-// Rutas antiguas en los avisos → módulos actuales
-function corregirRuta(a) {
-  if (!a) return a
-  return a.replace(/^\/banos/, '/inventario').replace(/^\/transporte(\?tab=mantenciones)?/, (m, t) => (t ? '/mantenimiento?tab=vehiculos' : '/flota'))
-    .replace(/^\/insumos/, '/inventario?tab=insumos').replace(/^\/(despachos|rutas)$/, '/operaciones')
-}
 
 // ── 1.3 Selector de fecha ─────────────────────────────────────────────────
 function SelectorFecha({ rango, onCerrar, onAplicar }) {

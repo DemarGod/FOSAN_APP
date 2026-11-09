@@ -6,13 +6,13 @@ import Modal from './Modal'
 import { Boton, Campo, Tabla, Pestanas, Estado, Ayuda } from './Base'
 import {
   insumosInventario, movimientosInsumoDe, siguienteCodigoInsumo, serviciosVigentes, registrarMovInsumo, guardarInsumo,
-  catCategorias, catUnidades, ubicacionesInsumo as catUbicacionesInternas, personalActivo,
+  catCategorias, catUnidades, ubicacionesInsumo, personalActivo,
 } from '../lib/api'
-import { exportarTabla } from '../lib/excel'
+import { exportarTabla, exportarCSV } from '../lib/excel'
 import { useSesion, puedeOperar, esDueno, verFinanzas } from '../lib/sesion'
 import { hoyISO, sumarDias } from '../lib/costos'
 import { formatoPesos, numeroDe, decimalDe } from '../lib/validar'
-import { C, Icon, I, fecha, fechaHora } from '../lib/ui'
+import { C, I, fecha, fechaHora } from '../lib/ui'
 
 const L_MOV = { entrada: 'Entrada', traslado: 'Traslado', consumo: 'Consumo', ajuste: 'Ajuste' }
 const chico = { minHeight: 34, padding: '6px 12px' }
@@ -32,7 +32,6 @@ const alerta = (i) => {
 }
 const lotesPorVencer = (lista) => lista.flatMap((i) => i.existencias.filter((e) => Number(e.cantidad) > 0 && e.insumo_lotes?.vencimiento
   && e.insumo_lotes.vencimiento >= hoyISO() && e.insumo_lotes.vencimiento <= sumarDias(hoyISO(), 30)).map((e) => ({ i, e })))
-const ahoraLocal = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16) }
 
 export default function InvInsumos() {
   const { perfil } = useSesion()
@@ -50,7 +49,7 @@ export default function InvInsumos() {
   const cargar = () => insumosInventario().then((l) => { setLista(l); setFicha((x) => (x ? l.find((i) => i.id === x.id) : x)) }).catch(setError)
   useEffect(() => {
     cargar()
-    catUbicacionesInternas().then((u) => {
+    UbicacionesInsumo().then((u) => {
       const act = u.filter((x) => x.activa)
       setUbic(act)
       const b = act.find((x) => x.tipo === 'bodega')
@@ -323,12 +322,7 @@ function FichaArticulo({ i, ubic, editable, exporta, onCerrar, onEditar, onMover
     const filas = (soloFiltrados ? visibles : movs || []).map((m) => [String(m.fecha).slice(0, 16).replace('T', ' '), L_MOV[m.tipo] || m.tipo, Number(m.cantidad), unidad(i),
       m.origen?.nombre || '', m.destino?.nombre || '', m.insumo_lotes?.codigo || '', m.usuario?.nombre || '', m.servicios_cliente?.codigo || m.referencia || m.receptor || '', m.motivo || ''])
     if (fmt === 'xlsx') exportarTabla(cols, filas, `Movimientos ${i.codigo}`)
-    else {
-      const esc = (x) => (/[";\n]/.test(String(x)) ? `"${String(x).replace(/"/g, '""')}"` : String(x))
-      const url = URL.createObjectURL(new Blob(['﻿' + [cols, ...filas].map((r) => r.map(esc).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' }))
-      const a = document.createElement('a'); a.href = url; a.download = `movimientos_${i.codigo}_${hoyISO()}.csv`; a.click()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
-    }
+    else exportarCSV(cols, filas, `movimientos_${i.codigo}_${hoyISO()}`)
   }
   return (
     <Modal titulo={`${i.codigo} · ${i.nombre}`} ancho={900} onCerrar={onCerrar} pie={<>

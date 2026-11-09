@@ -4,7 +4,7 @@
 // no se muestran ni se modifican: siguen en la base para Análisis y Rutas semanales.
 import { useEffect, useState } from 'react'
 import Modal from './Modal'
-import { Boton, Campo as CampoBase, Ayuda } from './Base'
+import { Boton, Campo, Ayuda } from './Base'
 import { clientePorId, clientePorRut, guardarDatosCliente, rubros as cargarRubros, crearRubro } from '../lib/api'
 import { formatoRut, rutValido, formatoTel, telValido, correoValido } from '../lib/validar'
 import { C, Icon, I } from '../lib/ui'
@@ -152,31 +152,31 @@ export default function FormCliente({ clienteId = null, onCerrar, onGuardado, on
       </Boton>
     </>}>
       <div className="cols2" style={{ gap: 16, padding: 18 }}>
-        <CampoBase etiqueta="Tipo de cliente" obligatorio error={errores.tipo_cliente}>
+        <Campo etiqueta="Tipo de cliente" obligatorio error={errores.tipo_cliente}>
           <select value={v.tipo_cliente} onChange={set('tipo_cliente')}>
             <option value="empresa">Empresa</option>
             <option value="persona">Persona</option>
           </select>
-        </CampoBase>
-        <CampoBase etiqueta="RUT" obligatorio ayuda="Formato referencial: 12.345.678-5" error={errores.rut}>
+        </Campo>
+        <Campo etiqueta="RUT" obligatorio ayuda="Formato referencial: 12.345.678-5" error={errores.rut}>
           <input value={v.rut} onChange={set('rut', formatoRut)} maxLength={12} placeholder="12.345.678-5" />
-        </CampoBase>
+        </Campo>
 
-        <CampoBase etiqueta={v.tipo_cliente === 'persona' ? 'Nombre completo' : 'Nombre / razón social'} obligatorio error={errores.nombre}>
+        <Campo etiqueta={v.tipo_cliente === 'persona' ? 'Nombre completo' : 'Nombre / razón social'} obligatorio error={errores.nombre}>
           <input value={v.nombre} onChange={(e) => set('nombre')({ target: { value: e.target.value.toUpperCase() } })} maxLength={120} placeholder="CONSTRUCTORA NORTE" />
-        </CampoBase>
-        <CampoBase etiqueta="Nombre comercial">
+        </Campo>
+        <Campo etiqueta="Nombre comercial">
           <input value={v.nombre_comercial} onChange={set('nombre_comercial')} maxLength={80} placeholder="NORTE" />
-        </CampoBase>
+        </Campo>
 
         <div style={{ display: 'grid', gap: 8 }}>
-          <CampoBase etiqueta="Rubro">
+          <Campo etiqueta="Rubro">
             <select value={v.rubro} onChange={elegirRubro}>
               {!v.rubro && <option value="">Seleccionar</option>}
               {listaRubros.map((r) => <option key={r.clave} value={r.clave}>{r.nombre}</option>)}
               <option value="__nuevo">+ Agregar nuevo rubro…</option>
             </select>
-          </CampoBase>
+          </Campo>
           {nuevoRubro !== null && (
             <div className="campo" style={{ display: 'flex', gap: 8 }}>
               <input autoFocus value={nuevoRubro} onChange={(e) => setNuevoRubro(e.target.value)} maxLength={40}
@@ -186,24 +186,24 @@ export default function FormCliente({ clienteId = null, onCerrar, onGuardado, on
             </div>
           )}
         </div>
-        <CampoBase etiqueta="Teléfono principal" error={errores.telefono}>
+        <Campo etiqueta="Teléfono principal" error={errores.telefono}>
           <input value={v.telefono} onChange={set('telefono', formatoTel)} inputMode="tel" placeholder="+56 9 1234 5678" />
-        </CampoBase>
+        </Campo>
 
-        <CampoBase etiqueta="Correo principal" error={errores.correo}>
+        <Campo etiqueta="Correo principal" error={errores.correo}>
           <input type="email" value={v.correo} onChange={set('correo')} maxLength={120} placeholder="contacto@ejemplo.cl" />
-        </CampoBase>
-        <CampoBase etiqueta="Dirección administrativa">
+        </Campo>
+        <Campo etiqueta="Dirección administrativa">
           <input value={v.direccion} onChange={set('direccion')} maxLength={160} placeholder="AV. CENTRAL 100" />
-        </CampoBase>
+        </Campo>
 
-        <CampoBase etiqueta="Comuna">
+        <Campo etiqueta="Comuna">
           <input value={v.comuna} onChange={set('comuna')} maxLength={60} list="comunas-maule" placeholder="Seleccionar o escribir" />
           <datalist id="comunas-maule">{COMUNAS_MAULE.map((c) => <option key={c} value={c} />)}</datalist>
-        </CampoBase>
-        <CampoBase etiqueta="Observaciones">
+        </Campo>
+        <Campo etiqueta="Observaciones">
           <textarea value={v.observaciones} onChange={set('observaciones')} maxLength={500} style={{ minHeight: 44 }} />
-        </CampoBase>
+        </Campo>
       </div>
 
       <div style={{ padding: '0 18px 18px', display: 'grid', gap: 10 }}>
@@ -216,13 +216,3 @@ export default function FormCliente({ clienteId = null, onCerrar, onGuardado, on
   )
 }
 
-// Se mantiene: lo usan FormDespacho, FormVehiculo, FormRutaSemana, Salida, Insumos y Ubicaciones.
-export function Campo({ l, err, children }) {
-  return (
-    <label className="campo">
-      <span>{l}</span>
-      {children}
-      {err && <em style={{ font: '400 11px var(--font)', color: '#b3261e', fontStyle: 'normal' }}>{err}</em>}
-    </label>
-  )
-}

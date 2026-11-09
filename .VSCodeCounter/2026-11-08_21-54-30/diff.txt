@@ -1,0 +1,51 @@
+Date : 2026-11-08 21:54:30
+Directory : c:\Users\Asus\FOSAN_APP
+Total : 22 files,  -337 codes, -12 comments, -6 blanks, all -355 lines
+
+Languages
++----------------+------------+------------+------------+------------+------------+
+| language       | files      | code       | comment    | blank      | total      |
++----------------+------------+------------+------------+------------+------------+
+| JavaScript     |          2 |          6 |          1 |         -1 |          6 |
+| JavaScript JSX |         20 |       -343 |        -13 |         -5 |       -361 |
++----------------+------------+------------+------------+------------+------------+
+
+Directories
++-------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                        | files      | code       | comment    | blank      | total      |
++-------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                           |         22 |       -337 |        -12 |         -6 |       -355 |
+| src                                                         |         22 |       -337 |        -12 |         -6 |       -355 |
+| src\components                                              |         11 |       -112 |         -5 |         -1 |       -118 |
+| src\lib                                                     |          4 |        -90 |         -1 |         -4 |        -95 |
+| src\pages                                                   |          7 |       -135 |         -6 |         -1 |       -142 |
++-------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| filename                                                    | language       | code       | comment    | blank      | total      |
++-------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| c:\Users\Asus\FOSAN_APP\src\components\Base.jsx             | JavaScript JSX |        -19 |         -2 |         -1 |        -22 |
+| c:\Users\Asus\FOSAN_APP\src\components\FormCliente.jsx      | JavaScript JSX |         -9 |         -1 |          0 |        -10 |
+| c:\Users\Asus\FOSAN_APP\src\components\InvEquipos.jsx       | JavaScript JSX |         -6 |         -1 |          0 |         -7 |
+| c:\Users\Asus\FOSAN_APP\src\components\InvInsumos.jsx       | JavaScript JSX |         -6 |          0 |          0 |         -6 |
+| c:\Users\Asus\FOSAN_APP\src\components\Menu.jsx             | JavaScript JSX |         40 |          1 |          1 |         42 |
+| c:\Users\Asus\FOSAN_APP\src\components\OpProgramacion.jsx   | JavaScript JSX |        -35 |         -1 |          0 |        -36 |
+| c:\Users\Asus\FOSAN_APP\src\components\OpRespaldos.jsx      | JavaScript JSX |         -1 |          0 |          0 |         -1 |
+| c:\Users\Asus\FOSAN_APP\src\components\ServiciosCliente.jsx | JavaScript JSX |        -48 |         -1 |         -1 |        -50 |
+| c:\Users\Asus\FOSAN_APP\src\components\Sidebar.jsx          | JavaScript JSX |        -17 |          0 |          0 |        -17 |
+| c:\Users\Asus\FOSAN_APP\src\components\Tabbar.jsx           | JavaScript JSX |         -7 |          0 |          0 |         -7 |
+| c:\Users\Asus\FOSAN_APP\src\components\Topbar.jsx           | JavaScript JSX |         -4 |          0 |          0 |         -4 |
+| c:\Users\Asus\FOSAN_APP\src\lib\costos.js                   | JavaScript     |          0 |          0 |         -1 |         -1 |
+| c:\Users\Asus\FOSAN_APP\src\lib\excel.js                    | JavaScript     |          6 |          1 |          0 |          7 |
+| c:\Users\Asus\FOSAN_APP\src\lib\sesion.jsx                  | JavaScript JSX |        -17 |          0 |          0 |        -17 |
+| c:\Users\Asus\FOSAN_APP\src\lib\ui.jsx                      | JavaScript JSX |        -79 |         -2 |         -3 |        -84 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Clientes.jsx              | JavaScript JSX |        -48 |         -2 |          0 |        -50 |
+| c:\Users\Asus\FOSAN_APP\src\pages\FichaEquipo.jsx           | JavaScript JSX |         -1 |          0 |          0 |         -1 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Flota.jsx                 | JavaScript JSX |        -40 |         -2 |         -1 |        -43 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Inicio.jsx                | JavaScript JSX |         -6 |         -1 |          1 |         -6 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Inventario.jsx            | JavaScript JSX |         -1 |          0 |          0 |         -1 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Mantenimiento.jsx         | JavaScript JSX |        -35 |         -1 |         -1 |        -37 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Reportes.jsx              | JavaScript JSX |         -4 |          0 |          0 |         -4 |
+| Total                                                       |                |       -337 |        -12 |         -6 |       -355 |
++-------------------------------------------------------------+----------------+------------+------------+------------+------------+

@@ -103,8 +103,7 @@ export const DIAS = [
   { v: 1, l: 'Lun' }, { v: 2, l: 'Mar' }, { v: 3, l: 'Mié' }, { v: 4, l: 'Jue' },
   { v: 5, l: 'Vie' }, { v: 6, l: 'Sáb' }, { v: 7, l: 'Dom' },
 ]
-export const diasTexto = (arr) => DIAS.filter((d) => (arr || []).includes(d.v)).map((d) => d.l).join(' · ') || '—'
-
+export const ahoraLocal = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16) }
 export const hoyISO = () => {
   const d = new Date()
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)

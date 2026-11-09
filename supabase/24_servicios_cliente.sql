@@ -1,26 +1,11 @@
 -- 24 · ESTANDARIZACIÓN · ETAPA 2 · Paquete 5: servicios del cliente
--- Solo agrega y ajusta. No borra columnas ni datos.
 --   A. Campo "Acceso / restricciones" para fosas (servicios_cliente.acceso).
 --   B. La base recalcula sola, desde los servicios VIGENTES del cliente, lo que leen
 --      Rutas semanales y Análisis: clientes.dias_limpieza, banos_propios y valor_mensual.
 --   C. Equipos externos (EXT-###) quedan "En operación" y nunca como disponibles.
 --   D. Las 5 vistas que cuentan o listan baños consideran solo equipos de la empresa.
--- Correr PASO POR PASO en Supabase → SQL Editor: seleccionar cada bloque y apretar Run.
 
-
--- ══ PASO 1 · Revisión previa (solo lectura) ═════════════════════════════════════
--- Esperado: externos = 0. Anota servicios_vigentes y los tipos de columna.
-select (select count(*) from servicios_cliente where estado = 'vigente')       as servicios_vigentes,
-       (select count(*) from activos where propiedad = 'cliente')               as externos,
-       (select data_type || '/' || coalesce(udt_name, '') from information_schema.columns
-         where table_name = 'clientes' and column_name = 'dias_limpieza')        as tipo_dias,
-       (select data_type from information_schema.columns
-         where table_name = 'clientes' and column_name = 'banos_propios')        as tipo_banos_propios,
-       (select string_agg(relname || ':' || coalesce(array_to_string(reloptions, ','), '-'), ' · ')
-          from pg_class where relname in ('v_banos_kpi','v_resumen_inventario','v_estado_activos','v_mapa_puntos','v_inventario')) as opciones_vistas;
-
-
--- ══ PASO 2 · Servicios: campo nuevo y recálculo (seleccionar hasta el PASO 3) ═══
+-- ══ PASO 1 · Servicios: campo nuevo y recálculo (seleccionar hasta el PASO 3) ═══
 alter table servicios_cliente add column if not exists acceso text;
 
 -- Recalcula los campos antiguos del cliente desde sus servicios vigentes
@@ -204,15 +189,3 @@ begin
     execute format('alter view %I set (%s)', r.key, r.value);
   end loop;
 end $vistas$;
-
-
--- ══ PASO 4 · Control (solo lectura) ══════════════════════════════════════════════
--- Esperado: campo_acceso = 1, triggers = 2, total_banos_kpi = 327 (o lo que mostraba Baños antes),
--- y vistas_ok = 5. opciones_vistas debe ser igual que en el PASO 1.
-select (select count(*) from information_schema.columns where table_name = 'servicios_cliente' and column_name = 'acceso') as campo_acceso,
-       (select count(*) from pg_trigger where tgname in ('t_servicios_recalcular','t_externo_recalcular'))                    as triggers,
-       (select total from v_banos_kpi)                                                                                     as total_banos_kpi,
-       (select count(*) from pg_views where viewname in ('v_banos_kpi','v_resumen_inventario','v_estado_activos','v_mapa_puntos','v_inventario')
-          and definition ilike '%propiedad%')                                                                              as vistas_ok,
-       (select string_agg(relname || ':' || coalesce(array_to_string(reloptions, ','), '-'), ' · ')
-          from pg_class where relname in ('v_banos_kpi','v_resumen_inventario','v_estado_activos','v_mapa_puntos','v_inventario')) as opciones_vistas;

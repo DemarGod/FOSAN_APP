@@ -1,16 +1,17 @@
 // Flota (lámina 5): listado de vehículos por patente, agregar, cambiar disponibilidad, desactivar y exportar.
 // "En ruta" no se marca a mano: se calcula cuando el día de la ruta se inicia con km y aún no se cierra.
 // Los costos (rendimiento, costo por km) se conservan y solo los ve quien tiene "Ver montos".
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import {useNavigate} from 'react-router-dom'
 import Modal from '../components/Modal'
 import FormVehiculo from '../components/FormVehiculo'
 import { Boton, Campo, Tabla, Estado, Ayuda } from '../components/Base'
 import { flota, vehiculos, parametros, cambiarDisponibilidadVehiculo, desactivarVehiculo } from '../lib/api'
 import { TIPOS_VEHICULO, costoKmVehiculo, mapaParametros, hoyISO } from '../lib/costos'
-import { exportarTabla } from '../lib/excel'
+import { exportarTabla, exportarCSV } from '../lib/excel'
 import { useSesion, puedeOperar, verFinanzas } from '../lib/sesion'
 import { C, Icon, I, clp } from '../lib/ui'
+import Menu from '../components/Menu'
 
 export const L_FLOTA = { disponible: 'Disponible', en_ruta: 'En ruta', mantenimiento: 'En mantenimiento', fuera_servicio: 'Fuera de servicio', baja: 'Desactivado' }
 const TONO = { disponible: 'ok', en_ruta: 'info', mantenimiento: 'atencion', fuera_servicio: 'error', baja: 'neutro' }
@@ -21,13 +22,6 @@ const chico = { minHeight: 34, padding: '6px 12px' }
 const PROHIBIDO = 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM5.6 5.6l12.8 12.8'
 
 export default function Flota() {
-  const [params] = useSearchParams()
-  // Enlaces antiguos: /transporte?tab=mantenciones → Mantenimiento
-  if (params.get('tab') === 'mantenciones') return <Navigate to="/mantenimiento?tab=vehiculos" replace />
-  return <Listado />
-}
-
-function Listado() {
   const navegar = useNavigate()
   const { perfil } = useSesion()
   const editable = puedeOperar(perfil, 'transporte')
@@ -128,7 +122,7 @@ function Listado() {
               k: 'acc', label: 'Acción', alinear: 'right', render: (v) => (
                 <div style={{ display: 'inline-flex', gap: 6 }}>
                   <Boton tipo="principal" onClick={() => v.qr_token && navegar('/activo/' + v.qr_token)} style={chico}>Ver ficha</Boton>
-                  <Menu opciones={[
+                  <Menu icono={PUNTOS} ancho={220} opciones={[
                     { l: 'Editar datos', d: I.lapiz, onClick: () => setForm(tecnicos[v.id] || v), disabled: !editable || v.estado_flota === 'baja' },
                     { l: 'Cambiar disponibilidad', d: I.check, onClick: () => setDisp(v), disabled: !editable || v.estado_flota === 'baja' },
                     { l: 'Dar de baja (vendido, siniestro…)', d: PROHIBIDO, color: C.rojo, onClick: () => setBaja(v), disabled: !editable || v.estado_flota === 'baja' },
@@ -224,12 +218,7 @@ function Exportar({ todas, filtradas, finanzas, costoKm, onCerrar }) {
     const filas = (solo ? filtradas : todas).map((v) => [v.patente || '', v.codigo || '', TIPOS_VEHICULO[v.tipo_vehiculo] || '', v.marca || '', v.modelo || '', v.anio || '',
       v.kilometraje ?? '', L_FLOTA[v.estado_flota], v.fecha_registro || '', ...(finanzas ? [costoKm(v)] : [])])
     if (fmt === 'xlsx') exportarTabla(cols, filas, 'Flota')
-    else {
-      const esc = (x) => (/[";\n]/.test(String(x)) ? `"${String(x).replace(/"/g, '""')}"` : String(x))
-      const url = URL.createObjectURL(new Blob(['﻿' + [cols, ...filas].map((r) => r.map(esc).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' }))
-      const a = document.createElement('a'); a.href = url; a.download = `flota_${hoyISO()}.csv`; a.click()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
-    }
+    else exportarCSV(cols, filas, `flota_${hoyISO()}`)
     onCerrar()
   }
   return (
@@ -250,35 +239,3 @@ function Exportar({ todas, filtradas, finanzas, costoKm, onCerrar }) {
   )
 }
 
-// ── Menú ⋮ (posición fija para que la tabla no lo recorte) ────────────────
-function Menu({ opciones }) {
-  const [abierto, setAbierto] = useState(null)
-  const ref = useRef(null)
-  useEffect(() => {
-    if (!abierto) return
-    const fuera = (e) => { if (ref.current && !ref.current.contains(e.target)) setAbierto(null) }
-    const cerrar = () => setAbierto(null)
-    document.addEventListener('mousedown', fuera); window.addEventListener('scroll', cerrar, true); window.addEventListener('resize', cerrar)
-    return () => { document.removeEventListener('mousedown', fuera); window.removeEventListener('scroll', cerrar, true); window.removeEventListener('resize', cerrar) }
-  }, [abierto])
-  const alternar = (e) => {
-    if (abierto) { setAbierto(null); return }
-    const r = e.currentTarget.getBoundingClientRect(), alto = opciones.length * 40 + 10
-    setAbierto({ top: r.bottom + 4 + alto > window.innerHeight ? r.top - 4 - alto : r.bottom + 4, right: window.innerWidth - r.right })
-  }
-  return (
-    <div ref={ref}>
-      <button type="button" className="btn" aria-label="Más acciones" onClick={alternar} style={{ minHeight: 34, padding: '6px 8px' }}><Icon d={PUNTOS} size={16} /></button>
-      {abierto && (
-        <div role="menu" style={{ position: 'fixed', right: abierto.right, top: abierto.top, zIndex: 1100, minWidth: 220, padding: 4, background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(19,41,75,.14)' }}>
-          {opciones.map((o) => (
-            <button key={o.l} type="button" role="menuitem" disabled={o.disabled} onClick={() => { setAbierto(null); o.onClick() }}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', border: 0, background: 'transparent', padding: '9px 10px', borderRadius: 'var(--radio-sm)', font: '400 14px var(--font)', textAlign: 'left', color: o.color || C.tinta, cursor: o.disabled ? 'not-allowed' : 'pointer', opacity: o.disabled ? 0.45 : 1 }}>
-              <Icon d={o.d} size={16} color={o.color || C.gris} />{o.l}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}

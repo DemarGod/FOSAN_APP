@@ -1,0 +1,24 @@
+"filename", "language", "JavaScript JSX", "JavaScript", "comment", "blank", "total"
+"c:\Users\Asus\FOSAN_APP\src\components\Base.jsx", "JavaScript JSX", -19, 0, -2, -1, -22
+"c:\Users\Asus\FOSAN_APP\src\components\FormCliente.jsx", "JavaScript JSX", -9, 0, -1, 0, -10
+"c:\Users\Asus\FOSAN_APP\src\components\InvEquipos.jsx", "JavaScript JSX", -6, 0, -1, 0, -7
+"c:\Users\Asus\FOSAN_APP\src\components\InvInsumos.jsx", "JavaScript JSX", -6, 0, 0, 0, -6
+"c:\Users\Asus\FOSAN_APP\src\components\Menu.jsx", "JavaScript JSX", 40, 0, 1, 1, 42
+"c:\Users\Asus\FOSAN_APP\src\components\OpProgramacion.jsx", "JavaScript JSX", -35, 0, -1, 0, -36
+"c:\Users\Asus\FOSAN_APP\src\components\OpRespaldos.jsx", "JavaScript JSX", -1, 0, 0, 0, -1
+"c:\Users\Asus\FOSAN_APP\src\components\ServiciosCliente.jsx", "JavaScript JSX", -48, 0, -1, -1, -50
+"c:\Users\Asus\FOSAN_APP\src\components\Sidebar.jsx", "JavaScript JSX", -17, 0, 0, 0, -17
+"c:\Users\Asus\FOSAN_APP\src\components\Tabbar.jsx", "JavaScript JSX", -7, 0, 0, 0, -7
+"c:\Users\Asus\FOSAN_APP\src\components\Topbar.jsx", "JavaScript JSX", -4, 0, 0, 0, -4
+"c:\Users\Asus\FOSAN_APP\src\lib\costos.js", "JavaScript", 0, 0, 0, -1, -1
+"c:\Users\Asus\FOSAN_APP\src\lib\excel.js", "JavaScript", 0, 6, 1, 0, 7
+"c:\Users\Asus\FOSAN_APP\src\lib\sesion.jsx", "JavaScript JSX", -17, 0, 0, 0, -17
+"c:\Users\Asus\FOSAN_APP\src\lib\ui.jsx", "JavaScript JSX", -79, 0, -2, -3, -84
+"c:\Users\Asus\FOSAN_APP\src\pages\Clientes.jsx", "JavaScript JSX", -48, 0, -2, 0, -50
+"c:\Users\Asus\FOSAN_APP\src\pages\FichaEquipo.jsx", "JavaScript JSX", -1, 0, 0, 0, -1
+"c:\Users\Asus\FOSAN_APP\src\pages\Flota.jsx", "JavaScript JSX", -40, 0, -2, -1, -43
+"c:\Users\Asus\FOSAN_APP\src\pages\Inicio.jsx", "JavaScript JSX", -6, 0, -1, 1, -6
+"c:\Users\Asus\FOSAN_APP\src\pages\Inventario.jsx", "JavaScript JSX", -1, 0, 0, 0, -1
+"c:\Users\Asus\FOSAN_APP\src\pages\Mantenimiento.jsx", "JavaScript JSX", -35, 0, -1, -1, -37
+"c:\Users\Asus\FOSAN_APP\src\pages\Reportes.jsx", "JavaScript JSX", -4, 0, 0, 0, -4
+"Total", "-", -343, 6, -12, -6, -355

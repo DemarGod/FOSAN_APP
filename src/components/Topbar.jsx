@@ -21,11 +21,7 @@ const SINONIMOS = {
   '/clientes': 'cliente clientes empresa arriendo contrato contratos rut',
   '/flota': 'camion camiones camioneta vehiculo vehiculos flota patente transporte odometro',
   '/mantenimiento': 'mantencion mantenciones mantenimiento taller reparacion preventiva correctiva',
-  '/despachos': 'despacho despachos entrega entregas retiro retiros cambio',
-  '/rutas': 'ruta rutas salida salidas limpieza limpiezas recorrido km',
-  '/insumos': 'insumo insumos stock quimico papel',
   '/inventario': 'inventario equipo equipos insumo insumos stock bodega bano banos quimico arriendo arriendos activo activos unidad codigo',
-  '/ubicaciones': 'mapa ubicacion ubicaciones faena direccion',
   '/reportes': 'reporte reportes excel informe pdf csv analisis costos rentabilidad margen utilidad ventas',
   '/configuracion': 'configuracion parametros diesel usuarios',
 }
