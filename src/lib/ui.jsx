@@ -12,7 +12,7 @@ export const C = {
   amarillo: '#F59E0B',
   rojo: '#EF4444',
   borde: '#1B3553',
-  tinte: 'rgba(7,139,250,.14)',   // fondo azul translúcido (selección, ayuda)
+  tinte: 'rgba(7,139,250,.18)',   // fondo azul translúcido (selección, ayuda)
   suave: '#0E1D31',     // fondo secundario
   fila: '#13253D',      // separadores y pistas de barras
   thead: '#0E1D31',

@@ -108,7 +108,7 @@ export default function InvEquipos() {
           <span>Asignadas</span><b>{datos ? propios.filter((e) => e.situacion === 'asignado').length : '…'}</b>
         </button>
         <button type="button" className="indicador" onClick={() => filtrar({ atencion: true })}
-          style={{ background: 'rgba(239,68,68,.14)', borderColor: 'rgba(239,68,68,.45)', display: 'block', textAlign: 'left', cursor: 'pointer', ...kpiActivo(esFiltro({ atencion: true })) }}>
+          style={{ background: 'rgba(239,68,68,.2)', borderColor: 'rgba(239,68,68,.45)', display: 'block', textAlign: 'left', cursor: 'pointer', ...kpiActivo(esFiltro({ atencion: true })) }}>
           <span>Requieren atención</span><b>{datos ? lista.filter(atencion).length : '…'}</b>
           <small style={{ display: 'block', font: '400 12px/1.4 var(--font)', color: C.tinta, marginTop: 4 }}>
             Es una alerta; puede coincidir con otras situaciones.

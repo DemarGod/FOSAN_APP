@@ -101,12 +101,12 @@ export default function Inicio({ onCalendario }) {
   const graf = armarGraficos(g)
   const TILES = [
     { l: 'Clientes activos', n: g?.clientesActivos, d: I.users, color: C.azul, fondo: C.tinte, ir: '/clientes' },
-    { l: 'Equipos disponibles', n: d?.disponibles, s: g ? `de ${g.equipos.length} propios` : null, d: I.box, color: C.verde, fondo: 'rgba(0,201,141,.14)', ir: '/inventario' },
+    { l: 'Equipos disponibles', n: d?.disponibles, s: g ? `de ${g.equipos.length} propios` : null, d: I.box, color: C.verde, fondo: 'rgba(0,201,141,.2)', ir: '/inventario' },
     { l: unDia && rango.desde === hoy ? 'Trabajos del día' : 'Trabajos del período', n: trabajos?.length, d: I.cal, color: C.azul, fondo: C.tinte, ir: '/operaciones?tab=programacion',
       spark: graf.prog, sparkT: 'Operaciones programadas por mes (últimos 6 meses)' },
-    { l: 'Atrasados', n: d?.atrasados, rojo: !!d?.atrasados, s: 'Operaciones sin realizar', d: I.alert, color: C.rojo, fondo: 'rgba(239,68,68,.14)', ir: '/operaciones?tab=programacion&estado=pendiente' },
-    ...(puedeVer(perfil, 'mantenciones') ? [{ l: 'Mantenimientos pendientes', n: d?.mant, d: I.wrench, color: C.amarillo, fondo: 'rgba(245,158,11,.14)', ir: '/mantenimiento' }] : []),
-    { l: 'Alertas críticas', n: d ? alertas.filter((a) => a.nivel === 'alerta').length : null, rojo: alertas.some((a) => a.nivel === 'alerta'), d: PROHIBIDO, color: C.rojo, fondo: 'rgba(239,68,68,.14)', ir: irAlertas },
+    { l: 'Atrasados', n: d?.atrasados, rojo: !!d?.atrasados, s: 'Operaciones sin realizar', d: I.alert, color: C.rojo, fondo: 'rgba(239,68,68,.2)', ir: '/operaciones?tab=programacion&estado=pendiente' },
+    ...(puedeVer(perfil, 'mantenciones') ? [{ l: 'Mantenimientos pendientes', n: d?.mant, d: I.wrench, color: C.amarillo, fondo: 'rgba(245,158,11,.2)', ir: '/mantenimiento' }] : []),
+    { l: 'Alertas críticas', n: d ? alertas.filter((a) => a.nivel === 'alerta').length : null, rojo: alertas.some((a) => a.nivel === 'alerta'), d: PROHIBIDO, color: C.rojo, fondo: 'rgba(239,68,68,.2)', ir: irAlertas },
   ]
 
   return (

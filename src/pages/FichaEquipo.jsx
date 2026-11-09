@@ -101,7 +101,7 @@ export default function FichaEquipo() {
         </div>
       </section>
 
-      <div style={{ display: 'flex', gap: 10, padding: '12px 14px', background: 'rgba(245,158,11,.14)', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)', font: '400 13px/1.5 var(--font)' }}>
+      <div style={{ display: 'flex', gap: 10, padding: '12px 14px', background: 'rgba(245,158,11,.2)', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)', font: '400 13px/1.5 var(--font)' }}>
         <Icon d={I.alert} size={18} color={C.amarillo} />
         <span><b>Dar de baja:</b> formulario con Fecha, Motivo (venta, donación, pérdida definitiva u otro) y Observaciones. Se confirma solo sin reservas, asignaciones u órdenes abiertas; conserva el historial. No localizado no equivale a baja definitiva.</span>
       </div>

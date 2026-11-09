@@ -131,17 +131,17 @@ function Calidad({ r, vista }) {
   const avisos = (por[vista] || []).filter(Boolean)
   if (!avisos.length) return null
   return (
-    <div style={{ margin: '16px 0 0', padding: '10px 14px', background: 'rgba(245,158,11,.14)', border: `1px solid ${C.amarillo}`, font: '400 12px/1.5 var(--font)', color: '#5c4400', display: 'grid', gap: 4, borderRadius: 'var(--radio-md)' }}>
+    <div style={{ margin: '16px 0 0', padding: '10px 14px', background: 'rgba(245,158,11,.2)', border: `1px solid ${C.amarillo}`, font: '400 12px/1.5 var(--font)', color: '#FCD34D', display: 'grid', gap: 4, borderRadius: 'var(--radio-md)' }}>
       <strong>Datos que faltan para que esta vista sea exacta</strong>
       {avisos.map((a, i) => <span key={i}>· {a}</span>)}
     </div>
   )
 }
 
-const Est = ({ on }) => (on ? <span title="Incluye kilómetros o datos estimados" style={{ marginLeft: 6, padding: '1px 5px', font: '700 9px var(--font)', letterSpacing: '.06em', textTransform: 'uppercase', background: 'rgba(245,158,11,.14)', color: '#FBBF24', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)' }}>est.</span> : null)
+const Est = ({ on }) => (on ? <span title="Incluye kilómetros o datos estimados" style={{ marginLeft: 6, padding: '1px 5px', font: '700 9px var(--font)', letterSpacing: '.06em', textTransform: 'uppercase', background: 'rgba(245,158,11,.2)', color: '#FBBF24', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)' }}>est.</span> : null)
 const SinDato = ({ children = 'Sin contrato' }) => <span style={{ font: '600 11px var(--font)', color: C.gris }}>{children}</span>
 const Margen = ({ p }) => (p === null || p === undefined ? <SinDato>—</SinDato>
-  : <span style={{ fontWeight: 700, color: p < 0.2 ? '#FCA5A5' : '#6EE7B7', background: p < 0.2 ? 'rgba(239,68,68,.14)' : undefined, padding: p < 0.2 ? '2px 6px' : 0 }}>{pct(p)}</span>)
+  : <span style={{ fontWeight: 700, color: p < 0.2 ? '#FCA5A5' : '#6EE7B7', background: p < 0.2 ? 'rgba(239,68,68,.2)' : undefined, padding: p < 0.2 ? '2px 6px' : 0 }}>{pct(p)}</span>)
 const Plata = ({ v }) => (v === null || v === undefined ? <SinDato>—</SinDato> : <span style={{ fontWeight: 700, color: v < 0 ? '#FCA5A5' : '#6EE7B7' }}>{$(v)}</span>)
 
 function Tabla({ cols, filas, onFila, vacio = 'Sin datos para este mes.', min = 640, pie }) {

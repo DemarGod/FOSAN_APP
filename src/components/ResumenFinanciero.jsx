@@ -63,8 +63,8 @@ export default function ResumenFinanciero() {
   const seisMeses = fin.slice(-6)
   const kpis = [
     { v: clp(ultimoMes.ventas), l: `Ventas · ${mesLargo(ultimoMes.mes)}`, color: C.navy, tint: 'rgba(155,174,197,.14)', d: I.money },
-    { v: clp(ultimoMes.costos), l: 'Costos del mes', color: C.amarillo, tint: 'rgba(245,158,11,.14)', d: I.wrench },
-    { v: clp(ultimoMes.utilidad), l: 'Utilidad del mes', color: C.verde, tint: 'rgba(0,201,141,.14)', d: I.chart },
+    { v: clp(ultimoMes.costos), l: 'Costos del mes', color: C.amarillo, tint: 'rgba(245,158,11,.2)', d: I.wrench },
+    { v: clp(ultimoMes.utilidad), l: 'Utilidad del mes', color: C.verde, tint: 'rgba(0,201,141,.2)', d: I.chart },
     { v: ultimoMes.margen != null ? ultimoMes.margen + '%' : '—', l: 'Margen del mes', color: C.azul, tint: C.tinte, d: I.chart },
   ]
 

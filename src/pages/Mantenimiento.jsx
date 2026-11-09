@@ -85,9 +85,9 @@ export default function Mantenimiento() {
 
       {vista === 'pendientes' && (
         <div className="kpis">
-          {[['programado', 'Programados', 'rgba(7,139,250,.14)', pend.filter((m) => m.estado_m === 'programado').length],
-            ['en_curso', 'En curso', 'rgba(245,158,11,.14)', pend.filter((m) => m.estado_m === 'en_curso').length],
-            ['vencido', 'Vencidos', 'rgba(239,68,68,.14)', pend.filter((m) => m.vencido).length]].map(([k, l, bg, n]) => (
+          {[['programado', 'Programados', 'rgba(7,139,250,.18)', pend.filter((m) => m.estado_m === 'programado').length],
+            ['en_curso', 'En curso', 'rgba(245,158,11,.2)', pend.filter((m) => m.estado_m === 'en_curso').length],
+            ['vencido', 'Vencidos', 'rgba(239,68,68,.2)', pend.filter((m) => m.vencido).length]].map(([k, l, bg, n]) => (
             <button key={k} type="button" className="indicador" onClick={() => filtrar({ estado: aplicado.estado === k ? '' : k })}
               style={{ display: 'block', textAlign: 'left', cursor: 'pointer', background: bg, ...(aplicado.estado === k ? { outline: `2px solid ${C.azul}`, outlineOffset: -2 } : {}) }}>
               <span>{l}</span><b>{datos ? n : '…'}</b>

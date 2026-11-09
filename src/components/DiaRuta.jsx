@@ -69,7 +69,7 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
         </div>
       )}
 
-      {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.14)', border: `1px solid ${C.rojo}`, font: '400 13px/1.45 var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
+      {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.2)', border: `1px solid ${C.rojo}`, font: '400 13px/1.45 var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
 
       {/* Paradas */}
       <div style={{ border: `1px solid ${C.borde}`, background: 'var(--panel)', borderRadius: 'var(--radio-md)' }}>
@@ -261,7 +261,7 @@ function Marcar({ p, estado, fecha, onCerrar, onListo, mantInicial = false }) {
           <span>Fotos (opcional){fotos.length ? ` · ${fotos.length} elegida(s)` : ''}</span>
           <input type="file" accept="image/*,application/pdf" multiple onChange={(e) => setFotos([...e.target.files])} />
         </label>
-        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.14)', border: `1px solid ${C.rojo}`, color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
+        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.2)', border: `1px solid ${C.rojo}`, color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
       </div>
     </Modal>
   )
@@ -294,11 +294,11 @@ function Cerrar({ viaje, pendientes, onCerrar, onListo }) {
         </label>
         {recorridos > 0 && <p style={{ margin: 0 }}>Recorrido del día: <strong>{miles(recorridos)} km</strong></p>}
         {pendientes > 0 && (
-          <div style={{ padding: '10px 12px', background: 'rgba(245,158,11,.14)', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-sm)' }}>
+          <div style={{ padding: '10px 12px', background: 'rgba(245,158,11,.2)', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-sm)' }}>
             Quedan {pendientes} parada(s) pendientes. Al cerrar quedarán como <strong>No se pudo</strong>.
           </div>
         )}
-        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.14)', border: `1px solid ${C.rojo}`, color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
+        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.2)', border: `1px solid ${C.rojo}`, color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
       </div>
     </Modal>
   )

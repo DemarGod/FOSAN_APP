@@ -234,7 +234,7 @@ function NuevoPunto({ punto, clientes, onCancelar, onGuardado }) {
           </>
         )}
         <Campo l="Dirección"><input value={direccion} onChange={(e) => setDireccion(e.target.value)} maxLength={160} placeholder="Se completa sola al hacer clic" /></Campo>
-        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.14)', border: `1px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
+        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.2)', border: `1px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button className="btn" onClick={onCancelar}>Cancelar</button>
           <button className="btn btn-azul" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar ubicación'}</button>

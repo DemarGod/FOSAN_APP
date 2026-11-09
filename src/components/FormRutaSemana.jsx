@@ -261,7 +261,7 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
           <div style={{ padding: '8px 18px', font: '400 11px/1.5 var(--font)', color: C.gris }}>
             Limpiezas: marca todos los días en que se visita. Entregas y retiros: un solo día (círculo). El orden de las filas es el orden de las paradas.
           </div>
-          {error && <div style={{ margin: '0 18px 14px', padding: '10px 12px', background: 'rgba(239,68,68,.14)', border: `1px solid ${C.rojo}`, font: '400 13px var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
+          {error && <div style={{ margin: '0 18px 14px', padding: '10px 12px', background: 'rgba(239,68,68,.2)', border: `1px solid ${C.rojo}`, font: '400 13px var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
         </>
       )}
 

@@ -149,7 +149,7 @@ function FormInsumo({ insumo, onCerrar, onGuardado }) {
             ? 'Costo mensual = unidades en uso × costo unitario ÷ meses que dura. En Análisis se reparte entre los clientes según sus aseos.'
             : 'Al marcar una limpieza como hecha en Rutas, se descuenta este gasto por cada baño del cliente. En Análisis es el costo de insumos de cada aseo.'}
         </div>
-        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.14)', border: `2px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#FCA5A5' }}>{String(error?.message || error)}</div>}
+        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.2)', border: `2px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#FCA5A5' }}>{String(error?.message || error)}</div>}
       </div>
     </Modal>
   )
@@ -202,7 +202,7 @@ function FormIngreso({ insumo, onCerrar, onGuardado }) {
         <Campo l={`Cantidad (${insumo.unidad})`}><input autoFocus value={cantidad} onChange={(e) => setCantidad(dec(e.target.value))} inputMode="decimal" placeholder="50" /></Campo>
         <Campo l={tipo === 'compra' ? 'Motivo (opcional)' : 'Motivo'}><input value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={120} placeholder={tipo === 'compra' ? 'Factura 1234 · SAYPOR' : 'Conteo físico, bidón roto…'} /></Campo>
         <div style={{ font: '400 12px var(--font)', color: C.gris }}>Stock actual: {insumo.stockL}</div>
-        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.14)', border: `2px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#FCA5A5' }}>{String(error?.message || error)}</div>}
+        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.2)', border: `2px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#FCA5A5' }}>{String(error?.message || error)}</div>}
       </div>
     </Modal>
   )

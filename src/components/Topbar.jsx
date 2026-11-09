@@ -7,8 +7,8 @@ import { C, Icon, I, fechaHora } from '../lib/ui'
 import { nombreRol, esOperador } from '../lib/sesion'
 
 const NIVEL = {
-  alerta: { color: C.rojo, tint: 'rgba(239,68,68,.14)', d: I.alert },
-  aviso: { color: C.amarillo, tint: 'rgba(245,158,11,.14)', d: I.wrench },
+  alerta: { color: C.rojo, tint: 'rgba(239,68,68,.2)', d: I.alert },
+  aviso: { color: C.amarillo, tint: 'rgba(245,158,11,.2)', d: I.wrench },
   info: { color: C.azul, tint: C.tinte, d: I.info },
 }
 

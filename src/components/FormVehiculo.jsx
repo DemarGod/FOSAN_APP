@@ -154,7 +154,7 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
             </div>
           )}
           {error && (
-            <div style={{ padding: '11px 13px', background: 'rgba(239,68,68,.14)', border: `1px solid ${C.rojo}`, font: '400 12px/1.45 var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-md)' }}>
+            <div style={{ padding: '11px 13px', background: 'rgba(239,68,68,.2)', border: `1px solid ${C.rojo}`, font: '400 12px/1.45 var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-md)' }}>
               {String(error?.message || error)}
             </div>
           )}
