@@ -72,7 +72,7 @@ export default function FichaVehiculo({ token }) {
           <h2 style={{ margin: 0, flex: '1 1 260px' }}>{v.patente || 'Sin patente'} · {v.codigo}</h2>
           <Chip titulo="Tipo" fondo={C.fila}>{TIPOS_VEHICULO[v.tipo_vehiculo] || '—'}</Chip>
           <Chip titulo="Estado" fondo={C.tinte}><Estado tono={TONO[v.estado_flota]}>{L_FLOTA[v.estado_flota]}</Estado></Chip>
-          <Chip titulo="Odómetro" fondo="#e6f4ea">{miles(v.kilometraje)}</Chip>
+          <Chip titulo="Odómetro" fondo={C.suave}>{miles(v.kilometraje)}</Chip>
           <Boton tipo="principal" icono={I.lapiz} onClick={() => setModal('editar')} disabled={!editable || baja || !tec}>Editar datos</Boton>
           <Boton onClick={() => setModal('disp')} disabled={!editable || baja}>Cambiar disponibilidad</Boton>
           <button type="button" className="btn" onClick={() => setModal('baja')} disabled={!editable || baja} style={{ color: C.rojo, borderColor: C.rojo }}>Dar de baja</button>
@@ -100,7 +100,7 @@ export default function FichaVehiculo({ token }) {
 
 function Chip({ titulo, fondo, children }) {
   return (
-    <span style={{ display: 'inline-grid', padding: '4px 12px', borderRadius: 'var(--radio-sm)', background: fondo, lineHeight: 1.2 }}>
+    <span style={{ display: 'inline-grid', padding: '4px 12px', borderRadius: 'var(--radio-sm)', background: fondo, border: `1px solid ${C.borde}`, lineHeight: 1.2 }}>
       <small style={{ font: '400 11px var(--font)', color: C.gris }}>{titulo}</small>
       <span style={{ font: '600 13px var(--font)' }}>{children}</span>
     </span>

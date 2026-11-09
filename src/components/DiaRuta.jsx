@@ -51,7 +51,7 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
           </span>
         </span>
         {Object.entries(SEMAFORO).map(([k, s]) => (
-          <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, font: '600 12px var(--font)', color: '#9BAEC5' }}>
+          <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, font: '600 12px var(--font)', color: '#CBD7E6' }}>
             <Punto color={s.c} />{s.l}: {cuenta(k)}
           </span>
         ))}
@@ -94,9 +94,9 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
                   <Chip tarea={p.tarea} servicio={servicio} />
                   <span style={{ font: '600 11px var(--font)', color: s.c }}>{s.l}</span>
                 </span>
-                {banos && <span style={{ font: '400 12px var(--font)', color: '#9BAEC5' }}>{servicio === 'limpieza_fosas' ? 'Fosa' : `Baños: ${banos}`}</span>}
+                {banos && <span style={{ font: '400 12px var(--font)', color: '#CBD7E6' }}>{servicio === 'limpieza_fosas' ? 'Fosa' : `Baños: ${banos}`}</span>}
                 {(c.contacto_nombre || c.telefono) && (
-                  <span style={{ font: '400 12px var(--font)', color: '#9BAEC5' }}>
+                  <span style={{ font: '400 12px var(--font)', color: '#CBD7E6' }}>
                     {c.contacto_nombre}{c.contacto_nombre && c.telefono ? ' · ' : ''}
                     {c.telefono && <a href={`tel:${c.telefono.replace(/\s/g, '')}`} style={{ color: C.azul }}>{c.telefono}</a>}
                   </span>

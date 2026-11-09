@@ -102,7 +102,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
   return (
     <header style={{
       display: 'flex', alignItems: 'center', gap: 14, height: 72, padding: '0 22px',
-      background: 'rgba(5,11,22,.78)', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${C.borde}`,
+      background: 'rgba(12,24,41,.78)', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${C.borde}`,
       position: 'sticky', top: 0, zIndex: 30,
     }}>
       <div className="sbtab"><MarcaFosan tam={22} tamTexto={17} /></div>
@@ -110,7 +110,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
       {!operador && <div ref={cajaBusca} className="desk-only" style={{ flex: 1, maxWidth: 460, position: 'relative' }}>
         <form onSubmit={buscar} style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          border: `1px solid ${C.borde}`, padding: '10px 14px', background: 'rgba(11,23,40,.85)', borderRadius: 12 }}>
+          border: `1px solid ${C.borde}`, padding: '10px 14px', background: 'rgba(21,38,63,.85)', borderRadius: 12 }}>
           <Icon d={I.busca} size={15} color={C.gris} />
           <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar baños, clientes o secciones"
@@ -135,7 +135,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
 
       {!operador && <>
       <button onClick={onCalendario} title="Calendario" style={{
-        border: `1px solid ${C.borde}`, background: 'rgba(11,23,40,.85)', color: C.navy,
+        border: `1px solid ${C.borde}`, background: 'rgba(21,38,63,.85)', color: C.navy,
         width: 42, height: 42, display: 'grid', placeItems: 'center', cursor: 'pointer', borderRadius: 12 }}>
         <Icon d={I.cal} size={18} w={1.7} />
       </button>

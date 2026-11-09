@@ -8,7 +8,7 @@ export const COLORES = {
   limpieza1: '#7fb3ff',   // 1 limpieza por semana
   limpieza2: '#3B82F6',   // 2 o más por semana
   bodega: C.tinta,
-  otro: '#6B7F99',
+  otro: '#9DB0C7',
 }
 
 // Color por defecto (sin datos de limpieza)
@@ -122,7 +122,7 @@ export function Leyenda({ items = LEYENDA }) {
       {items.map((l) => (
         <span key={l.l} style={{
           display: 'flex', alignItems: 'center', gap: 7,
-          font: '400 12px var(--font)', color: '#9BAEC5',
+          font: '400 12px var(--font)', color: '#CBD7E6',
         }}>
           <span style={{ width: 11, height: 11, borderRadius: '50%', background: l.c }} />
           {l.l}

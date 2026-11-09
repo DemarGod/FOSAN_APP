@@ -39,7 +39,7 @@ const item = (activo) => ({
   padding: '11px 14px', boxSizing: 'border-box', border: 0, cursor: 'pointer', textAlign: 'left',
   background: activo ? 'var(--degradado)' : 'transparent',
   boxShadow: activo ? '0 6px 20px rgba(7,139,250,.35), inset 0 0 0 1px rgba(255,255,255,.12)' : 'none',
-  color: activo ? '#fff' : '#9BAEC5',
+  color: activo ? '#fff' : '#CBD7E6',
   font: `${activo ? 600 : 500} 14px/1.2 var(--font)`, textDecoration: 'none', borderRadius: 10,
   transition: 'background .2s, color .2s',
 })
@@ -73,7 +73,7 @@ export default function Sidebar() {
   }, [])
   return (
     <aside className="sidebar" style={{
-      background: 'linear-gradient(180deg, #081426 0%, #06101F 100%)', color: '#fff', borderRight: '1px solid #12243B',
+      background: 'linear-gradient(180deg, #112038 0%, #0D1A2E 100%)', color: '#fff', borderRight: '1px solid #253E5E',
       display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh',
     }}>
       <div style={{ height: 72, padding: '0 20px', display: 'flex', alignItems: 'center' }}>
@@ -92,12 +92,12 @@ export default function Sidebar() {
       </nav>
 
       {/* Estado de la conexión de este equipo (real: navigator.onLine) */}
-      <div style={{ padding: '14px 20px 18px', borderTop: '1px solid #12243B', display: 'grid', gap: 4, font: '500 12px var(--font)', color: '#9BAEC5' }}>
+      <div style={{ padding: '14px 20px 18px', borderTop: '1px solid #253E5E', display: 'grid', gap: 4, font: '500 12px var(--font)', color: '#CBD7E6' }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: enLinea ? '#00C98D' : '#EF4444', boxShadow: `0 0 8px ${enLinea ? '#00C98D' : '#EF4444'}` }} />
           {enLinea ? 'En línea' : 'Sin conexión'}
         </span>
-        <span style={{ color: '#6B7F99' }}>FOSAN · gestión de operaciones</span>
+        <span style={{ color: '#9DB0C7' }}>FOSAN · gestión de operaciones</span>
       </div>
     </aside>
   )

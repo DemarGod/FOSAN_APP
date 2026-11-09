@@ -75,10 +75,11 @@ export default function FichaEquipo() {
           <h2 style={{ margin: 0, flex: '1 1 260px' }}>{externo ? e.codigo : `Unidad ${e.codigo}`} · {e.categoria || 'Equipo'}</h2>
           <Chip titulo="Propiedad" fondo={C.fila}>{externo ? 'Cliente' : 'Empresa'}</Chip>
           <Chip titulo="Situación" fondo={C.tinte}><Estado tono={TONO_SITUACION[e.situacion]}>{L_SITUACION[e.situacion] || '—'}</Estado></Chip>
-          <Chip titulo="Condición" fondo="#e6f4ea"><Estado tono={TONO_CONDICION[e.condicion]}>{L_CONDICION[e.condicion] || '—'}</Estado></Chip>
+          <Chip titulo="Condición" fondo={C.suave}><Estado tono={TONO_CONDICION[e.condicion]}>{L_CONDICION[e.condicion] || '—'}</Estado></Chip>
           <Boton tipo="principal" icono={I.lapiz} onClick={() => setEditar(true)} disabled={!editable || dadoDeBaja}>Editar datos</Boton>
           {!externo && (
             <button type="button" className="btn" onClick={() => setBaja(true)} disabled={!editable || dadoDeBaja}
+              title="Retira la unidad de forma definitiva (venta, donación, pérdida u otro). Se conserva su historial."
               style={{ color: C.rojo, borderColor: C.rojo }}>Dar de baja</button>
           )}
         </div>
@@ -100,11 +101,6 @@ export default function FichaEquipo() {
         </div>
       </section>
 
-      <div style={{ display: 'flex', gap: 10, padding: '12px 14px', background: 'rgba(245,158,11,.2)', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)', font: '400 13px/1.5 var(--font)' }}>
-        <Icon d={I.alert} size={18} color={C.amarillo} />
-        <span><b>Dar de baja:</b> formulario con Fecha, Motivo (venta, donación, pérdida definitiva u otro) y Observaciones. Se confirma solo sin reservas, asignaciones u órdenes abiertas; conserva el historial. No localizado no equivale a baja definitiva.</span>
-      </div>
-
       {editar && <EditarDatos e={e} onCerrar={() => setEditar(false)} onGuardado={() => { setEditar(false); recargar() }} />}
       {baja && <DarDeBaja e={e} onCerrar={() => setBaja(false)} onListo={() => { setBaja(false); recargar() }} />}
     </div>
@@ -113,7 +109,7 @@ export default function FichaEquipo() {
 
 function Chip({ titulo, fondo, children }) {
   return (
-    <span style={{ display: 'inline-grid', padding: '4px 12px', borderRadius: 'var(--radio-sm)', background: fondo, lineHeight: 1.2 }}>
+    <span style={{ display: 'inline-grid', padding: '4px 12px', borderRadius: 'var(--radio-sm)', background: fondo, border: `1px solid ${C.borde}`, lineHeight: 1.2 }}>
       <small style={{ font: '400 11px var(--font)', color: C.gris }}>{titulo}</small>
       <span style={{ font: '600 13px var(--font)' }}>{children}</span>
     </span>
@@ -531,7 +527,9 @@ function DarDeBaja({ e, onCerrar, onListo }) {
         </Campo>
         {paso === 2
           ? <Ayuda tono="error">¿Confirmas dar de baja la unidad {e.codigo} por {L_MOTIVO_BAJA[v.motivo].toLowerCase()} el {fecha(v.fecha)}? Su número no se reutiliza y el historial se conserva.</Ayuda>
-          : <Ayuda tono="atencion">Solo se confirma sin reservas, asignaciones, despachos ni mantenciones abiertas. No localizado no equivale a baja definitiva.</Ayuda>}
+          : <Ayuda tono="atencion">Indica la fecha, el motivo (venta, donación, pérdida definitiva u otro) y las observaciones.
+              Solo se confirma si la unidad no tiene reservas, asignaciones, despachos ni mantenciones abiertas; su historial se conserva.
+              Un equipo <b>no localizado</b> no equivale a una baja definitiva.</Ayuda>}
         {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
       </div>
     </Modal>

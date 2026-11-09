@@ -82,7 +82,7 @@ export default function Ubicaciones() {
             const on = filtro === f
             return (
               <button key={f} onClick={() => setFiltro(f)} style={{
-                border: 0, background: on ? C.tinte : 'var(--panel)', color: on ? '#7CC4FF' : '#9BAEC5',
+                border: 0, background: on ? C.tinte : 'var(--panel)', color: on ? '#7CC4FF' : '#CBD7E6',
                 font: '600 13px var(--font)', padding: '10px 16px', minHeight: 42, cursor: 'pointer',
               }}>{f}</button>
             )
@@ -124,7 +124,7 @@ function Lista({ visibles, sel, setSel, color, limpiaHoy, sinGeo, editable }) {
     <section className="card" style={{ display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: '14px 18px', background: C.tinte, borderBottom: `1px solid ${C.borde}` }}>
         <div style={{ font: '800 24px/1 var(--font)', color: '#7CC4FF' }}>{visibles.length}</div>
-        <div style={{ font: '400 11px var(--font)', color: '#9BAEC5', marginTop: 4 }}>
+        <div style={{ font: '400 11px var(--font)', color: '#CBD7E6', marginTop: 4 }}>
           puntos en esta vista · toca uno para centrarlo
         </div>
       </div>
