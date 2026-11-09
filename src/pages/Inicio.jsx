@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Modal from '../components/Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda, Pestanas } from '../components/Base'
-import { TarjetaGrafico, Barras, BarrasH, Dona, SERIE } from '../components/Graficos'
+import { TarjetaGrafico, Barras, BarrasH, Dona, SERIE, Sparkline, Lineas } from '../components/Graficos'
 import Mapa, { Leyenda as LeyendaMapa } from '../components/Mapa'
 import { useSesion, puedeOperar, puedeVer, esDueno, verFinanzas } from '../lib/sesion'
 import { inicioDatos, actividadPeriodo, avisosCalculados, inicioGraficos, mapaPuntos } from '../lib/api'
@@ -17,7 +17,6 @@ import { TablaCambios } from '../lib/auditoria'
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const PROHIBIDO = 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM5.6 5.6l12.8 12.8'
 
-const L_SERV = { arriendo_limpieza: 'Arriendo', limpieza_cliente: 'Limpieza de baños', limpieza_fosas: 'Limpieza de fosa' }
 const L_ACC = { entrega: 'Entrega', retiro: 'Retiro', cambio: 'Cambio', limpieza: 'Limpieza' }
 const L_OP = { programada: 'Programada', realizada: 'Realizada', pendiente: 'Atrasada', cancelada: 'Cancelada' }
 const TONO_OP = { programada: 'info', realizada: 'ok', pendiente: 'error', cancelada: 'neutro' }
@@ -81,7 +80,6 @@ export default function Inicio({ onCalendario }) {
 
   const unDia = rango.desde === rango.hasta
   const titRango = unDia ? (rango.desde === hoy ? `Hoy · ${fecha(hoy)}` : fecha(rango.desde)) : `${fecha(rango.desde)} – ${fecha(rango.hasta)}`
-  const v = (x) => (d ? (x ?? '—') : '…')
 
   // Alertas: atrasados + avisos calculados (insumos, mantenciones, contratos, eventos, documentos).
   // Se agrupan para que la lista no se llene de repetidos: las operaciones atrasadas van en una línea
@@ -101,18 +99,19 @@ export default function Inicio({ onCalendario }) {
   const graf = armarGraficos(g)
   const TILES = [
     { l: 'Clientes activos', n: g?.clientesActivos, d: I.users, color: C.azul, fondo: C.tinte, ir: '/clientes' },
-    { l: 'Equipos disponibles', n: d?.disponibles, s: g ? `de ${g.equipos.length} propios` : null, d: I.box, color: '#1e8e3e', fondo: '#e6f4ea', ir: '/inventario' },
-    { l: unDia && rango.desde === hoy ? 'Trabajos del día' : 'Trabajos del período', n: trabajos?.length, d: I.cal, color: C.azul, fondo: C.tinte, ir: '/operaciones?tab=programacion' },
-    { l: 'Atrasados', n: d?.atrasados, rojo: !!d?.atrasados, s: 'Operaciones sin realizar', d: I.alert, color: C.rojo, fondo: '#fce8e6', ir: '/operaciones?tab=programacion&estado=pendiente' },
-    ...(puedeVer(perfil, 'mantenciones') ? [{ l: 'Mantenimientos pendientes', n: d?.mant, d: I.wrench, color: '#b06000', fondo: '#fef7e0', ir: '/mantenimiento' }] : []),
-    { l: 'Alertas críticas', n: d ? alertas.filter((a) => a.nivel === 'alerta').length : null, rojo: alertas.some((a) => a.nivel === 'alerta'), d: PROHIBIDO, color: C.rojo, fondo: '#fce8e6', ir: irAlertas },
+    { l: 'Equipos disponibles', n: d?.disponibles, s: g ? `de ${g.equipos.length} propios` : null, d: I.box, color: C.verde, fondo: 'rgba(0,201,141,.2)', ir: '/inventario' },
+    { l: unDia && rango.desde === hoy ? 'Trabajos del día' : 'Trabajos del período', n: trabajos?.length, d: I.cal, color: C.azul, fondo: C.tinte, ir: '/operaciones?tab=programacion',
+      spark: graf.prog, sparkT: 'Operaciones programadas por mes (últimos 6 meses)' },
+    { l: 'Atrasados', n: d?.atrasados, rojo: !!d?.atrasados, s: 'Operaciones sin realizar', d: I.alert, color: C.rojo, fondo: 'rgba(239,68,68,.2)', ir: '/operaciones?tab=programacion&estado=pendiente' },
+    ...(puedeVer(perfil, 'mantenciones') ? [{ l: 'Mantenimientos pendientes', n: d?.mant, d: I.wrench, color: C.amarillo, fondo: 'rgba(245,158,11,.2)', ir: '/mantenimiento' }] : []),
+    { l: 'Alertas críticas', n: d ? alertas.filter((a) => a.nivel === 'alerta').length : null, rojo: alertas.some((a) => a.nivel === 'alerta'), d: PROHIBIDO, color: C.rojo, fondo: 'rgba(239,68,68,.2)', ir: irAlertas },
   ]
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <h2 style={{ margin: 0 }}>{saludo()}{perfil?.nombre ? `, ${perfil.nombre.split(' ')[0]}` : ''}</h2>
+          <h2 style={{ margin: 0, fontSize: 28, lineHeight: '34px' }}>{saludo()}{perfil?.nombre ? <>, <span style={{ background: 'var(--degradado)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{perfil.nombre.split(' ')[0]}</span></> : ''}</h2>
           <span className="text-muted">Centro de control de FOSAN · {fecha(hoy)}</span>
         </div>
         <Boton icono={I.cal} onClick={() => setElegirFecha(true)}>{titRango}</Boton>
@@ -122,10 +121,14 @@ export default function Inicio({ onCalendario }) {
       {/* Indicadores */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
         {TILES.map((k) => (
-          <button key={k.l} type="button" onClick={() => (typeof k.ir === 'function' ? k.ir() : navegar(k.ir))} className="card"
-            style={{ display: 'grid', gap: 6, padding: 14, textAlign: 'left', cursor: 'pointer', border: `1px solid ${C.borde}` }}>
-            <span style={{ width: 38, height: 38, borderRadius: 10, display: 'grid', placeItems: 'center', background: k.fondo }}><Icon d={k.d} size={20} color={k.color} /></span>
-            <b style={{ font: '800 28px/1 var(--font)', color: k.rojo ? C.rojo : C.tinta }}>{k.n ?? '…'}</b>
+          <button key={k.l} type="button" onClick={() => (typeof k.ir === 'function' ? k.ir() : navegar(k.ir))} className="card kpi"
+            style={{ display: 'grid', gap: 6, padding: 16, textAlign: 'left', cursor: 'pointer', position: 'relative', '--kpi': k.color }}>
+            <span style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+              <span style={{ width: 42, height: 42, borderRadius: '50%', display: 'grid', placeItems: 'center', background: k.fondo,
+                border: `1px solid ${k.color}55`, boxShadow: `0 0 18px ${k.color}22` }}><Icon d={k.d} size={20} color={k.color} /></span>
+              {k.spark && <Sparkline datos={k.spark} color={C.azulClaro} titulo={k.sparkT} />}
+            </span>
+            <b style={{ font: '700 30px/1 var(--font)', color: k.rojo ? C.rojo : C.tinta, marginTop: 4, textShadow: k.rojo ? '0 0 18px rgba(239,68,68,.35)' : 'none' }}>{k.n ?? '…'}</b>
             <span style={{ font: '600 13px var(--font)', color: C.tinta }}>{k.l}</span>
             {k.s && <small className="text-muted" style={{ marginTop: -4 }}>{k.s}</small>}
           </button>
@@ -136,8 +139,8 @@ export default function Inicio({ onCalendario }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
         <TarjetaGrafico titulo="Operaciones por mes" sub="Programadas vs realizadas · últimos 6 meses"
           tabla={{ columnas: ['Mes', 'Programadas', 'Realizadas'], filas: graf.meses.map((m, i) => [m, graf.prog[i], graf.real[i]]) }}>
-          <Barras etiquetas={graf.meses} series={[{ l: 'Programadas', c: SERIE[0], datos: graf.prog }, { l: 'Realizadas', c: SERIE[1], datos: graf.real }]}
-            onBarra={() => navegar('/operaciones?tab=programacion')} />
+          <Lineas etiquetas={graf.meses} series={[{ l: 'Programadas', c: '#18B8FF', datos: graf.prog }, { l: 'Realizadas', c: '#00C98D', datos: graf.real }]}
+            onPunto={() => navegar('/operaciones?tab=programacion')} />
         </TarjetaGrafico>
 
         <TarjetaGrafico titulo="Situación de los equipos" sub="Equipos propios · situación actual"

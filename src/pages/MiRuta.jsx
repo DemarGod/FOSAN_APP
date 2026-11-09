@@ -44,7 +44,7 @@ export default function MiRuta() {
 
   // Aviso y selector para el dueño
   const panelDueno = dueno && (
-    <div style={{ display: 'grid', gap: 10, padding: 14, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', background: '#fff' }}>
+    <div style={{ display: 'grid', gap: 10, padding: 14, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', background: 'var(--panel)' }}>
       <span style={{ font: '400 13px/1.5 var(--font)' }}>
         Recuerda: Mi ruta es la pantalla de cada operador. Para revisar y marcar <b>todas</b> las rutas usa{' '}
         <Link to="/operaciones?tab=rutas" style={{ color: C.azul, fontWeight: 600 }}>Operaciones → Rutas</Link>.
@@ -81,7 +81,7 @@ export default function MiRuta() {
       {panelDueno}
 
       {semana.rutas.length === 0 && (
-        <div style={{ padding: 18, border: `1px solid ${C.borde}`, background: '#fff', font: '400 14px/1.5 var(--font)', borderRadius: 'var(--radio-md)' }}>
+        <div style={{ padding: 18, border: `1px solid ${C.borde}`, background: 'var(--panel)', font: '400 14px/1.5 var(--font)', borderRadius: 'var(--radio-md)' }}>
           {dueno && verComo ? 'Este operador no tiene una ruta asignada esta semana.'
             : dueno && !perfil?.tieneRuta ? 'No tienes una ruta asignada esta semana. Para ver la de un operador, elígelo arriba en "Ver como operador".'
             : `No tienes una ruta asignada ${salto === 0 ? 'esta semana' : 'en esa semana'}. Cuando te asignen una, aparecerá aquí.`}
@@ -120,7 +120,7 @@ export default function MiRuta() {
               return (
                 <button key={d.v} onClick={() => setDia(d.v)} style={{
                   border: 0, cursor: 'pointer', padding: '8px 4px', minHeight: 64, display: 'grid', justifyItems: 'center', gap: 4,
-                  background: on ? C.navy : '#fff', color: on ? '#fff' : C.navy,
+                  background: on ? C.azul : 'var(--panel)', color: on ? '#fff' : C.navy,
                   borderBottom: f === hoy ? `3px solid ${C.verde}` : '3px solid transparent',
                 }}>
                   <strong style={{ font: '700 14px var(--font)' }}>{d.l}</strong>
@@ -139,7 +139,7 @@ export default function MiRuta() {
 
           {viaje
             ? <DiaRuta key={viaje.id} viaje={viaje} editable={viaje.fecha <= hoy} onCambio={cargar} />
-            : <div style={{ padding: 18, border: `1px solid ${C.borde}`, background: '#fff', font: '400 13px var(--font)', color: C.gris, borderRadius: 'var(--radio-md)' }}>Este día no tiene paradas.</div>}
+            : <div style={{ padding: 18, border: `1px solid ${C.borde}`, background: 'var(--panel)', font: '400 13px var(--font)', color: C.gris, borderRadius: 'var(--radio-md)' }}>Este día no tiene paradas.</div>}
         </>
       )}
     </div>

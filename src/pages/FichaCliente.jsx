@@ -74,7 +74,7 @@ export default function FichaCliente() {
           <div style={{ flex: 1, minWidth: 240 }}>
             <h2 style={{ margin: '0 0 8px' }}>{c.nombre}</h2>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <Chip fondo={c.activo ? '#e6f4ea' : C.fila}>
+              <Chip fondo={c.activo ? 'rgba(0,201,141,.2)' : C.fila}>
                 <Estado tono={c.activo ? 'ok' : 'neutro'}>{c.activo ? 'Cliente activo' : 'Cliente inactivo'}</Estado>
               </Chip>
               <Chip>{c.codigo} · RUT {c.rut || '—'}</Chip>

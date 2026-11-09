@@ -1,21 +1,25 @@
 // Iconos, colores, etiquetas de los enum de la base y formateadores.
 
-// Sistema de diseño FOSAN (láminas). Mismos valores que :root en src/index.css.
+// Sistema de diseño FOSAN · tema oscuro corporativo (noviembre 2026). Mismos valores que :root en src/index.css.
+// Los nombres se mantienen para no tocar las pantallas: "blanco" es el fondo de tarjeta, "navy" el texto de títulos.
 export const C = {
-  navy: '#13294b',      // barra lateral y encabezados
-  azul: '#2f6fdd',      // botones principales, activo, enlaces
-  azulClaro: '#4085f4', // solo íconos y foco (no de fondo bajo texto blanco)
-  blanco: '#ffffff',
-  verde: '#34a853',
-  amarillo: '#f9ab00',
-  rojo: '#ea4335',
-  borde: '#dbe3ee',
-  tinte: '#e8f0fe',
-  suave: '#f6f8fb',
-  fila: '#eef1f5',
-  thead: '#eaf0f9',
-  gris: '#5f6368',
-  tinta: '#201e1d',
+  navy: '#F1F5FA',      // títulos y texto destacado
+  azul: '#078BFA',      // azul eléctrico: botones, selección, enlaces
+  azulClaro: '#18B8FF', // azul luminoso: íconos, foco, acentos
+  azulOscuro: '#064B9B',
+  blanco: '#0B1728',    // fondo de tarjetas y paneles
+  verde: '#00C98D',
+  amarillo: '#F59E0B',
+  rojo: '#EF4444',
+  borde: '#1B3553',
+  tinte: 'rgba(7,139,250,.18)',   // fondo azul translúcido (selección, ayuda)
+  suave: '#0E1D31',     // fondo secundario
+  fila: '#13253D',      // separadores y pistas de barras
+  thead: '#0E1D31',
+  gris: '#9BAEC5',      // texto secundario
+  tinta: '#F1F5FA',     // texto principal
+  fondo: '#050B16',
+  lateral: '#081426',
 }
 
 export const I = {
@@ -48,7 +52,7 @@ export const I = {
 export function Icon({ d, size = 18, color = 'currentColor', w = 1.8, style }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color}
-      strokeWidth={w} strokeLinecap="square" style={{ flex: 'none', ...style }}>
+      strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', ...style }}>
       <path d={d} />
     </svg>
   )
@@ -78,7 +82,7 @@ export const L_TIPO_EVENTO = {
 }
 export const COLORES_BANO = ['Azul', 'Verde', 'Rojo', 'Amarillo', 'Naranjo', 'Blanco', 'Gris', 'Negro', 'Café', 'Celeste', 'Rosado']
 export const COLOR_EVENTO = {
-  mantencion: C.amarillo, pago: C.verde, servicio: C.azul, alerta: C.rojo, reunion: C.navy,
+  mantencion: C.amarillo, pago: C.verde, servicio: C.azul, alerta: C.rojo, reunion: C.azulClaro,
 }
 
 // ── Formateadores ──────────────────────────────────────────────────────────

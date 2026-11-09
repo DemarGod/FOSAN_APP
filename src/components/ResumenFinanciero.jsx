@@ -25,7 +25,7 @@ function GraficoUtilidad({ datos }) {
           const hC = (Number(d.costos || 0) / max) * alto
           return (
             <g key={d.mes}>
-              <rect x={x} y={margenSup + alto - hV} width={anchoBarra} height={hV} fill={C.navy}><title>Ventas: {clp(d.ventas)}</title></rect>
+              <rect x={x} y={margenSup + alto - hV} width={anchoBarra} height={hV} fill={C.azul}><title>Ventas: {clp(d.ventas)}</title></rect>
               <rect x={x + anchoBarra + gapBarras} y={margenSup + alto - hC} width={anchoBarra} height={hC} fill={C.amarillo}><title>Costos: {clp(d.costos)}</title></rect>
               <text x={x + grupoAncho / 2} y={margenSup + alto + 18} textAnchor="middle" fontFamily="Archivo" fontSize="11" fill={C.gris}>
                 {mesLargo(d.mes).split(' ')[0].slice(0, 3)}
@@ -37,7 +37,7 @@ function GraficoUtilidad({ datos }) {
       </svg>
       <div style={{ display: 'flex', gap: 18, marginTop: 8 }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, font: '400 12px var(--font)', color: C.gris }}>
-          <span style={{ width: 10, height: 10, background: C.navy, display: 'inline-block' }} /> Ventas
+          <span style={{ width: 10, height: 10, background: C.azul, display: 'inline-block' }} /> Ventas
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, font: '400 12px var(--font)', color: C.gris }}>
           <span style={{ width: 10, height: 10, background: C.amarillo, display: 'inline-block' }} /> Costos
@@ -62,9 +62,9 @@ export default function ResumenFinanciero() {
   const ultimoMes = fin[fin.length - 1] || {}
   const seisMeses = fin.slice(-6)
   const kpis = [
-    { v: clp(ultimoMes.ventas), l: `Ventas · ${mesLargo(ultimoMes.mes)}`, color: C.navy, tint: '#e8edf5', d: I.money },
-    { v: clp(ultimoMes.costos), l: 'Costos del mes', color: C.amarillo, tint: '#fef7e0', d: I.wrench },
-    { v: clp(ultimoMes.utilidad), l: 'Utilidad del mes', color: C.verde, tint: '#e6f4ea', d: I.chart },
+    { v: clp(ultimoMes.ventas), l: `Ventas · ${mesLargo(ultimoMes.mes)}`, color: C.navy, tint: 'rgba(155,174,197,.14)', d: I.money },
+    { v: clp(ultimoMes.costos), l: 'Costos del mes', color: C.amarillo, tint: 'rgba(245,158,11,.2)', d: I.wrench },
+    { v: clp(ultimoMes.utilidad), l: 'Utilidad del mes', color: C.verde, tint: 'rgba(0,201,141,.2)', d: I.chart },
     { v: ultimoMes.margen != null ? ultimoMes.margen + '%' : '—', l: 'Margen del mes', color: C.azul, tint: C.tinte, d: I.chart },
   ]
 
@@ -98,7 +98,7 @@ export default function ResumenFinanciero() {
 
       <div className="kpis" style={{ marginTop: 4 }}>
         {kpis.map((k) => (
-          <div key={k.l} style={{ background: '#fff', border: `1px solid ${C.borde}`, borderTop: `4px solid ${k.color}`, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, borderRadius: 'var(--radio-md)' }}>
+          <div key={k.l} style={{ background: 'var(--panel)', border: `1px solid ${C.borde}`, borderTop: `4px solid ${k.color}`, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, borderRadius: 'var(--radio-md)' }}>
             <span style={{ width: 38, height: 38, flex: 'none', background: k.tint, color: k.color, display: 'grid', placeItems: 'center' }}>
               <Icon d={k.d} size={20} />
             </span>
@@ -129,7 +129,7 @@ export default function ResumenFinanciero() {
                 </div>
                 <div style={{ height: 10, background: C.fila }}>
                   <div style={{
-                    height: 10, background: C.navy,
+                    height: 10, background: C.azul,
                     width: (Number(c.ingresos || 0) / max * 100) + '%',
                   }} />
                 </div>
@@ -163,7 +163,7 @@ export default function ResumenFinanciero() {
           display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
           padding: '14px 18px', background: C.tinte, borderBottom: `1px solid ${C.borde}`,
         }}>
-          <h6 style={{ margin: 0, color: '#1a3c72' }}>Evolución de utilidad</h6>
+          <h6 style={{ margin: 0, color: '#7CC4FF' }}>Evolución de utilidad</h6>
           <span style={{ font: '400 12px var(--font)', color: C.gris }}>Últimos {seisMeses.length} mes(es)</span>
         </div>
         <div style={{ padding: '18px 18px 8px' }}><GraficoUtilidad datos={seisMeses} /></div>

@@ -3,7 +3,7 @@
 import { C, Icon, I } from '../lib/ui'
 
 // ── Botón ─────────────────────────────────────────────────────────────────
-// tipo: 'principal' (azul) · 'secundario' (blanco) · 'peligro' (rojo, solo confirmaciones finales)
+// tipo: 'principal' (azul) · 'secundario' (contorno) · 'peligro' (rojo, solo confirmaciones finales)
 export function Boton({ tipo = 'secundario', icono, children, className = '', ...props }) {
   const clase = { principal: 'btn btn-azul', secundario: 'btn', peligro: 'btn btn-rojo' }[tipo] || 'btn'
   return (
@@ -102,7 +102,7 @@ export function Ayuda({ children, tono = 'info', style }) {
   if (tono === 'error' && typeof children === 'string') children = enEspanol(children)
   const color = tono === 'error' ? C.rojo : tono === 'atencion' ? C.amarillo : C.azulClaro
   return (
-    <div className="ayuda" style={style}>
+    <div className={`ayuda ayuda-${tono}`} style={style}>
       <Icon d={tono === 'info' ? I.info : I.alert} size={18} color={color} />
       <div>{children}</div>
     </div>

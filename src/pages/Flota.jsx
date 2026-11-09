@@ -10,7 +10,7 @@ import { flota, vehiculos, parametros, cambiarDisponibilidadVehiculo, desactivar
 import { TIPOS_VEHICULO, costoKmVehiculo, mapaParametros, hoyISO } from '../lib/costos'
 import { exportarTabla, exportarCSV } from '../lib/excel'
 import { useSesion, puedeOperar, verFinanzas } from '../lib/sesion'
-import { C, Icon, I, clp } from '../lib/ui'
+import { C, I, clp } from '../lib/ui'
 import Menu from '../components/Menu'
 
 export const L_FLOTA = { disponible: 'Disponible', en_ruta: 'En ruta', mantenimiento: 'En mantenimiento', fuera_servicio: 'Fuera de servicio', baja: 'Desactivado' }
@@ -66,9 +66,9 @@ export default function Flota() {
 
   const KPIS = [
     ['', 'Activos', C.blanco, activos.length],
-    ['disponible', 'Disponibles', '#e6f4ea', cuenta('disponible')],
-    ['en_ruta', 'En ruta', '#e8f0fe', cuenta('en_ruta')],
-    ['mantenimiento', 'En mantenimiento', '#fef7e0', cuenta('mantenimiento')],
+    ['disponible', 'Disponibles', 'rgba(0,201,141,.2)', cuenta('disponible')],
+    ['en_ruta', 'En ruta', 'rgba(7,139,250,.18)', cuenta('en_ruta')],
+    ['mantenimiento', 'En mantenimiento', 'rgba(245,158,11,.2)', cuenta('mantenimiento')],
   ]
 
   return (

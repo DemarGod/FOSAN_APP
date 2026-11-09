@@ -144,17 +144,17 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
           </div>
           <div style={{
             padding: '11px 13px', background: C.suave, border: `1px solid ${C.borde}`,
-            font: '400 12px/1.45 var(--font)', color: '#3c4551', borderRadius: 'var(--radio-md)' }}>
+            font: '400 12px/1.45 var(--font)', color: '#9BAEC5', borderRadius: 'var(--radio-md)' }}>
             Con estos datos cada ruta calcula su costo: diésel según los km y el peso que lleva,
             más desgaste y costos fijos por kilómetro. Los campos vacíos cuentan como cero.
           </div>
           </> : (
-            <div style={{ padding: '11px 13px', background: C.suave, border: `1px solid ${C.borde}`, font: '400 12px/1.45 var(--font)', color: '#3c4551', borderRadius: 'var(--radio-md)' }}>
+            <div style={{ padding: '11px 13px', background: C.suave, border: `1px solid ${C.borde}`, font: '400 12px/1.45 var(--font)', color: '#9BAEC5', borderRadius: 'var(--radio-md)' }}>
               Patente única: se guarda en mayúsculas y sin guiones ni espacios. Rendimiento y costos los completa quien tiene permiso "Ver montos".
             </div>
           )}
           {error && (
-            <div style={{ padding: '11px 13px', background: '#fce8e6', border: `1px solid ${C.rojo}`, font: '400 12px/1.45 var(--font)', color: '#7c1405', borderRadius: 'var(--radio-md)' }}>
+            <div style={{ padding: '11px 13px', background: 'rgba(239,68,68,.2)', border: `1px solid ${C.rojo}`, font: '400 12px/1.45 var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-md)' }}>
               {String(error?.message || error)}
             </div>
           )}
@@ -166,5 +166,5 @@ export default function FormVehiculo({ vehiculo, onCerrar, onGuardado }) {
 
 const par = { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }
 const Titulo = ({ children }) => (
-  <div style={{ font: '700 12px var(--font)', color: '#1a3c72', borderBottom: `1px solid ${C.borde}`, paddingBottom: 6 }}>{children}</div>
+  <div style={{ font: '700 12px var(--font)', color: '#7CC4FF', borderBottom: `1px solid ${C.borde}`, paddingBottom: 6 }}>{children}</div>
 )

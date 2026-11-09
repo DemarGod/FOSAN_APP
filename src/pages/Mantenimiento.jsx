@@ -23,7 +23,6 @@ const L_COND = { operativo: 'Operativo', requiere_limpieza: 'Requiere limpieza',
 const TIPOS_EQUIPO = ['Mantención preventiva', 'Mantención correctiva', 'Inspección', 'Reparación de puerta', 'Cambio de estanque', 'Revisión de bomba']
 const TIPOS_FLOTA = ['Mantención preventiva', 'Mantención correctiva', 'Inspección', 'Cambio de aceite', 'Revisión técnica', 'Cambio de neumáticos']
 const MOTIVOS_CANCELAR = ['Se reprograma por disponibilidad', 'Ya no es necesario', 'Se registró por error', 'Otro']
-const PUNTOS = 'M6 9l6 6 6-6'
 const chico = { minHeight: 34, padding: '6px 12px' }
 const abierto = (m) => m.estado_m === 'programado' || m.estado_m === 'en_curso'
 
@@ -86,9 +85,9 @@ export default function Mantenimiento() {
 
       {vista === 'pendientes' && (
         <div className="kpis">
-          {[['programado', 'Programados', '#e8f0fe', pend.filter((m) => m.estado_m === 'programado').length],
-            ['en_curso', 'En curso', '#fef7e0', pend.filter((m) => m.estado_m === 'en_curso').length],
-            ['vencido', 'Vencidos', '#fce8e6', pend.filter((m) => m.vencido).length]].map(([k, l, bg, n]) => (
+          {[['programado', 'Programados', 'rgba(7,139,250,.18)', pend.filter((m) => m.estado_m === 'programado').length],
+            ['en_curso', 'En curso', 'rgba(245,158,11,.2)', pend.filter((m) => m.estado_m === 'en_curso').length],
+            ['vencido', 'Vencidos', 'rgba(239,68,68,.2)', pend.filter((m) => m.vencido).length]].map(([k, l, bg, n]) => (
             <button key={k} type="button" className="indicador" onClick={() => filtrar({ estado: aplicado.estado === k ? '' : k })}
               style={{ display: 'block', textAlign: 'left', cursor: 'pointer', background: bg, ...(aplicado.estado === k ? { outline: `2px solid ${C.azul}`, outlineOffset: -2 } : {}) }}>
               <span>{l}</span><b>{datos ? n : '…'}</b>
@@ -330,7 +329,7 @@ function Detalle({ m, editable, finanzas, onCerrar, onCambio, onEditar, onResult
         <Ayuda>Iniciar trabajo solo se habilita si está Programado. Registrar resultado si está Programado o En curso; permite trabajo iniciado y finalizado el mismo día. Editar programación solo mientras está Programado.</Ayuda>
 
         {editable && abierto(m) && (cancelar ? (
-          <div style={{ display: 'grid', gap: 10, padding: 14, border: `1px solid ${C.rojo}`, borderRadius: 'var(--radio-md)', background: '#fdf3f2' }}>
+          <div style={{ display: 'grid', gap: 10, padding: 14, border: `1px solid ${C.rojo}`, borderRadius: 'var(--radio-md)', background: 'rgba(239,68,68,.10)' }}>
             <b style={{ color: C.rojo }}>Cancelar mantenimiento</b>
             <Campo etiqueta="Motivo" obligatorio>
               <select value={motivo} onChange={(e) => setMotivo(e.target.value)}>{MOTIVOS_CANCELAR.map((x) => <option key={x}>{x}</option>)}</select>

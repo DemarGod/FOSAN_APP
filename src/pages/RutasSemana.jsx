@@ -80,7 +80,7 @@ export default function RutasSemana() {
       <Aviso error={error} />
 
       {pendientes.length > 0 && (
-        <div style={{ border: `1px solid ${C.amarillo}`, background: '#fffaf0', padding: '12px 14px', marginBottom: 16, display: 'grid', gap: 6, borderRadius: 'var(--radio-md)' }}>
+        <div style={{ border: `1px solid ${C.amarillo}`, background: 'rgba(245,158,11,.10)', padding: '12px 14px', marginBottom: 16, display: 'grid', gap: 6, borderRadius: 'var(--radio-md)' }}>
           <strong style={{ font: '700 13px var(--font)', color: C.navy }}>{pendientes.length} entrega(s) o retiro(s) sin ruta</strong>
           {pendientes.slice(0, 6).map((d) => (
             <span key={d.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', font: '400 12px var(--font)' }}>
@@ -91,7 +91,7 @@ export default function RutasSemana() {
       )}
 
       {!rutas ? <Cargando /> : rutas.length === 0 ? (
-        <div style={{ padding: 22, border: `1px solid ${C.borde}`, background: '#fff', font: '400 14px/1.5 var(--font)', borderRadius: 'var(--radio-md)' }}>
+        <div style={{ padding: 22, border: `1px solid ${C.borde}`, background: 'var(--panel)', font: '400 14px/1.5 var(--font)', borderRadius: 'var(--radio-md)' }}>
           No hay rutas para esta semana.{planifica && ' Crea una nueva o copia la de la semana anterior.'}
           {planifica && <div style={{ marginTop: 12 }}><button className="btn" onClick={() => setLunes(sumarDias(lunes, -7))}>Ver semana anterior</button></div>}
         </div>
@@ -102,7 +102,7 @@ export default function RutasSemana() {
             const kmR = dias.reduce((s, v) => s + Number(v.km_real || 0), 0)
             const comenzada = dias.some((v) => v.iniciada_en || v.estado !== 'planificada')
             return (
-              <div key={r.id} style={{ border: `1px solid ${C.borde}`, background: '#fff', borderRadius: 'var(--radio-md)' }}>
+              <div key={r.id} style={{ border: `1px solid ${C.borde}`, background: 'var(--panel)', borderRadius: 'var(--radio-md)' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: `1px solid ${C.borde}` }}>
                   <span style={{ flex: '1 1 220px' }}>
                     <strong style={{ display: 'block', font: '700 16px var(--font)', color: C.navy }}>{r.nombre}</strong>
@@ -122,7 +122,7 @@ export default function RutasSemana() {
                     const pend = v ? v.total - v.hechas - v.fallidas : 0
                     const est = !v ? 'Libre' : v.estado === 'cerrada' ? `Cerrado · ${miles(v.km_real)} km` : v.iniciada_en ? 'En ruta' : 'Sin iniciar'
                     return (
-                      <div key={d.v} style={{ background: f === hoy ? C.tinte : '#fff', padding: '8px 10px', display: 'grid', gap: 4, minWidth: 0 }}>
+                      <div key={d.v} style={{ background: f === hoy ? C.tinte : 'var(--panel)', padding: '8px 10px', display: 'grid', gap: 4, minWidth: 0 }}>
                         <span style={{ font: '700 12px var(--font)', color: C.navy }}>{d.l} {diaCorto(f)}</span>
                         {v && (
                           <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap', font: '700 11px var(--font)' }}>

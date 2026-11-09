@@ -15,14 +15,13 @@ import { rutasDeSemana, lunesDe } from '../lib/rutasSemana'
 import { exportarTabla, exportarCSV } from '../lib/excel'
 import { useSesion, puedeOperar, esDueno } from '../lib/sesion'
 import { hoyISO } from '../lib/costos'
-import { C, Icon, I, fecha } from '../lib/ui'
+import { C, I, fecha } from '../lib/ui'
 import Menu from './Menu'
 
 const L_ESTADO_OP = { programada: 'Programada', realizada: 'Realizada', pendiente: 'Atrasada', cancelada: 'Cancelada' }
 const TONO_OP = { programada: 'info', realizada: 'ok', pendiente: 'atencion', cancelada: 'neutro' }
 
 const chico = { minHeight: 34, padding: '6px 12px' }
-const PUNTOS = 'M6 9l6 6 6-6'
 const PROHIBIDO = 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM5.6 5.6l12.8 12.8'
 const inicioMes = () => hoyISO().slice(0, 8) + '01'
 const finMes = () => { const d = new Date(hoyISO().slice(0, 8) + '01T12:00:00'); d.setMonth(d.getMonth() + 1); d.setDate(0); return d.toISOString().slice(0, 10) }
@@ -83,7 +82,7 @@ export default function OpProgramacion({ irARutas }) {
       </div>
 
       <div className="kpis">
-        {[['programada', 'Programadas', C.blanco], ['realizada', 'Realizadas', '#e6f4ea'], ['pendiente', 'Atrasadas', '#fef7e0']].map(([k, l, bg]) => (
+        {[['programada', 'Programadas', C.blanco], ['realizada', 'Realizadas', 'rgba(0,201,141,.2)'], ['pendiente', 'Atrasadas', 'rgba(245,158,11,.2)']].map(([k, l, bg]) => (
           <button key={k} type="button" className="indicador" onClick={() => filtrar({ estado: k })}
             style={{ display: 'block', textAlign: 'left', cursor: 'pointer', background: bg, ...(aplicado.estado === k ? { outline: `2px solid ${C.azul}`, outlineOffset: -2 } : {}) }}>
             <span>{l}</span><b>{datos ? cuenta(k) : '…'}</b>
@@ -348,13 +347,13 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
                   : ` Con esta entrega se completa lo solicitado.`) : '')
               : 'Solo baños disponibles y no reservados por otra operación.'} />}
           {conCupo && (entregar.length >= libresCupo || urgente) && (
-            <div style={{ display: 'grid', gap: 10, padding: 16, border: `3px solid ${C.amarillo}`, background: '#fef7e0', borderRadius: 'var(--radio-md)' }}>
-              <strong style={{ font: '800 16px/1.3 var(--font)', color: '#7a4a00' }}>⚠ CUPO DEL SERVICIO COMPLETO</strong>
-              <span style={{ font: '400 14px/1.5 var(--font)', color: '#5c3b00' }}>
+            <div style={{ display: 'grid', gap: 10, padding: 16, border: `3px solid ${C.amarillo}`, background: 'rgba(245,158,11,.2)', borderRadius: 'var(--radio-md)' }}>
+              <strong style={{ font: '800 16px/1.3 var(--font)', color: '#FBBF24' }}>⚠ CUPO DEL SERVICIO COMPLETO</strong>
+              <span style={{ font: '400 14px/1.5 var(--font)', color: '#FBBF24' }}>
                 El servicio {servicioSel?.codigo} solicita <b>{cupo.solicitada}</b> unidad(es). Para entregar más, lo correcto es <b>editar la cantidad del servicio</b> en la ficha del cliente.
                 Si es una urgencia, puedes seguir: quedará registrada en la operación y se avisará en Notificaciones, porque el servicio y el cobro quedan descuadrados hasta que se actualicen.
               </span>
-              <label style={{ display: 'flex', gap: 10, alignItems: 'center', font: '700 14px var(--font)', color: '#5c3b00', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', gap: 10, alignItems: 'center', font: '700 14px var(--font)', color: '#FBBF24', cursor: 'pointer' }}>
                 <input type="checkbox" checked={urgente} onChange={(e) => { setUrgente(e.target.checked); setErrores({}) }} style={{ width: 20, height: 20 }} />
                 Es urgente: entregar más unidades de las solicitadas
               </label>
@@ -416,7 +415,7 @@ function Unidades({ titulo, disponibles, elegidas, setElegidas, error, ayuda, to
         ))}
       </div>
       {lleno
-        ? <small style={{ color: '#7a4a00', fontWeight: 600 }}>Cupo del servicio completo: no se pueden agregar más unidades.</small>
+        ? <small style={{ color: '#FBBF24', fontWeight: 600 }}>Cupo del servicio completo: no se pueden agregar más unidades.</small>
         : <input value={texto} onChange={(e) => setTexto(e.target.value.replace(/\D/g, ''))} placeholder={`Buscar N.º de unidad (${disponibles.length - ids.size} disponibles)`} inputMode="numeric" />}
       {texto && !lleno && (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -466,8 +465,8 @@ function Detalle({ o, editable, onCerrar, onEditar, onRuta, onConfirmar, onRespa
         </div>
         {o.estado === 'hecho' && (o.recibido_por || o.resultado) && <Ayuda>Recibió: {o.recibido_por || '—'}{o.resultado ? ` · ${o.resultado}` : ''}</Ayuda>}
         {o.exceso_unidades > 0 && (
-          <div style={{ padding: 14, border: `3px solid ${C.amarillo}`, background: '#fef7e0', borderRadius: 'var(--radio-md)', font: '400 14px/1.5 var(--font)', color: '#5c3b00' }}>
-            <b style={{ font: '800 15px var(--font)', color: '#7a4a00' }}>⚠ URGENCIA: entrega sobre lo solicitado (+{o.exceso_unidades})</b><br />
+          <div style={{ padding: 14, border: `3px solid ${C.amarillo}`, background: 'rgba(245,158,11,.2)', borderRadius: 'var(--radio-md)', font: '400 14px/1.5 var(--font)', color: '#FBBF24' }}>
+            <b style={{ font: '800 15px var(--font)', color: '#FBBF24' }}>⚠ URGENCIA: entrega sobre lo solicitado (+{o.exceso_unidades})</b><br />
             Motivo: {o.exceso_motivo || '—'}. Actualiza la cantidad del servicio {o.servicio_codigo || ''} para que el cobro cuadre.
           </div>
         )}

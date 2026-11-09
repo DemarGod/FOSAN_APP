@@ -119,7 +119,7 @@ export default function App() {
   return (
     <SesionCtx.Provider value={{ usuario, perfil }}>
       <div className="shell">
-        <Sidebar onCalendario />
+        <Sidebar />
         <main style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           <Topbar perfil={perfil} onCalendario={() => setCal(true)} version={calVersion} />
           <div className="pad">

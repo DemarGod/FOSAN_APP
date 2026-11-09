@@ -9,8 +9,8 @@ export function Aviso({ error }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
-      background: '#fce8e6', border: `1px solid ${C.rojo}`, margin: '0 0 16px',
-      font: '400 12px/1.45 var(--font)', color: '#7c1405', borderRadius: 'var(--radio-md)' }}>
+      background: 'rgba(239,68,68,.2)', border: `1px solid ${C.rojo}`, margin: '0 0 16px',
+      font: '400 12px/1.45 var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-md)' }}>
       <Icon d={I.alert} size={17} color={C.rojo} />
       <span>{String(error.message || error)}</span>
     </div>
@@ -37,7 +37,7 @@ export function Kpis({ items = [] }) {
       {items.map((k) => {
         const ic = iconoKpi(k.l)
         return (
-          <div key={k.l} style={{ background: '#fff', padding: '12px' }}>
+          <div key={k.l} style={{ background: 'var(--panel)', padding: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <div style={{ font: '800 19px/1 var(--font)', letterSpacing: '-.03em' }}>{k.v}</div>
               {ic.d && <Icon d={ic.d} size={18} color={ic.color} />}

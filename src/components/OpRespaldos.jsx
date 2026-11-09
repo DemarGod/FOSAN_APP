@@ -6,7 +6,7 @@ import Modal from './Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
 import { operaciones, paradasRealizadas, respaldosDe, subirRespaldo, confirmarOperacion, abrirRespaldo, esImagenRespaldo } from '../lib/api'
 import { useSesion } from '../lib/sesion'
-import { hoyISO, sumarDias } from '../lib/costos'
+import { hoyISO, sumarDias, ahoraLocal } from '../lib/costos'
 import { C, I, fecha, fechaHora } from '../lib/ui'
 
 export const L_SERV = { arriendo_limpieza: 'Arriendo de baños químicos', limpieza_cliente: 'Limpieza de baños', limpieza_fosas: 'Limpieza de fosa' }
@@ -170,7 +170,7 @@ export function Lienzo({ onCambio }) {
   return (
     <div style={{ display: 'grid', gap: 6 }}>
       <canvas ref={ref} onPointerDown={abajo} onPointerMove={mover} onPointerUp={arriba} onPointerLeave={arriba}
-        style={{ width: '100%', height: 180, background: '#fff', border: `1px dashed ${C.gris}`, borderRadius: 'var(--radio-md)', touchAction: 'none', cursor: 'crosshair' }} />
+        style={{ width: '100%', height: 180, background: 'var(--panel)', border: `1px dashed ${C.gris}`, borderRadius: 'var(--radio-md)', touchAction: 'none', cursor: 'crosshair' }} />
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <small className="text-muted">Firme dentro del recuadro.</small>
         <Boton onClick={limpiar} style={{ minHeight: 30, padding: '4px 10px' }}>Limpiar</Boton>

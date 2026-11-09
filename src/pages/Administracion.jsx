@@ -388,7 +388,7 @@ function DetalleCambio({ r, onCerrar }) {
           {motivo && fila('Motivo', String(motivo))}
         </div>
         <TablaCambios accion={r.accion} cambios={r.cambios} />
-        <div style={{ display: 'flex', gap: 10, padding: '10px 12px', background: '#fef7e0', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)', font: '400 13px/1.45 var(--font)' }}>
+        <div style={{ display: 'flex', gap: 10, padding: '10px 12px', background: 'rgba(245,158,11,.2)', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)', font: '400 13px/1.45 var(--font)' }}>
           <Icon d={I.alert} size={18} color={C.amarillo} />
           <span><b>Importante.</b> Para contraseñas solo se registra quién la asignó y la fecha; nunca la clave ni su valor anterior.</span>
         </div>

@@ -2,7 +2,7 @@
 // Formulario común + UNO de los apartados A, B o C según el tipo.
 // Guardar registra el acuerdo: no reserva equipos, no crea entregas ni limpiezas.
 // La base recalcula sola los días de limpieza, baños propios y valor mensual del cliente (script 24).
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Modal from './Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
@@ -12,7 +12,7 @@ import {
 } from '../lib/api'
 import { formatoPesos, numeroDe, decimalDe, fechaValida, FECHA_MIN, FECHA_MAX } from '../lib/validar'
 import { DIAS, hoyISO } from '../lib/costos'
-import { C, Icon, I, fecha, clp } from '../lib/ui'
+import { C, I, fecha, clp } from '../lib/ui'
 import { FormUbicacion, FormContacto } from '../pages/FichaCliente'
 import Menu from './Menu'
 
@@ -24,7 +24,6 @@ const L_TIPO_SERV = {
 const L_FRECUENCIA = { semanal: 'Semanal', quincenal: 'Quincenal', mensual: 'Mensual' }
 const L_MODALIDAD = { puntual: 'Puntual', recurrente: 'Recurrente' }
 const PROHIBIDO = 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM5.6 5.6l12.8 12.8'
-const ABAJO = 'M6 9l6 6 6-6'
 const chico = { minHeight: 34, padding: '6px 12px' }
 const diasL = (arr) => DIAS.filter((d) => (arr || []).includes(d.v)).map((d) => d.l).join(' · ') || '—'
 

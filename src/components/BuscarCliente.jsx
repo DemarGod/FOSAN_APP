@@ -34,7 +34,7 @@ export default function BuscarCliente({ valor, onElegir, disabled = false, autoF
       {abierto && (
         <div role="listbox" style={{
           position: 'absolute', left: 0, right: 0, top: 'calc(100% + 4px)', zIndex: 30, maxHeight: 300, overflowY: 'auto',
-          background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(19,41,75,.14)',
+          background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(0,0,0,.45)',
         }}>
           {res.length === 0 && <div style={{ padding: 12, color: C.gris }}>Sin clientes activos con ese RUT o nombre.</div>}
           {res.map((c) => (
