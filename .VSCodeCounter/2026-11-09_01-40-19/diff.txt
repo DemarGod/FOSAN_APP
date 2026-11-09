@@ -1,0 +1,42 @@
+Date : 2026-11-09 01:40:19
+Directory : c:\Users\Asus\FOSAN_APP
+Total : 12 files,  319 codes, 28 comments, 16 blanks, all 363 lines
+
+Languages
++----------------+------------+------------+------------+------------+------------+
+| language       | files      | code       | comment    | blank      | total      |
++----------------+------------+------------+------------+------------+------------+
+| JavaScript JSX |         11 |        198 |         16 |         10 |        224 |
+| PostCSS        |          1 |        121 |         12 |          6 |        139 |
++----------------+------------+------------+------------+------------+------------+
+
+Directories
++-------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                        | files      | code       | comment    | blank      | total      |
++-------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                           |         12 |        319 |         28 |         16 |        363 |
+| src                                                         |         12 |        319 |         28 |         16 |        363 |
+| src (Files)                                                 |          1 |        121 |         12 |          6 |        139 |
+| src\components                                              |          7 |        188 |         15 |         10 |        213 |
+| src\lib                                                     |          1 |          3 |          1 |          0 |          4 |
+| src\pages                                                   |          3 |          7 |          0 |          0 |          7 |
++-------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| filename                                                    | language       | code       | comment    | blank      | total      |
++-------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| c:\Users\Asus\FOSAN_APP\src\components\Graficos.jsx         | JavaScript JSX |        116 |          8 |          3 |        127 |
+| c:\Users\Asus\FOSAN_APP\src\components\Login.jsx            | JavaScript JSX |         45 |          3 |          5 |         53 |
+| c:\Users\Asus\FOSAN_APP\src\components\Modal.jsx            | JavaScript JSX |          2 |          2 |          0 |          4 |
+| c:\Users\Asus\FOSAN_APP\src\components\OpProgramacion.jsx   | JavaScript JSX |         -1 |          0 |          0 |         -1 |
+| c:\Users\Asus\FOSAN_APP\src\components\ServiciosCliente.jsx | JavaScript JSX |         -1 |          0 |          0 |         -1 |
+| c:\Users\Asus\FOSAN_APP\src\components\Sidebar.jsx          | JavaScript JSX |         29 |          2 |          2 |         33 |
+| c:\Users\Asus\FOSAN_APP\src\components\Topbar.jsx           | JavaScript JSX |         -2 |          0 |          0 |         -2 |
+| c:\Users\Asus\FOSAN_APP\src\index.css                       | PostCSS        |        121 |         12 |          6 |        139 |
+| c:\Users\Asus\FOSAN_APP\src\lib\ui.jsx                      | JavaScript JSX |          3 |          1 |          0 |          4 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Configuracion.jsx         | JavaScript JSX |          5 |          0 |          0 |          5 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Inicio.jsx                | JavaScript JSX |          3 |          0 |          0 |          3 |
+| c:\Users\Asus\FOSAN_APP\src\pages\Mantenimiento.jsx         | JavaScript JSX |         -1 |          0 |          0 |         -1 |
+| Total                                                       |                |        319 |         28 |         16 |        363 |
++-------------------------------------------------------------+----------------+------------+------------+------------+------------+
