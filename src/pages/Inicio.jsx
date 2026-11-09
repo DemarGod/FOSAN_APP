@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Modal from '../components/Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda, Pestanas } from '../components/Base'
-import { TarjetaGrafico, Barras, BarrasH, Dona, SERIE, Sparkline } from '../components/Graficos'
+import { TarjetaGrafico, Barras, BarrasH, Dona, SERIE, Sparkline, Lineas } from '../components/Graficos'
 import Mapa, { Leyenda as LeyendaMapa } from '../components/Mapa'
 import { useSesion, puedeOperar, puedeVer, esDueno, verFinanzas } from '../lib/sesion'
 import { inicioDatos, actividadPeriodo, avisosCalculados, inicioGraficos, mapaPuntos } from '../lib/api'
@@ -141,8 +141,8 @@ export default function Inicio({ onCalendario }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
         <TarjetaGrafico titulo="Operaciones por mes" sub="Programadas vs realizadas · últimos 6 meses"
           tabla={{ columnas: ['Mes', 'Programadas', 'Realizadas'], filas: graf.meses.map((m, i) => [m, graf.prog[i], graf.real[i]]) }}>
-          <Barras etiquetas={graf.meses} series={[{ l: 'Programadas', c: SERIE[0], datos: graf.prog }, { l: 'Realizadas', c: '#5CD6FF', datos: graf.real }]}
-            onBarra={() => navegar('/operaciones?tab=programacion')} />
+          <Lineas etiquetas={graf.meses} series={[{ l: 'Programadas', c: '#18B8FF', datos: graf.prog }, { l: 'Realizadas', c: '#00C98D', datos: graf.real }]}
+            onPunto={() => navegar('/operaciones?tab=programacion')} />
         </TarjetaGrafico>
 
         <TarjetaGrafico titulo="Situación de los equipos" sub="Equipos propios · situación actual"

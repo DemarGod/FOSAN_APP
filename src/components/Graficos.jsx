@@ -142,6 +142,89 @@ export function Barras({ etiquetas, series, alto = 210, fmt = n, onBarra }) {
   )
 }
 
+// Líneas con área (estilo de las tarjetas KPI): líneas luminosas de 2,5 px, área con degradado transparente,
+// guía vertical y puntos al pasar el mouse, tooltip con todas las series. series [{ l, c, datos: [] }]
+const curva = (p) => {
+  // Curva suave que pasa por todos los puntos sin "pasarse" por debajo de 0 (monótona por tramos)
+  if (p.length < 2) return ''
+  let d = `M${p[0][0]},${p[0][1]}`
+  for (let i = 0; i < p.length - 1; i++) {
+    const [x0, y0] = p[i], [x1, y1] = p[i + 1], mx = (x0 + x1) / 2
+    d += ` C${mx},${y0} ${mx},${y1} ${x1},${y1}`
+  }
+  return d
+}
+export function Lineas({ etiquetas, series, alto = 210, fmt = n, onPunto }) {
+  const [sel, setSel] = useState(null)
+  const gid = 'gl' + useId().replace(/:/g, '')
+  const ancho = 520, izq = 52, der = 14, abajo = 30, arriba = 14
+  const max = Math.max(0, ...series.flatMap((s) => s.datos.map(Number)))
+  const { tope, pasos } = escala(max)
+  const h = alto - abajo - arriba, paso = (ancho - izq - der) / Math.max(1, etiquetas.length - 1)
+  const X = (i) => izq + i * paso
+  const Y = (v) => arriba + h - (Number(v) / tope) * h
+  const pts = series.map((s) => etiquetas.map((_, i) => [X(i), Y(s.datos[i] || 0)]))
+  const mover = (e) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    const x = ((e.clientX - r.left) / r.width) * ancho
+    setSel(Math.max(0, Math.min(etiquetas.length - 1, Math.round((x - izq) / paso))))
+  }
+  return (
+    <div style={{ position: 'relative' }}>
+      {series.length > 1 && <Leyenda items={series} />}
+      <svg viewBox={`0 0 ${ancho} ${alto}`} style={{ width: '100%', height: 'auto', display: 'block', marginTop: 6, cursor: onPunto ? 'pointer' : 'crosshair' }}
+        onMouseMove={mover} onMouseLeave={() => setSel(null)} onClick={onPunto && sel != null ? () => onPunto(sel) : undefined}>
+        <defs>
+          {series.map((s, j) => (
+            <linearGradient key={j} id={`${gid}-${j}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor={s.c} stopOpacity={j === 0 ? '.38' : '.22'} />
+              <stop offset="1" stopColor={s.c} stopOpacity="0" />
+            </linearGradient>
+          ))}
+        </defs>
+        {pasos.map((p) => (
+          <g key={p}>
+            <line x1={izq} x2={ancho - der} y1={Y(p)} y2={Y(p)} stroke="rgba(155,174,197,.12)" strokeWidth={1} strokeDasharray="3 4" />
+            <text x={izq - 8} y={Y(p) + 4} textAnchor="end" fontSize="13" fill={C.gris} style={{ fontFamily: 'var(--font)' }}>{corto(p)}</text>
+          </g>
+        ))}
+        {etiquetas.map((et, i) => (
+          <text key={et + i} x={X(i)} y={alto - 8} textAnchor="middle" fontSize="14" fill={sel === i ? C.tinta : C.gris} style={{ fontFamily: 'var(--font)' }}>{et}</text>
+        ))}
+        {sel != null && <line x1={X(sel)} x2={X(sel)} y1={arriba} y2={arriba + h} stroke="rgba(24,184,255,.45)" strokeWidth={1} strokeDasharray="4 4" />}
+        {/* Áreas primero (abajo) y luego las líneas */}
+        {series.map((s, j) => (
+          <path key={'a' + j} className="g-arco" d={`${curva(pts[j])} L${X(etiquetas.length - 1)},${arriba + h} L${X(0)},${arriba + h} Z`} fill={`url(#${gid}-${j})`} />
+        ))}
+        {series.map((s, j) => (
+          <path key={'l' + j} className="g-linea" d={curva(pts[j])} fill="none" stroke={s.c} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"
+            pathLength="1" style={{ filter: `drop-shadow(0 0 5px ${s.c}aa)`, animationDelay: `${j * 120}ms` }} />
+        ))}
+        {/* Último punto destacado y puntos del mes elegido */}
+        {series.map((s, j) => {
+          const [x, y] = pts[j][pts[j].length - 1]
+          return <circle key={'u' + j} cx={x} cy={y} r="3.5" fill={s.c} style={{ filter: `drop-shadow(0 0 5px ${s.c})` }} />
+        })}
+        {sel != null && series.map((s, j) => (
+          <circle key={'p' + j} cx={pts[j][sel][0]} cy={pts[j][sel][1]} r="5" fill="#050B16" stroke={s.c} strokeWidth="2.5" />
+        ))}
+      </svg>
+      {sel != null && (
+        <div style={{ position: 'absolute', left: `${(X(sel) / ancho) * 100}%`, top: 24, transform: `translateX(${sel > etiquetas.length / 2 ? 'calc(-100% - 12px)' : '12px'})`, pointerEvents: 'none',
+          background: 'rgba(5,11,22,.95)', color: '#F1F5FA', border: '1px solid rgba(24,184,255,.55)', boxShadow: '0 8px 24px rgba(0,0,0,.5), 0 0 12px rgba(7,139,250,.25)',
+          padding: '8px 11px', borderRadius: 8, font: '600 12px/1.5 var(--font)', whiteSpace: 'nowrap', zIndex: 5 }}>
+          <div style={{ color: C.gris, fontWeight: 500 }}>{etiquetas[sel]}</div>
+          {series.map((s) => (
+            <div key={s.l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.c }} />{s.l}: {fmt(s.datos[sel] || 0)}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Barras horizontales con etiqueta y valor: items [{ l, v, c?, onClick? }]
 export function BarrasH({ items, color = SERIE[0], fmt = n, vacio = 'Sin datos.' }) {
   const max = Math.max(1, ...items.map((i) => Number(i.v)))
