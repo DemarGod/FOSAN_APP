@@ -10,8 +10,8 @@ export function Aviso({ error }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
-      background: '#fce8e6', border: `1px solid ${C.rojo}`, margin: '0 0 16px',
-      font: '400 12px/1.45 var(--font)', color: '#7c1405', borderRadius: 'var(--radio-md)' }}>
+      background: 'rgba(239,68,68,.14)', border: `1px solid ${C.rojo}`, margin: '0 0 16px',
+      font: '400 12px/1.45 var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-md)' }}>
       <Icon d={I.alert} size={17} color={C.rojo} />
       <span>{String(error.message || error)}</span>
     </div>
@@ -38,7 +38,7 @@ export function Kpis({ items = [] }) {
       {items.map((k) => {
         const ic = iconoKpi(k.l)
         return (
-          <div key={k.l} style={{ background: '#fff', padding: '12px' }}>
+          <div key={k.l} style={{ background: 'var(--panel)', padding: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <div style={{ font: '800 19px/1 var(--font)', letterSpacing: '-.03em' }}>{k.v}</div>
               {ic.d && <Icon d={ic.d} size={18} color={ic.color} />}
@@ -95,7 +95,7 @@ export default function Listado({
     ? (seleccion.ids || []).filter((id) => !visibles.some((d) => d.id === id))
     : [...new Set([...(seleccion.ids || []), ...visibles.map((d) => d.id)])])
   const alternar = (id) => seleccion.onChange(elegidos.has(id) ? seleccion.ids.filter((x) => x !== id) : [...seleccion.ids, id])
-  const caja = { width: 18, height: 18, accentColor: C.navy, cursor: 'pointer' }
+  const caja = { width: 18, height: 18, accentColor: C.azul, cursor: 'pointer' }
 
   return (
     <div>
@@ -131,7 +131,7 @@ export default function Listado({
             const on = segmentos.valor === s.v
             return (
               <button key={s.v} onClick={() => { segmentos.onChange(s.v); setPag(0) }} style={{
-                border: 0, background: on ? C.tinte : '#fff', color: on ? '#1a3c72' : '#3c4551',
+                border: 0, background: on ? C.tinte : 'var(--panel)', color: on ? '#7CC4FF' : '#9BAEC5',
                 font: '600 13px var(--font)', padding: '10px 16px', minHeight: 42,
                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
               }}>
@@ -151,7 +151,7 @@ export default function Listado({
           <select key={ft.k} value={f[ft.k] || ''}
             onChange={(e) => { setF((p) => ({ ...p, [ft.k]: e.target.value })); setPag(0) }}
             style={{
-              border: `1px solid ${C.borde}`, background: '#fff', color: C.navy,
+              border: `1px solid ${C.borde}`, background: 'var(--panel)', color: C.navy,
               font: '600 13px var(--font)', padding: '9px 12px', minHeight: 42,
               cursor: 'pointer', outline: 'none', borderRadius: 'var(--radio-sm)' }}>
             <option value="">{ft.label}: todos</option>
@@ -162,7 +162,7 @@ export default function Listado({
         ))}
         <div style={{
           flex: 1, minWidth: 220, display: 'flex', alignItems: 'center', gap: 9,
-          border: `1px solid ${C.borde}`, background: '#fff', padding: '0 12px', minHeight: 42, borderRadius: 'var(--radio-sm)' }}>
+          border: `1px solid ${C.borde}`, background: 'var(--panel)', padding: '0 12px', minHeight: 42, borderRadius: 'var(--radio-sm)' }}>
           <Icon d={I.busca} size={16} color={C.gris} />
           <input value={q} onChange={(e) => { setQ(e.target.value); setPag(0) }}
             placeholder="Buscar en esta tabla"
@@ -171,7 +171,7 @@ export default function Listado({
       </div>
 
       {barraSeleccion}
-      <div className="scroller" style={{ border: `1px solid ${C.borde}`, background: '#fff', borderRadius: 'var(--radio-md)' }}>
+      <div className="scroller" style={{ border: `1px solid ${C.borde}`, background: 'var(--panel)', borderRadius: 'var(--radio-md)' }}>
         <table style={{ minWidth: 640 }}>
           <thead>
             <tr>
@@ -212,7 +212,7 @@ export default function Listado({
                           onClick={(e) => { e.stopPropagation(); a.onClick() }}
                           style={{
                             height: 34, minWidth: 34, padding: a.label ? '0 10px' : 0,
-                            border: `1px solid ${a.borde || C.borde}`, background: a.bg || '#fff',
+                            border: `1px solid ${a.borde || C.borde}`, background: a.bg || 'var(--panel)',
                             color: a.color || C.navy, cursor: a.disabled ? 'not-allowed' : 'pointer',
                             opacity: a.disabled ? .45 : 1,
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
@@ -243,8 +243,8 @@ export default function Listado({
               <button key={i} onClick={() => setPag(i)} style={{
                 padding: '5px 10px', cursor: 'pointer',
                 border: i === pagina ? 0 : `1px solid ${C.borde}`,
-                background: i === pagina ? C.navy : '#fff',
-                color: i === pagina ? '#eef2f9' : C.tinta,
+                background: i === pagina ? C.azul : 'var(--panel)',
+                color: i === pagina ? '#F1F5FA' : C.tinta,
                 fontWeight: i === pagina ? 600 : 400, font: '400 12px var(--font)',
               }}>{i + 1}</button>
             ))}

@@ -72,9 +72,9 @@ function Listado() {
 
   const KPIS = [
     ['', 'Activos', C.blanco, activos.length],
-    ['disponible', 'Disponibles', '#e6f4ea', cuenta('disponible')],
-    ['en_ruta', 'En ruta', '#e8f0fe', cuenta('en_ruta')],
-    ['mantenimiento', 'En mantenimiento', '#fef7e0', cuenta('mantenimiento')],
+    ['disponible', 'Disponibles', 'rgba(0,201,141,.14)', cuenta('disponible')],
+    ['en_ruta', 'En ruta', 'rgba(7,139,250,.14)', cuenta('en_ruta')],
+    ['mantenimiento', 'En mantenimiento', 'rgba(245,158,11,.14)', cuenta('mantenimiento')],
   ]
 
   return (
@@ -270,7 +270,7 @@ function Menu({ opciones }) {
     <div ref={ref}>
       <button type="button" className="btn" aria-label="Más acciones" onClick={alternar} style={{ minHeight: 34, padding: '6px 8px' }}><Icon d={PUNTOS} size={16} /></button>
       {abierto && (
-        <div role="menu" style={{ position: 'fixed', right: abierto.right, top: abierto.top, zIndex: 1100, minWidth: 220, padding: 4, background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(19,41,75,.14)' }}>
+        <div role="menu" style={{ position: 'fixed', right: abierto.right, top: abierto.top, zIndex: 1100, minWidth: 220, padding: 4, background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(0,0,0,.45)' }}>
           {opciones.map((o) => (
             <button key={o.l} type="button" role="menuitem" disabled={o.disabled} onClick={() => { setAbierto(null); o.onClick() }}
               style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', border: 0, background: 'transparent', padding: '9px 10px', borderRadius: 'var(--radio-sm)', font: '400 14px var(--font)', textAlign: 'left', color: o.color || C.tinta, cursor: o.disabled ? 'not-allowed' : 'pointer', opacity: o.disabled ? 0.45 : 1 }}>

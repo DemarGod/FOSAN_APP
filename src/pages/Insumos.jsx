@@ -144,12 +144,12 @@ function FormInsumo({ insumo, onCerrar, onGuardado }) {
             <Campo l="Dura (meses)"><input value={v.duracion_meses} onChange={set('duracion_meses', dec)} inputMode="decimal" placeholder="6" /></Campo>
           </div>
         )}
-        <div style={{ padding: '11px 13px', background: C.suave, border: `2px solid ${C.borde}`, font: '400 12px/1.45 var(--font)', color: '#3c4551' }}>
+        <div style={{ padding: '11px 13px', background: C.suave, border: `2px solid ${C.borde}`, font: '400 12px/1.45 var(--font)', color: '#9BAEC5' }}>
           {fijo
             ? 'Costo mensual = unidades en uso × costo unitario ÷ meses que dura. En Análisis se reparte entre los clientes según sus aseos.'
             : 'Al marcar una limpieza como hecha en Rutas, se descuenta este gasto por cada baño del cliente. En Análisis es el costo de insumos de cada aseo.'}
         </div>
-        {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `2px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#7c1405' }}>{String(error?.message || error)}</div>}
+        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.14)', border: `2px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#FCA5A5' }}>{String(error?.message || error)}</div>}
       </div>
     </Modal>
   )
@@ -202,7 +202,7 @@ function FormIngreso({ insumo, onCerrar, onGuardado }) {
         <Campo l={`Cantidad (${insumo.unidad})`}><input autoFocus value={cantidad} onChange={(e) => setCantidad(dec(e.target.value))} inputMode="decimal" placeholder="50" /></Campo>
         <Campo l={tipo === 'compra' ? 'Motivo (opcional)' : 'Motivo'}><input value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={120} placeholder={tipo === 'compra' ? 'Factura 1234 · SAYPOR' : 'Conteo físico, bidón roto…'} /></Campo>
         <div style={{ font: '400 12px var(--font)', color: C.gris }}>Stock actual: {insumo.stockL}</div>
-        {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `2px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#7c1405' }}>{String(error?.message || error)}</div>}
+        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.14)', border: `2px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#FCA5A5' }}>{String(error?.message || error)}</div>}
       </div>
     </Modal>
   )

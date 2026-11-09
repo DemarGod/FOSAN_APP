@@ -222,7 +222,7 @@ export function Campo({ l, err, children }) {
     <label className="campo">
       <span>{l}</span>
       {children}
-      {err && <em style={{ font: '400 11px var(--font)', color: '#b3261e', fontStyle: 'normal' }}>{err}</em>}
+      {err && <em style={{ font: '400 11px var(--font)', color: '#FCA5A5', fontStyle: 'normal' }}>{err}</em>}
     </label>
   )
 }

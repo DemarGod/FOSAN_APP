@@ -67,7 +67,7 @@ export default function Analisis() {
       <div style={{ display: 'flex', gap: 2, marginTop: 16, border: `1px solid ${C.borde}`, width: 'fit-content', maxWidth: '100%', flexWrap: 'wrap', borderRadius: 'var(--radio-md)' }}>
         {VISTAS.map((x) => (
           <button key={x.v} onClick={() => setVista(x.v)} style={{
-            border: 0, background: vista === x.v ? C.tinte : '#fff', color: vista === x.v ? '#1a3c72' : '#3c4551',
+            border: 0, background: vista === x.v ? C.tinte : 'var(--panel)', color: vista === x.v ? '#7CC4FF' : '#9BAEC5',
             font: '600 13px var(--font)', padding: '10px 16px', minHeight: 42, cursor: 'pointer',
           }}>{x.l}</button>
         ))}
@@ -97,8 +97,8 @@ export default function Analisis() {
             {detalle.resumen && <div style={{ font: '400 13px/1.5 var(--font)' }}>{detalle.resumen}</div>}
             <Tabla min={620} filas={detalle.lineas} cols={[
               { k: 'concepto', l: 'Concepto' },
-              { k: 'formula', l: 'Cálculo', f: (x) => <span style={{ whiteSpace: 'normal', color: '#3c4551' }}>{x.formula}</span> },
-              { k: 'monto', l: 'Monto', der: true, f: (x) => <span style={{ color: x.ingreso ? '#1e6b34' : undefined, fontWeight: 600 }}>{x.ingreso ? '+' : '−'}{$(x.monto)}</span> },
+              { k: 'formula', l: 'Cálculo', f: (x) => <span style={{ whiteSpace: 'normal', color: '#9BAEC5' }}>{x.formula}</span> },
+              { k: 'monto', l: 'Monto', der: true, f: (x) => <span style={{ color: x.ingreso ? '#6EE7B7' : undefined, fontWeight: 600 }}>{x.ingreso ? '+' : '−'}{$(x.monto)}</span> },
             ]} />
           </div>
         </Modal>
@@ -131,22 +131,22 @@ function Calidad({ r, vista }) {
   const avisos = (por[vista] || []).filter(Boolean)
   if (!avisos.length) return null
   return (
-    <div style={{ margin: '16px 0 0', padding: '10px 14px', background: '#fef7e0', border: `1px solid ${C.amarillo}`, font: '400 12px/1.5 var(--font)', color: '#5c4400', display: 'grid', gap: 4, borderRadius: 'var(--radio-md)' }}>
+    <div style={{ margin: '16px 0 0', padding: '10px 14px', background: 'rgba(245,158,11,.14)', border: `1px solid ${C.amarillo}`, font: '400 12px/1.5 var(--font)', color: '#5c4400', display: 'grid', gap: 4, borderRadius: 'var(--radio-md)' }}>
       <strong>Datos que faltan para que esta vista sea exacta</strong>
       {avisos.map((a, i) => <span key={i}>· {a}</span>)}
     </div>
   )
 }
 
-const Est = ({ on }) => (on ? <span title="Incluye kilómetros o datos estimados" style={{ marginLeft: 6, padding: '1px 5px', font: '700 9px var(--font)', letterSpacing: '.06em', textTransform: 'uppercase', background: '#fef7e0', color: '#8a5a00', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)' }}>est.</span> : null)
+const Est = ({ on }) => (on ? <span title="Incluye kilómetros o datos estimados" style={{ marginLeft: 6, padding: '1px 5px', font: '700 9px var(--font)', letterSpacing: '.06em', textTransform: 'uppercase', background: 'rgba(245,158,11,.14)', color: '#FBBF24', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)' }}>est.</span> : null)
 const SinDato = ({ children = 'Sin contrato' }) => <span style={{ font: '600 11px var(--font)', color: C.gris }}>{children}</span>
 const Margen = ({ p }) => (p === null || p === undefined ? <SinDato>—</SinDato>
-  : <span style={{ fontWeight: 700, color: p < 0.2 ? '#b3261e' : '#1e6b34', background: p < 0.2 ? '#fce8e6' : undefined, padding: p < 0.2 ? '2px 6px' : 0 }}>{pct(p)}</span>)
-const Plata = ({ v }) => (v === null || v === undefined ? <SinDato>—</SinDato> : <span style={{ fontWeight: 700, color: v < 0 ? '#b3261e' : '#1e6b34' }}>{$(v)}</span>)
+  : <span style={{ fontWeight: 700, color: p < 0.2 ? '#FCA5A5' : '#6EE7B7', background: p < 0.2 ? 'rgba(239,68,68,.14)' : undefined, padding: p < 0.2 ? '2px 6px' : 0 }}>{pct(p)}</span>)
+const Plata = ({ v }) => (v === null || v === undefined ? <SinDato>—</SinDato> : <span style={{ fontWeight: 700, color: v < 0 ? '#FCA5A5' : '#6EE7B7' }}>{$(v)}</span>)
 
 function Tabla({ cols, filas, onFila, vacio = 'Sin datos para este mes.', min = 640, pie }) {
   return (
-    <div className="scroller" style={{ border: `1px solid ${C.borde}`, background: '#fff', borderRadius: 'var(--radio-md)' }}>
+    <div className="scroller" style={{ border: `1px solid ${C.borde}`, background: 'var(--panel)', borderRadius: 'var(--radio-md)' }}>
       <table style={{ minWidth: min }}>
         <thead><tr>{cols.map((c) => <th key={c.k} style={{ textAlign: c.der ? 'right' : 'left' }}>{c.l}</th>)}</tr></thead>
         <tbody>
@@ -289,7 +289,7 @@ function GraficoEquilibrio({ e }) {
   const ticks = [0, 0.25, 0.5, 0.75, 1]
   const etq = (v) => (porAseo ? num(v) : '$' + num(v / 1e6, 1) + 'M')
   return (
-    <div style={{ border: `1px solid ${C.borde}`, background: '#fff', padding: '14px 12px 10px', margin: '16px 0', borderRadius: 'var(--radio-md)' }}>
+    <div style={{ border: `1px solid ${C.borde}`, background: 'var(--panel)', padding: '14px 12px 10px', margin: '16px 0', borderRadius: 'var(--radio-md)' }}>
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', maxWidth: W, display: 'block' }}>
         {ticks.map((f) => (
           <g key={f}>
@@ -301,7 +301,7 @@ function GraficoEquilibrio({ e }) {
         <line x1={L} x2={W - R} y1={Y(0)} y2={Y(0)} stroke={C.borde} strokeWidth="2" />
         <line x1={X(0)} x2={X(xMax)} y1={Y(e.CF)} y2={Y(e.CF)} stroke={C.gris} strokeDasharray="4 4" />
         <line x1={X(0)} x2={X(xMax)} y1={Y(cost(0))} y2={Y(cost(xMax))} stroke={C.amarillo} strokeWidth="3" />
-        <line x1={X(0)} x2={X(xMax)} y1={Y(ing(0))} y2={Y(ing(xMax))} stroke={C.navy} strokeWidth="3" />
+        <line x1={X(0)} x2={X(xMax)} y1={Y(ing(0))} y2={Y(ing(xMax))} stroke={C.azulClaro} strokeWidth="3" style={{ filter: 'drop-shadow(0 0 4px rgba(24,184,255,.6))' }} />
         <line x1={X(pe)} x2={X(pe)} y1={Y(0)} y2={Y(ing(pe))} stroke={C.rojo} strokeWidth="2" />
         <circle cx={X(pe)} cy={Y(ing(pe))} r="6" fill={C.rojo} />
         <text x={X(pe) + 8} y={Y(ing(pe)) - 8} fontFamily="Archivo" fontSize="12" fontWeight="700" fill={C.rojo}>Equilibrio · {etq(pe)}</text>
@@ -309,8 +309,8 @@ function GraficoEquilibrio({ e }) {
         <text x={X(actual) + 6} y={T + 12} fontFamily="Archivo" fontSize="12" fontWeight="700" fill={C.verde}>Hoy · {etq(actual)}</text>
         <text x={W - R} y={H - 4} textAnchor="end" fontFamily="Archivo" fontSize="11" fill={C.gris}>{porAseo ? 'Aseos al mes' : 'Ingreso al mes'}</text>
       </svg>
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8, font: '400 12px var(--font)', color: '#3c4551' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 14, height: 3, background: C.navy }} />Ingresos</span>
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8, font: '400 12px var(--font)', color: '#9BAEC5' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 14, height: 3, background: C.azul }} />Ingresos</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 14, height: 3, background: C.amarillo }} />Costo total (fijos + variables)</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 14, height: 0, borderTop: `2px dashed ${C.gris}` }} />Costos fijos</span>
       </div>
@@ -335,7 +335,7 @@ function Equilibrio({ d }) {
         El punto de equilibrio es el nivel de actividad en que los ingresos cubren justo los costos fijos y variables. Cada aseo aporta su precio ({e.precioAseo != null ? $(e.precioAseo) : '—'}) menos su costo variable ({e.cvAseo != null ? $(e.cvAseo) : '—'}) = {e.mcAseo != null ? $(e.mcAseo) : '—'} para pagar los fijos.
         Equilibrio = costos fijos ÷ contribución por aseo = {$(e.CF)} ÷ {e.mcAseo != null ? $(e.mcAseo) : '—'} = {e.peAseos != null ? num(Math.ceil(e.peAseos)) : '—'} aseos al mes.
         En pesos: costos fijos ÷ margen de contribución = {$(e.CF)} ÷ {pct(e.ratioMC)} = {e.pe$ != null ? $(e.pe$) : '—'}.
-        Margen de seguridad = cuánto pueden caer los ingresos antes de perder plata. Resultado del mes con los datos actuales: <strong style={{ color: e.resultado < 0 ? '#b3261e' : '#1e6b34' }}>{$(e.resultado)}</strong>.
+        Margen de seguridad = cuánto pueden caer los ingresos antes de perder plata. Resultado del mes con los datos actuales: <strong style={{ color: e.resultado < 0 ? '#FCA5A5' : '#6EE7B7' }}>{$(e.resultado)}</strong>.
       </Caja>
       <Sub>Costos fijos del mes</Sub>
       <Tabla min={520} filas={e.cf} pie={{ monto: e.CF }} cols={[
@@ -444,12 +444,12 @@ function Insumos({ d }) {
       <Sub>Variables: se gastan en cada aseo</Sub>
       <Tabla filas={aseo} min={1040} cols={[
         { k: 'nombre', l: 'Insumo', f: (x) => <>{x.nombre}<Est on={x.estimado} /></> },
-        { k: 'stock', l: 'Stock', der: true, f: (x) => <span style={{ fontWeight: x.bajoMinimo ? 700 : 400, color: x.bajoMinimo ? '#b3261e' : undefined }}>{num(x.stock, 1)} {x.unidad}</span> },
+        { k: 'stock', l: 'Stock', der: true, f: (x) => <span style={{ fontWeight: x.bajoMinimo ? 700 : 400, color: x.bajoMinimo ? '#FCA5A5' : undefined }}>{num(x.stock, 1)} {x.unidad}</span> },
         { k: 'porBano', l: 'Por aseo', der: true, f: (x) => (x.sinReceta ? <SinDato>Sin receta</SinDato> : num(x.porBano, 2)) },
         { k: 'usadoRutas', l: `Aseos hechos (${num(d.banosLimpiadosMes)})`, der: true, f: (x) => (x.sinReceta ? '—' : num(x.usadoRutas, 1)) },
         { k: 'consumo30', l: 'Salidas bodega 30 días', der: true, f: (x) => num(x.consumo30, 1) },
         { k: 'proyectado14', l: 'Próx. 14 días', der: true, f: (x) => (x.sinReceta ? '—' : num(x.proyectado14, 1)) },
-        { k: 'cobertura', l: 'Alcanza para', der: true, f: (x) => (x.cobertura == null ? <SinDato>Sin consumo</SinDato> : <span style={{ fontWeight: 700, color: x.cobertura < 7 ? '#b3261e' : undefined }}>{num(x.cobertura)} días</span>) },
+        { k: 'cobertura', l: 'Alcanza para', der: true, f: (x) => (x.cobertura == null ? <SinDato>Sin consumo</SinDato> : <span style={{ fontWeight: 700, color: x.cobertura < 7 ? '#FCA5A5' : undefined }}>{num(x.cobertura)} días</span>) },
         { k: 'punto', l: 'Reponer bajo', der: true, f: (x) => `${num(x.punto, 1)} ${x.unidad}` },
         { k: 'comprar', l: 'Comprar', der: true, f: (x) => (x.comprar ? <strong>{num(x.comprar)} {x.unidad}</strong> : '—') },
       ]} />
@@ -470,11 +470,11 @@ function Tendencia({ t }) {
   const max = Math.max(1, ...t.map((x) => Math.max(x.ingreso, x.costo)))
   return (
     <>
-      <div style={{ border: `1px solid ${C.borde}`, background: '#fff', padding: '18px 16px 10px', margin: '18px 0 14px', borderRadius: 'var(--radio-md)' }}>
+      <div style={{ border: `1px solid ${C.borde}`, background: 'var(--panel)', padding: '18px 16px 10px', margin: '18px 0 14px', borderRadius: 'var(--radio-md)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${t.length}, minmax(0, 120px))`, gap: 12, alignItems: 'end', height: 180 }}>
           {t.map((x) => (
             <div key={x.mes} title={`${mesLargo(x.mes)}: contratos ${$(x.ingreso)} · costos ${$(x.costo)}`} style={{ display: 'flex', gap: 2, alignItems: 'end', height: '100%' }}>
-              <div style={{ flex: 1, height: `${(x.ingreso / max) * 100}%`, background: C.navy, minHeight: x.ingreso ? 2 : 0 }} />
+              <div style={{ flex: 1, height: `${(x.ingreso / max) * 100}%`, background: C.azul, minHeight: x.ingreso ? 2 : 0 }} />
               <div style={{ flex: 1, height: `${(x.costo / max) * 100}%`, background: C.amarillo, minHeight: x.costo ? 2 : 0 }} />
             </div>
           ))}
@@ -482,8 +482,8 @@ function Tendencia({ t }) {
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${t.length}, minmax(0, 120px))`, gap: 12, marginTop: 6 }}>
           {t.map((x) => <div key={x.mes} style={{ font: '400 10px var(--font)', color: C.gris, textAlign: 'center' }}>{mesLargo(x.mes).slice(0, 3)} {x.mes.slice(2, 4)}</div>)}
         </div>
-        <div style={{ display: 'flex', gap: 16, marginTop: 10, font: '400 12px var(--font)', color: '#3c4551' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 11, height: 11, background: C.navy }} />Contratos vigentes</span>
+        <div style={{ display: 'flex', gap: 16, marginTop: 10, font: '400 12px var(--font)', color: '#9BAEC5' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 11, height: 11, background: C.azul }} />Contratos vigentes</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 11, height: 11, background: C.amarillo }} />Costos registrados</span>
         </div>
       </div>

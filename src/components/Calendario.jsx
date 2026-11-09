@@ -95,22 +95,22 @@ export default function Calendario({ puedeEditar, onCerrar }) {
           }}>{d2}</div>
         ))}
         {celdas.map((c, i) => {
-          if (!c) return <div key={i} style={{ background: '#fafbfc', minHeight: 58 }} />
+          if (!c) return <div key={i} style={{ background: 'rgba(255,255,255,.02)', minHeight: 58 }} />
           const on = c.iso === sel
           const evs = porDia[c.iso] || []
           return (
             <button key={i} onClick={() => setSel(c.iso)} style={{
-              background: on ? C.tinte : '#fff', border: 0,
+              background: on ? C.tinte : 'var(--panel)', border: 0,
               borderBottom: `3px solid ${on ? C.azul : 'transparent'}`,
               minHeight: 58, padding: 6, textAlign: 'left', cursor: 'pointer',
               display: 'flex', flexDirection: 'column', gap: 4,
             }}>
-              <span style={{ font: '600 13px var(--font)', color: on ? '#1a3c72' : C.tinta }}>{c.n}</span>
+              <span style={{ font: '600 13px var(--font)', color: on ? '#7CC4FF' : C.tinta }}>{c.n}</span>
               <span style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                 {evs.map((e) => (
                   <span key={e.id} style={{
                     width: 7, height: 7, borderRadius: '50%',
-                    background: COLOR_EVENTO[e.tipo] || C.navy,
+                    background: COLOR_EVENTO[e.tipo] || C.azul,
                   }} />
                 ))}
               </span>
@@ -134,7 +134,7 @@ export default function Calendario({ puedeEditar, onCerrar }) {
           }}>
             <span style={{
               width: 10, height: 10, borderRadius: '50%', flex: 'none',
-              background: COLOR_EVENTO[e.tipo] || C.navy,
+              background: COLOR_EVENTO[e.tipo] || C.azul,
             }} />
             <span style={{ font: '600 12px var(--font)', color: COLOR_EVENTO[e.tipo], minWidth: 96 }}>
               {L_TIPO_EVENTO[e.tipo]}
@@ -150,7 +150,7 @@ export default function Calendario({ puedeEditar, onCerrar }) {
         ))}
 
         {error && (
-          <div style={{ marginTop: 12, font: '400 12px var(--font)', color: '#7c1405' }}>
+          <div style={{ marginTop: 12, font: '400 12px var(--font)', color: '#FCA5A5' }}>
             {String(error.message || error)}
           </div>
         )}
@@ -163,7 +163,7 @@ export default function Calendario({ puedeEditar, onCerrar }) {
                 const col = COLOR_EVENTO[t]
                 return (
                   <button key={t} onClick={() => setTipo(t)} style={{
-                    border: `1px solid ${col}`, background: on ? col : '#fff',
+                    border: `1px solid ${col}`, background: on ? col : 'var(--panel)',
                     color: on ? '#fff' : col, font: '600 12px var(--font)',
                     padding: '8px 12px', minHeight: 38, cursor: 'pointer', borderRadius: 'var(--radio-sm)' }}>{L_TIPO_EVENTO[t]}</button>
                 )
@@ -191,6 +191,6 @@ export default function Calendario({ puedeEditar, onCerrar }) {
 }
 
 const btnNav = {
-  border: `1px solid ${C.borde}`, background: '#fff', width: 36, height: 36,
+  border: `1px solid ${C.borde}`, background: 'var(--panel)', width: 36, height: 36,
   cursor: 'pointer', color: C.navy, font: '700 15px var(--font)',
 }

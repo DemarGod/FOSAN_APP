@@ -204,7 +204,7 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
                   const fija = l.dias.some((d) => bloq.has(d))
                   const opciones = tareasDe(c, lineas.some((x) => x.cliente_id === l.cliente_id && x.tarea === 'entrega'))
                   return (
-                    <tr key={l.k} style={{ background: l.tarea === 'limpieza' ? '#fff' : '#f6f8fc' }}>
+                    <tr key={l.k} style={{ background: l.tarea === 'limpieza' ? 'var(--panel)' : 'rgba(255,255,255,.03)' }}>
                       <td style={{ ...td, color: C.gris, fontWeight: 700 }}>{i + 1}</td>
                       <td style={{ ...td, fontWeight: 700, maxWidth: 200 }}>{c.nombre || '—'}</td>
                       <td style={td}>
@@ -223,7 +223,7 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
                           <td key={d.v} style={{ ...td, textAlign: 'center', padding: 2 }}>
                             <button type="button" onClick={() => alternarDia(l, d.v)} disabled={b} aria-label={`${d.largo} ${on ? 'marcado' : ''}`} style={{
                               width: 30, height: 30, cursor: b ? 'not-allowed' : 'pointer', font: '700 12px var(--font)',
-                              border: `1px solid ${on ? C.navy : C.borde}`, background: on ? C.navy : '#fff', color: on ? '#fff' : C.borde,
+                              border: `1px solid ${on ? C.azul : C.borde}`, background: on ? C.azul : 'var(--panel)', color: on ? '#fff' : C.borde,
                               borderRadius: l.tarea === 'limpieza' ? 0 : '50%', opacity: b ? 0.5 : 1,
                             }}>{on ? '✓' : ''}</button>
                           </td>
@@ -261,7 +261,7 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
           <div style={{ padding: '8px 18px', font: '400 11px/1.5 var(--font)', color: C.gris }}>
             Limpiezas: marca todos los días en que se visita. Entregas y retiros: un solo día (círculo). El orden de las filas es el orden de las paradas.
           </div>
-          {error && <div style={{ margin: '0 18px 14px', padding: '10px 12px', background: '#fce8e6', border: `1px solid ${C.rojo}`, font: '400 13px var(--font)', color: '#7c1405', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
+          {error && <div style={{ margin: '0 18px 14px', padding: '10px 12px', background: 'rgba(239,68,68,.14)', border: `1px solid ${C.rojo}`, font: '400 13px var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
         </>
       )}
 
@@ -279,4 +279,4 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
   )
 }
 
-const mini = { border: `1px solid ${C.borde}`, background: '#fff', width: 26, height: 26, cursor: 'pointer', marginRight: 3, font: '700 12px var(--font)', color: C.navy }
+const mini = { border: `1px solid ${C.borde}`, background: 'var(--panel)', width: 26, height: 26, cursor: 'pointer', marginRight: 3, font: '700 12px var(--font)', color: C.navy }

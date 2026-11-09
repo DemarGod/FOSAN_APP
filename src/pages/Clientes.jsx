@@ -86,7 +86,7 @@ export default function Clientes() {
     { k: 'comuna', label: 'Comuna', render: (c) => c.comuna || '—' },
     {
       k: 'ubicaciones', label: 'Ubicaciones', alinear: 'right', render: (c) => (c.ubicaciones > 0 || !c.activo ? c.ubicaciones : (
-        <span title="Sin ubicaciones activas: agrégala en la ficha del cliente" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#b06000', fontWeight: 600 }}>
+        <span title="Sin ubicaciones activas: agrégala en la ficha del cliente" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#FBBF24', fontWeight: 600 }}>
           <Icon d={I.alert} size={15} color={C.amarillo} /> Sin ubicación
         </span>
       )),
@@ -218,7 +218,7 @@ function Menu({ opciones }) {
       {abierto && (
         <div role="menu" style={{
           position: 'fixed', right: abierto.right, top: abierto.top, zIndex: 1100, minWidth: 180, padding: 4,
-          background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(19,41,75,.14)',
+          background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(0,0,0,.45)',
         }}>
           {opciones.map((o) => (
             <button key={o.l} type="button" role="menuitem" disabled={o.disabled}

@@ -130,7 +130,7 @@ export default function AdminRoles() {
       </div>
 
       {sinRevisar && (
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', padding: 14, background: '#fef7e0', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)', font: '400 13px/1.5 var(--font)' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', padding: 14, background: 'rgba(245,158,11,.14)', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)', font: '400 13px/1.5 var(--font)' }}>
           <Icon d={I.alert} size={18} color={C.amarillo} />
           <span style={{ flex: 1, minWidth: 220 }}>
             <b>Dueño: revisa este rol.</b> <b>{rolL}</b> trae permisos predeterminados (plantilla). Revisa qué puede consultar, registrar y exportar,
@@ -151,7 +151,7 @@ export default function AdminRoles() {
                     <td>
                       <span style={{ fontWeight: 600 }}>{x.m}</span>{rol === 'operador' && x.op ? <span className="text-muted"> {x.op}</span> : null}
                       {x.nota && <div className="text-muted" style={{ fontSize: 12 }}>Hoy: {x.nota}</div>}
-                      {v[x.m]?.mixto && <div style={{ fontSize: 12, color: '#b06000' }}>Antes tenía permisos distintos por pantalla; al guardar se igualan.</div>}
+                      {v[x.m]?.mixto && <div style={{ fontSize: 12, color: '#FBBF24' }}>Antes tenía permisos distintos por pantalla; al guardar se igualan.</div>}
                     </td>
                     {ACC.map((a) => (
                       <td key={a.k} style={{ textAlign: 'center' }}>
@@ -199,7 +199,7 @@ export default function AdminRoles() {
               <li>{rol === 'secretaria' ? 'En Administración solo ve la pestaña Mi perfil.' : 'No ve Administración; tiene "Mi perfil" en el menú.'}</li>
             </ul>}
           </div>
-          <div style={{ display: 'flex', gap: 10, padding: 14, background: '#fef7e0', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)', font: '400 13px/1.5 var(--font)' }}>
+          <div style={{ display: 'flex', gap: 10, padding: 14, background: 'rgba(245,158,11,.14)', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)', font: '400 13px/1.5 var(--font)' }}>
             <Icon d={I.info} size={18} color={C.amarillo} />
             <span><b>Dueño</b>: acceso total. <b>Operador</b>: solo Mi ruta y Mi perfil. Los demás roles (Secretaria, Ejecutivo de ventas y los que crees) usan estos permisos. La función de cada persona define su rol.</span>
           </div>

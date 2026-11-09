@@ -108,7 +108,7 @@ export default function InvEquipos() {
           <span>Asignadas</span><b>{datos ? propios.filter((e) => e.situacion === 'asignado').length : '…'}</b>
         </button>
         <button type="button" className="indicador" onClick={() => filtrar({ atencion: true })}
-          style={{ background: '#fce8e6', borderColor: '#f5c2bc', display: 'block', textAlign: 'left', cursor: 'pointer', ...kpiActivo(esFiltro({ atencion: true })) }}>
+          style={{ background: 'rgba(239,68,68,.14)', borderColor: 'rgba(239,68,68,.45)', display: 'block', textAlign: 'left', cursor: 'pointer', ...kpiActivo(esFiltro({ atencion: true })) }}>
           <span>Requieren atención</span><b>{datos ? lista.filter(atencion).length : '…'}</b>
           <small style={{ display: 'block', font: '400 12px/1.4 var(--font)', color: C.tinta, marginTop: 4 }}>
             Es una alerta; puede coincidir con otras situaciones.
@@ -158,7 +158,7 @@ export default function InvEquipos() {
             { k: 'situacion', label: 'Situación', render: (e) => (
               <div>
                 <Estado tono={TONO_SITUACION[e.situacion]}>{L_SITUACION[e.situacion] || e.situacion || '—'}</Estado>
-                {mants[e.id] && <div style={{ fontSize: 12, color: '#b06000', marginTop: 3 }} title="Tiene un mantenimiento abierto (ver en Mantenimiento)">
+                {mants[e.id] && <div style={{ fontSize: 12, color: '#FBBF24', marginTop: 3 }} title="Tiene un mantenimiento abierto (ver en Mantenimiento)">
                   🔧 {mants[e.id].folio} · {mants[e.id].iniciada_en ? 'en curso' : `programada ${fecha(mants[e.id].fecha_programada)}`}</div>}
               </div>
             ) },
@@ -166,7 +166,7 @@ export default function InvEquipos() {
             {
               k: 'ubicacion', label: 'Ubicación', render: (e) => (
                 <div>
-                  <div>{e.ubicacion || <span style={{ color: '#b06000' }}>Sin ubicación</span>}</div>
+                  <div>{e.ubicacion || <span style={{ color: '#FBBF24' }}>Sin ubicación</span>}</div>
                   {e.propiedad === 'cliente' && <div className="text-muted" style={{ fontSize: 12 }}>De {e.propietario}</div>}
                   {e.propiedad === 'empresa' && e.cliente && <div className="text-muted" style={{ fontSize: 12 }}>{e.cliente}</div>}
                 </div>

@@ -50,12 +50,13 @@ export default function Modal({ titulo, ancho = 820, onCerrar, pie, children, gu
 
   return (
     <div onClick={cerrar} style={{
-      position: 'fixed', inset: 0, background: 'rgba(32,30,29,.6)', zIndex: 1200,
+      position: 'fixed', inset: 0, background: 'rgba(2,6,14,.72)', backdropFilter: 'blur(4px)', zIndex: 1200,
       display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
       padding: 20, overflowY: 'auto', overscrollBehavior: 'contain',
     }}>
       <div onClick={(e) => e.stopPropagation()} onInput={marcar} onChange={marcar} style={{
         background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', overflow: 'hidden', width: `min(${ancho}px, 100%)`,
+        boxShadow: '0 24px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(24,184,255,.08)',
       }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px',

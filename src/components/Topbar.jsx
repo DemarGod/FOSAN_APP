@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { notificaciones, marcarLeidas, avisosCalculados, buscarGlobal } from '../lib/api'
-import { NAV } from './Sidebar'
+import { NAV, MarcaFosan } from './Sidebar'
 import { C, Icon, I, fechaHora } from '../lib/ui'
 import { nombreRol, esOperador } from '../lib/sesion'
 
 const NIVEL = {
-  alerta: { color: C.rojo, tint: '#fce8e6', d: I.alert },
-  aviso: { color: C.amarillo, tint: '#fef7e0', d: I.wrench },
+  alerta: { color: C.rojo, tint: 'rgba(239,68,68,.14)', d: I.alert },
+  aviso: { color: C.amarillo, tint: 'rgba(245,158,11,.14)', d: I.wrench },
   info: { color: C.azul, tint: C.tinte, d: I.info },
 }
 
@@ -105,27 +105,25 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
 
   return (
     <header style={{
-      display: 'flex', alignItems: 'center', gap: 14, height: 64, padding: '0 16px',
-      background: '#fff', borderBottom: `1px solid ${C.borde}`,
+      display: 'flex', alignItems: 'center', gap: 14, height: 72, padding: '0 22px',
+      background: 'rgba(5,11,22,.78)', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${C.borde}`,
       position: 'sticky', top: 0, zIndex: 30,
     }}>
-      <div className="sbtab" style={{ font: '800 17px/1 var(--font)', letterSpacing: '-.02em', color: C.navy }}>
-        FOSAN
-      </div>
+      <div className="sbtab"><MarcaFosan tam={22} tamTexto={17} /></div>
 
-      {!operador && <div ref={cajaBusca} className="desk-only" style={{ flex: 1, maxWidth: 420, position: 'relative' }}>
+      {!operador && <div ref={cajaBusca} className="desk-only" style={{ flex: 1, maxWidth: 460, position: 'relative' }}>
         <form onSubmit={buscar} style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          border: `1px solid ${C.borde}`, padding: '7px 10px', background: '#fff', borderRadius: 'var(--radio-md)' }}>
+          border: `1px solid ${C.borde}`, padding: '10px 14px', background: 'rgba(11,23,40,.85)', borderRadius: 12 }}>
           <Icon d={I.busca} size={15} color={C.gris} />
           <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar baños, clientes o secciones"
-            style={{ border: 0, outline: 'none', background: 'transparent', font: '400 13px var(--font)', width: '100%' }} />
+            style={{ border: 0, outline: 'none', background: 'transparent', font: '400 14px var(--font)', width: '100%', color: C.tinta }} />
         </form>
         {res && (
           <div style={{
-            position: 'absolute', top: 40, left: 0, right: 0, background: '#fff', zIndex: 1100,
-            border: `1px solid ${C.borde}`, boxShadow: '0 10px 30px rgba(31,58,99,.18)', maxHeight: 420, overflowY: 'auto', borderRadius: 'var(--radio-md)' }}>
+            position: 'absolute', top: 40, left: 0, right: 0, background: 'var(--panel)', zIndex: 1100,
+            border: `1px solid ${C.borde}`, boxShadow: '0 10px 30px rgba(0,0,0,.5)', maxHeight: 420, overflowY: 'auto', borderRadius: 'var(--radio-md)' }}>
             {!hayRes && <div style={{ padding: 14, font: '400 13px var(--font)', color: C.gris }}>Sin resultados para "{busqueda.trim()}".</div>}
             {res.paginas.length > 0 && <Grupo t="Secciones" />}
             {res.paginas.map((p) => <Resultado key={p.to} d={p.d} t={p.label} onClick={() => ir(p.to)} />)}
@@ -141,8 +139,8 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
 
       {!operador && <>
       <button onClick={onCalendario} title="Calendario" style={{
-        border: `1px solid ${C.borde}`, background: '#fff', color: C.navy,
-        width: 40, height: 40, display: 'grid', placeItems: 'center', cursor: 'pointer', borderRadius: 'var(--radio-md)' }}>
+        border: `1px solid ${C.borde}`, background: 'rgba(11,23,40,.85)', color: C.navy,
+        width: 42, height: 42, display: 'grid', placeItems: 'center', cursor: 'pointer', borderRadius: 12 }}>
         <Icon d={I.cal} size={18} w={1.7} />
       </button>
 
@@ -155,7 +153,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
           {sinLeer > 0 && (
             <span style={{
               position: 'absolute', top: 0, right: 0, minWidth: 16, height: 16, padding: '0 3px',
-              background: C.rojo, color: '#fff', borderRadius: 8,
+              background: C.rojo, color: '#fff', borderRadius: 8, boxShadow: '0 0 10px rgba(239,68,68,.6)',
               font: '700 10px/16px var(--font)', textAlign: 'center',
             }}>{sinLeer}</span>
           )}
@@ -163,8 +161,8 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
 
         {abierto && (
           <div style={{
-            position: 'absolute', top: 38, right: 0, width: 'min(360px, 80vw)', background: '#fff',
-            border: `1px solid ${C.borde}`, boxShadow: '0 10px 30px rgba(31,58,99,.18)', zIndex: 1100, borderRadius: 'var(--radio-md)' }}>
+            position: 'absolute', top: 38, right: 0, width: 'min(360px, 80vw)', background: 'var(--panel)',
+            border: `1px solid ${C.borde}`, boxShadow: '0 10px 30px rgba(0,0,0,.5)', zIndex: 1100, borderRadius: 'var(--radio-md)' }}>
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
               padding: '12px 14px', borderBottom: `1px solid ${C.borde}`,
@@ -212,8 +210,8 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
         <div style={{
-          width: 32, height: 32, background: C.navy, color: '#eef2f9',
-          display: 'grid', placeItems: 'center', font: '800 12px var(--font)',
+          width: 38, height: 38, background: 'var(--degradado)', color: '#fff', borderRadius: 10,
+          boxShadow: '0 4px 14px rgba(7,139,250,.35)', display: 'grid', placeItems: 'center', font: '700 13px var(--font)',
         }}>{iniciales}</div>
         <div className="desk-only" style={{ lineHeight: 1.2 }}>
           <div style={{ font: '600 13px var(--font)' }}>{perfil?.nombre || 'Usuario'}</div>
@@ -238,11 +236,11 @@ const Grupo = ({ t }) => (
 const Resultado = ({ d, t, sub, onClick }) => (
   <button type="button" onClick={onClick} style={{
     width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', border: 0,
-    background: '#fff', cursor: 'pointer', textAlign: 'left', minHeight: 44,
+    background: 'var(--panel)', cursor: 'pointer', textAlign: 'left', minHeight: 44,
   }}>
     <Icon d={d} size={16} color={C.navy} />
     <span style={{ minWidth: 0, flex: 1 }}>
-      <span style={{ display: 'block', font: '600 13px var(--font)', color: '#201e1d' }}>{t}</span>
+      <span style={{ display: 'block', font: '600 13px var(--font)', color: '#F1F5FA' }}>{t}</span>
       {sub && <span style={{ display: 'block', font: '400 11px var(--font)', color: C.gris, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</span>}
     </span>
   </button>

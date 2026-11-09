@@ -85,9 +85,9 @@ export default function Mantenimiento() {
 
       {vista === 'pendientes' && (
         <div className="kpis">
-          {[['programado', 'Programados', '#e8f0fe', pend.filter((m) => m.estado_m === 'programado').length],
-            ['en_curso', 'En curso', '#fef7e0', pend.filter((m) => m.estado_m === 'en_curso').length],
-            ['vencido', 'Vencidos', '#fce8e6', pend.filter((m) => m.vencido).length]].map(([k, l, bg, n]) => (
+          {[['programado', 'Programados', 'rgba(7,139,250,.14)', pend.filter((m) => m.estado_m === 'programado').length],
+            ['en_curso', 'En curso', 'rgba(245,158,11,.14)', pend.filter((m) => m.estado_m === 'en_curso').length],
+            ['vencido', 'Vencidos', 'rgba(239,68,68,.14)', pend.filter((m) => m.vencido).length]].map(([k, l, bg, n]) => (
             <button key={k} type="button" className="indicador" onClick={() => filtrar({ estado: aplicado.estado === k ? '' : k })}
               style={{ display: 'block', textAlign: 'left', cursor: 'pointer', background: bg, ...(aplicado.estado === k ? { outline: `2px solid ${C.azul}`, outlineOffset: -2 } : {}) }}>
               <span>{l}</span><b>{datos ? n : '…'}</b>
@@ -329,7 +329,7 @@ function Detalle({ m, editable, finanzas, onCerrar, onCambio, onEditar, onResult
         <Ayuda>Iniciar trabajo solo se habilita si está Programado. Registrar resultado si está Programado o En curso; permite trabajo iniciado y finalizado el mismo día. Editar programación solo mientras está Programado.</Ayuda>
 
         {editable && abierto(m) && (cancelar ? (
-          <div style={{ display: 'grid', gap: 10, padding: 14, border: `1px solid ${C.rojo}`, borderRadius: 'var(--radio-md)', background: '#fdf3f2' }}>
+          <div style={{ display: 'grid', gap: 10, padding: 14, border: `1px solid ${C.rojo}`, borderRadius: 'var(--radio-md)', background: 'rgba(239,68,68,.10)' }}>
             <b style={{ color: C.rojo }}>Cancelar mantenimiento</b>
             <Campo etiqueta="Motivo" obligatorio>
               <select value={motivo} onChange={(e) => setMotivo(e.target.value)}>{MOTIVOS_CANCELAR.map((x) => <option key={x}>{x}</option>)}</select>
@@ -448,7 +448,7 @@ function Menu({ opciones }) {
     <div ref={ref}>
       <button type="button" className="btn" aria-label="Más acciones" onClick={alternar} style={{ minHeight: 34, padding: '6px 8px' }}><Icon d={PUNTOS} size={16} /></button>
       {abiertoM && (
-        <div role="menu" style={{ position: 'fixed', right: abiertoM.right, top: abiertoM.top, zIndex: 1100, minWidth: 210, padding: 4, background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(19,41,75,.14)' }}>
+        <div role="menu" style={{ position: 'fixed', right: abiertoM.right, top: abiertoM.top, zIndex: 1100, minWidth: 210, padding: 4, background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(0,0,0,.45)' }}>
           {opciones.map((o) => (
             <button key={o.l} type="button" role="menuitem" disabled={o.disabled} onClick={() => { setAbierto(null); o.onClick() }}
               style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', border: 0, background: 'transparent', padding: '9px 10px', borderRadius: 'var(--radio-sm)', font: '400 14px var(--font)', textAlign: 'left', color: o.color || C.tinta, cursor: o.disabled ? 'not-allowed' : 'pointer', opacity: o.disabled ? 0.45 : 1 }}>

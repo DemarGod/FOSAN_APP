@@ -188,7 +188,7 @@ function Numero({ etiqueta, unidad, valor, editable, onGuardar }) {
   return (
     <label style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 120px 44px', gap: 8, alignItems: 'center' }}>
       <span style={{ font: '400 13px var(--font)' }}>{etiqueta}</span>
-      <span style={{ display: 'flex', alignItems: 'center', border: `1px solid ${C.borde}`, background: '#fff', borderRadius: 'var(--radio-md)' }}>
+      <span style={{ display: 'flex', alignItems: 'center', border: `1px solid ${C.borde}`, background: 'var(--panel)', borderRadius: 'var(--radio-md)' }}>
         <input value={t} disabled={!editable} inputMode="decimal" placeholder="—"
           onChange={(e) => setT(e.target.value.replace(/[^0-9.,]/g, '').slice(0, 12))}
           onBlur={() => t !== original && onGuardar(t)}

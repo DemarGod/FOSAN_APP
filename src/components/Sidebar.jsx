@@ -1,3 +1,4 @@
+import { useEffect, useId, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { C, Icon, I } from '../lib/ui'
 import { useSesion, puedeVer, verMiRuta, verAdministracion, esOperador } from '../lib/sesion'
@@ -35,54 +36,85 @@ export const itemVisible = (perfil, ajustes, n) => (esOperador(perfil) ? !!(n.mi
   && !(n.admin && !verAdministracion(perfil)) && !(n.sinAdmin && verAdministracion(perfil)) && !(n.miRuta && !verMiRuta(perfil, ajustes))
 
 const item = (activo) => ({
-  width: 'calc(100% - 16px)', margin: '2px 8px', display: 'flex', alignItems: 'center', gap: 11,
-  padding: '10px 12px', boxSizing: 'border-box', border: 0, cursor: 'pointer', textAlign: 'left',
-  background: activo ? '#2f6fdd' : 'transparent',
-  color: activo ? '#fff' : '#c9d4e5',
-  font: `${activo ? 600 : 400} 14px/1.2 var(--font)`, textDecoration: 'none', borderRadius: 4,
+  width: 'calc(100% - 20px)', margin: '3px 10px', display: 'flex', alignItems: 'center', gap: 12,
+  padding: '11px 14px', boxSizing: 'border-box', border: 0, cursor: 'pointer', textAlign: 'left',
+  background: activo ? 'var(--degradado)' : 'transparent',
+  boxShadow: activo ? '0 6px 20px rgba(7,139,250,.35), inset 0 0 0 1px rgba(255,255,255,.12)' : 'none',
+  color: activo ? '#fff' : '#9BAEC5',
+  font: `${activo ? 600 : 500} 14px/1.2 var(--font)`, textDecoration: 'none', borderRadius: 10,
+  transition: 'background .2s, color .2s',
 })
+
+// Marca FOSAN: "F" en degradado azul (también la usa el login)
+export function MarcaFosan({ tam = 30, texto = true, tamTexto = 22 }) {
+  const gid = 'fosan-f' + useId().replace(/:/g, '')   // id único: el menú lateral oculto no debe "robar" el degradado
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+      <svg width={tam} height={tam} viewBox="0 0 32 32" aria-hidden="true">
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#18B8FF" /><stop offset="1" stopColor="#078BFA" />
+          </linearGradient>
+        </defs>
+        <path d="M9 4h17l-3 6H14.5l-1.2 4H22l-3 6h-7.6L9 28H3z" fill={`url(#${gid})`} />
+      </svg>
+      {texto && <span style={{ font: `700 ${tamTexto}px/1 var(--font)`, letterSpacing: '.02em', color: '#F1F5FA' }}>FOSAN</span>}
+    </span>
+  )
+}
 
 export default function Sidebar({ onCalendario }) {
   const { perfil } = useSesion()
   const ajustes = useAjustes()
+  const [enLinea, setEnLinea] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
+  useEffect(() => {
+    const on = () => setEnLinea(true), off = () => setEnLinea(false)
+    window.addEventListener('online', on); window.addEventListener('offline', off)
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
+  }, [])
   return (
     <aside className="sidebar" style={{
-      background: '#13294b', color: '#fff', borderRight: 0,
+      background: 'linear-gradient(180deg, #081426 0%, #06101F 100%)', color: '#fff', borderRight: '1px solid #12243B',
       display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh',
     }}>
-      <div style={{
-        height: 64, padding: '0 18px', borderBottom: '1px solid rgba(255,255,255,.12)',
-        display: 'flex', alignItems: 'center',
-      }}>
-        <span style={{ font: '800 32px/1 var(--font)', letterSpacing: '-.02em' }}>FOSAN</span>
+      <div style={{ height: 72, padding: '0 20px', display: 'flex', alignItems: 'center' }}>
+        <MarcaFosan />
       </div>
 
-      <nav style={{ flex: 1, overflowY: 'auto', padding: '10px 0' }}>
+      <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
         {NAV.filter((n) => itemVisible(perfil, ajustes, n)).map((n, i) => {
           if (n.grupo) {
             return (
               <div key={n.grupo} style={{
-                margin: i ? '10px 0 4px' : '0 0 4px', padding: '10px 18px 4px',
-                borderTop: '1px solid rgba(255,255,255,.12)', font: '700 10px var(--font)',
-                textTransform: 'uppercase', letterSpacing: '.08em', color: '#8fa3c2',
+                margin: i ? '10px 0 4px' : '0 0 4px', padding: '10px 20px 4px',
+                font: '700 10px var(--font)', textTransform: 'uppercase', letterSpacing: '.08em', color: '#6B7F99',
               }}>{n.grupo}</div>
             )
           }
           if (n.calendario) {
             return (
               <button key="cal" onClick={onCalendario} style={item(false)}>
-                <Icon d={n.d} size={17} w={1.7} /><span>{n.label}</span>
+                <Icon d={n.d} size={18} w={1.7} /><span>{n.label}</span>
               </button>
             )
           }
           return (
-            <NavLink key={n.to} to={n.to} end={n.fin} style={({ isActive }) => item(isActive)}>
-              <Icon d={n.d} size={17} w={1.7} />
+            <NavLink key={n.to} to={n.to} end={n.fin} style={({ isActive }) => item(isActive)} className="nav-lateral">
+              <Icon d={n.d} size={18} w={1.7} />
               <span>{n.label}</span>
             </NavLink>
           )
         })}
       </nav>
+
+      {/* Estado de la conexión de este equipo (real: navigator.onLine) */}
+      <div style={{ padding: '14px 20px 18px', borderTop: '1px solid #12243B', display: 'grid', gap: 4, font: '500 12px var(--font)', color: '#9BAEC5' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: enLinea ? '#00C98D' : '#EF4444', boxShadow: `0 0 8px ${enLinea ? '#00C98D' : '#EF4444'}` }} />
+          {enLinea ? 'En línea' : 'Sin conexión'}
+        </span>
+        <span style={{ color: '#6B7F99' }}>FOSAN · gestión de operaciones</span>
+      </div>
     </aside>
   )
 }

@@ -1,11 +1,12 @@
 // Gráficos simples en SVG para el Inicio (sin librerías).
 // Reglas: marcas finas con extremos redondeados, eje Y único, cuadrícula suave, leyenda siempre que hay ≥ 2 series,
 // valores con color de texto (no del color de la serie), tooltip al pasar el mouse y opción "Ver tabla" en cada tarjeta.
-// Colores categóricos validados (orden fijo): azul FOSAN, naranja, aqua, amarillo, magenta.
-import { useState } from 'react'
+// Colores categóricos para fondo oscuro (orden fijo): azul eléctrico, coral, verde, ámbar, rosa.
+// Barras con degradado, cuadrícula discreta, tooltip oscuro con borde azul y animación suave al cargar.
+import { useId, useState } from 'react'
 import { C } from '../lib/ui'
 
-export const SERIE = ['#2f6fdd', '#eb6834', '#1baf7a', '#eda100', '#e87ba4']
+export const SERIE = ['#078BFA', '#FF6B4A', '#00C98D', '#F59E0B', '#F472B6']
 const n = (x) => Number(x || 0).toLocaleString('es-CL')
 
 // Tarjeta de gráfico: título, subtítulo, acción "Ver tabla" y el contenido
@@ -63,7 +64,8 @@ function useTip() {
   }
   const Tip = () => (tip ? (
     <div style={{ position: 'absolute', left: tip.x, top: tip.y - 10, transform: 'translate(-50%, -100%)', pointerEvents: 'none',
-      background: '#13294b', color: '#fff', padding: '6px 9px', borderRadius: 6, font: '600 12px/1.35 var(--font)', whiteSpace: 'pre', zIndex: 5 }}>{tip.texto}</div>
+      background: 'rgba(5,11,22,.95)', color: '#F1F5FA', border: '1px solid rgba(24,184,255,.55)', boxShadow: '0 8px 24px rgba(0,0,0,.5), 0 0 12px rgba(7,139,250,.25)',
+      padding: '7px 10px', borderRadius: 8, font: '600 12px/1.4 var(--font)', whiteSpace: 'pre', zIndex: 5 }}>{tip.texto}</div>
   ) : null)
   return { mostrar, ocultar: () => setTip(null), Tip }
 }
@@ -78,8 +80,24 @@ const escala = (max) => {
 const corto = (v) => (v >= 1e6 ? `${(v / 1e6).toLocaleString('es-CL', { maximumFractionDigits: 1 })} M` : v >= 1e3 ? `${(v / 1e3).toLocaleString('es-CL', { maximumFractionDigits: 0 })} mil` : n(v))
 
 // Barras verticales agrupadas: etiquetas (eje X) y series [{ l, c, datos: [] }]
+// Degradado vertical de una barra: del color de la serie (abajo) a una versión luminosa (arriba)
+const luminoso = (c) => (c?.toUpperCase() === '#078BFA' ? '#18B8FF' : c)
+function DefsDegradado({ id, series }) {
+  return (
+    <defs>
+      {series.map((s, j) => (
+        <linearGradient key={j} id={`${id}-${j}`} x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0" stopColor={s.c} stopOpacity=".85" />
+          <stop offset="1" stopColor={luminoso(s.c)} stopOpacity="1" />
+        </linearGradient>
+      ))}
+    </defs>
+  )
+}
+
 export function Barras({ etiquetas, series, alto = 210, fmt = n, onBarra }) {
   const { mostrar, ocultar, Tip } = useTip()
+  const gid = 'gb' + useId().replace(/:/g, '')
   const ancho = 520, izq = 52, abajo = 30, arriba = 10
   const max = Math.max(0, ...series.flatMap((s) => s.datos.map(Number)))
   const { tope, pasos } = escala(max)
@@ -90,9 +108,10 @@ export function Barras({ etiquetas, series, alto = 210, fmt = n, onBarra }) {
     <div style={{ position: 'relative' }}>
       {series.length > 1 && <Leyenda items={series} />}
       <svg viewBox={`0 0 ${ancho} ${alto}`} style={{ width: '100%', height: 'auto', display: 'block', marginTop: 6 }} onMouseLeave={ocultar}>
+        <DefsDegradado id={gid} series={series} />
         {pasos.map((p) => (
           <g key={p}>
-            <line x1={izq} x2={ancho - 4} y1={y(p)} y2={y(p)} stroke={C.fila} strokeWidth={1} />
+            <line x1={izq} x2={ancho - 4} y1={y(p)} y2={y(p)} stroke="rgba(155,174,197,.12)" strokeWidth={1} strokeDasharray="3 4" />
             <text x={izq - 6} y={y(p) + 4} textAnchor="end" fontSize="13" fill={C.gris} style={{ fontFamily: "var(--font)" }}>{corto(p)}</text>
           </g>
         ))}
@@ -107,7 +126,8 @@ export function Barras({ etiquetas, series, alto = 210, fmt = n, onBarra }) {
                   <g key={s.l} style={{ cursor: onBarra ? 'pointer' : 'default' }} onClick={onBarra ? () => onBarra(i, j) : undefined}
                     onMouseMove={(e) => mostrar(e, `${et}\n${s.l}: ${fmt(v)}`)}>
                     <rect x={x - 3} y={arriba} width={bw + 6} height={h} fill="transparent" />
-                    {alt > 0 && <path d={`M${x},${arriba + h} V${top + r} Q${x},${top} ${x + r},${top} H${x + bw - r} Q${x + bw},${top} ${x + bw},${top + r} V${arriba + h} Z`} fill={s.c} />}
+                    {alt > 0 && <path className="g-barra" style={{ animationDelay: `${i * 40}ms` }}
+                      d={`M${x},${arriba + h} V${top + r} Q${x},${top} ${x + r},${top} H${x + bw - r} Q${x + bw},${top} ${x + bw},${top + r} V${arriba + h} Z`} fill={`url(#${gid}-${j})`} />}
                   </g>
                 )
               })}
@@ -115,7 +135,7 @@ export function Barras({ etiquetas, series, alto = 210, fmt = n, onBarra }) {
             </g>
           )
         })}
-        <line x1={izq} x2={ancho - 4} y1={arriba + h} y2={arriba + h} stroke={C.borde} strokeWidth={1} />
+        <line x1={izq} x2={ancho - 4} y1={arriba + h} y2={arriba + h} stroke="rgba(155,174,197,.25)" strokeWidth={1} />
       </svg>
       <Tip />
     </div>
@@ -132,8 +152,9 @@ export function BarrasH({ items, color = SERIE[0], fmt = n, vacio = 'Sin datos.'
         <button key={it.l} type="button" onClick={it.onClick} title={`${it.l}: ${fmt(it.v)}`}
           style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 38%) 1fr auto', alignItems: 'center', gap: 10, border: 0, background: 'transparent', padding: 0, textAlign: 'left', cursor: it.onClick ? 'pointer' : 'default' }}>
           <span style={{ font: '400 13px var(--font)', color: C.tinta, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.l}</span>
-          <span style={{ height: 14, background: C.fila, borderRadius: 4, overflow: 'hidden' }}>
-            <span style={{ display: 'block', height: '100%', width: `${(Number(it.v) / max) * 100}%`, minWidth: Number(it.v) ? 4 : 0, background: it.c || color, borderRadius: 4 }} />
+          <span style={{ height: 10, background: 'rgba(155,174,197,.10)', borderRadius: 999, overflow: 'hidden' }}>
+            <span className="g-barra-h" style={{ display: 'block', height: '100%', width: `${(Number(it.v) / max) * 100}%`, minWidth: Number(it.v) ? 6 : 0, borderRadius: 999,
+              background: `linear-gradient(90deg, ${it.c || color}, ${luminoso(it.c || color)})`, boxShadow: `0 0 10px ${(it.c || color)}55` }} />
           </span>
           <b style={{ font: '700 13px var(--font)', color: C.tinta, minWidth: 28, textAlign: 'right' }}>{fmt(it.v)}</b>
         </button>
@@ -162,18 +183,18 @@ export function Dona({ partes, centro, sub }) {
   return (
     <div style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap', position: 'relative' }}>
       <svg viewBox="0 0 160 160" style={{ width: 150, height: 150, flex: 'none' }} onMouseLeave={ocultar}>
-        {!total && <circle cx={cx} cy={cy} r={(R + r) / 2} fill="none" stroke={C.fila} strokeWidth={R - r} />}
-        {arcos.map((a) => (
-          <path key={a.l} d={a.d} fill={a.c} fillRule="evenodd" style={{ cursor: a.onClick ? 'pointer' : 'default' }} onClick={a.onClick}
+        <circle cx={cx} cy={cy} r={(R + r) / 2} fill="none" stroke="rgba(155,174,197,.08)" strokeWidth={R - r} />
+        {arcos.map((a, k) => (
+          <path key={a.l} className="g-arco" d={a.d} fill={a.c} fillRule="evenodd" style={{ cursor: a.onClick ? 'pointer' : 'default', animationDelay: `${k * 80}ms`, filter: `drop-shadow(0 0 4px ${a.c}66)` }} onClick={a.onClick}
             onMouseMove={(e) => mostrar(e, `${a.l}: ${n(a.v)} (${Math.round((100 * a.v) / total)} %)`)} />
         ))}
-        <text x={cx} y={cy + 2} textAnchor="middle" fontSize="22" fontWeight="800" fill={C.tinta} style={{ fontFamily: "var(--font)" }}>{centro ?? n(total)}</text>
+        <text x={cx} y={cy + 2} textAnchor="middle" fontSize="24" fontWeight="700" fill={C.tinta} style={{ fontFamily: "var(--font)" }}>{centro ?? n(total)}</text>
         {sub && <text x={cx} y={cy + 18} textAnchor="middle" fontSize="13" fill={C.gris} style={{ fontFamily: "var(--font)" }}>{sub}</text>}
       </svg>
       <div style={{ display: 'grid', gap: 7, flex: '1 1 140px' }}>
         {partes.map((p) => (
           <button key={p.l} type="button" onClick={p.onClick} style={{ display: 'flex', alignItems: 'center', gap: 8, border: 0, background: 'transparent', padding: 0, cursor: p.onClick ? 'pointer' : 'default', font: '400 13px var(--font)', color: C.tinta, textAlign: 'left' }}>
-            <span style={{ width: 10, height: 10, borderRadius: 2, background: p.c, flex: 'none' }} />
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: p.c, flex: 'none', boxShadow: `0 0 6px ${p.c}88` }} />
             <span style={{ flex: 1 }}>{p.l}</span>
             <b>{n(p.v)}</b>
             <span style={{ color: C.gris, width: 38, textAlign: 'right' }}>{total ? `${Math.round((100 * p.v) / total)} %` : '—'}</span>
@@ -182,5 +203,28 @@ export function Dona({ partes, centro, sub }) {
       </div>
       <Tip />
     </div>
+  )
+}
+
+// Mini tendencia (sparkline) para las tarjetas de indicadores. Solo se usa con datos históricos reales.
+export function Sparkline({ datos = [], color = '#18B8FF', ancho = 96, alto = 34, titulo }) {
+  const gid = 'sp' + useId().replace(/:/g, '')
+  const v = datos.map(Number)
+  if (v.length < 2 || v.every((x) => !x)) return null
+  const max = Math.max(...v), min = Math.min(0, ...v), rango = max - min || 1
+  const pts = v.map((x, i) => [(i / (v.length - 1)) * (ancho - 4) + 2, alto - 3 - ((x - min) / rango) * (alto - 8)])
+  const linea = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+  return (
+    <svg width={ancho} height={alto} viewBox={`0 0 ${ancho} ${alto}`} aria-label={titulo} role="img" style={{ display: 'block' }}>
+      {titulo && <title>{titulo}</title>}
+      <defs>
+        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={color} stopOpacity=".35" /><stop offset="1" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={`${linea} L${pts[pts.length - 1][0]},${alto} L${pts[0][0]},${alto} Z`} fill={`url(#${gid})`} />
+      <path d={linea} fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
+      <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="2.6" fill={color} />
+    </svg>
   )
 }

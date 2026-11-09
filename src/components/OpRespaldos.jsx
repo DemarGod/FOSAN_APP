@@ -171,7 +171,7 @@ export function Lienzo({ onCambio }) {
   return (
     <div style={{ display: 'grid', gap: 6 }}>
       <canvas ref={ref} onPointerDown={abajo} onPointerMove={mover} onPointerUp={arriba} onPointerLeave={arriba}
-        style={{ width: '100%', height: 180, background: '#fff', border: `1px dashed ${C.gris}`, borderRadius: 'var(--radio-md)', touchAction: 'none', cursor: 'crosshair' }} />
+        style={{ width: '100%', height: 180, background: 'var(--panel)', border: `1px dashed ${C.gris}`, borderRadius: 'var(--radio-md)', touchAction: 'none', cursor: 'crosshair' }} />
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <small className="text-muted">Firme dentro del recuadro.</small>
         <Boton onClick={limpiar} style={{ minHeight: 30, padding: '4px 10px' }}>Limpiar</Boton>

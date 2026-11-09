@@ -29,19 +29,19 @@ export default function Tabbar({ onCalendario }) {
     .filter((n, i, l) => !n.grupo || (l[i + 1] && !l[i + 1].grupo))
   const estilo = (activo) => ({
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, minHeight: 58,
-    textDecoration: 'none', border: 0, cursor: 'pointer', background: activo ? C.tinte : '#fff',
-    color: activo ? '#1a3c72' : '#3c4551', font: '400 10px var(--font)',
+    textDecoration: 'none', border: 0, cursor: 'pointer', background: activo ? C.tinte : 'var(--lateral)',
+    color: activo ? '#7CC4FF' : '#9BAEC5', font: '400 10px var(--font)',
   })
   return (
     <>
       {abierto && (
-        <div className="tabbar" onClick={() => setAbierto(false)} style={{ position: 'fixed', inset: 0, zIndex: 30, background: 'rgba(19,41,75,.45)' }}>
+        <div className="tabbar" onClick={() => setAbierto(false)} style={{ position: 'fixed', inset: 0, zIndex: 30, background: 'rgba(2,6,14,.7)' }}>
           <nav onClick={(e) => e.stopPropagation()} style={{
             position: 'absolute', left: 0, right: 0, bottom: 60, maxHeight: '75vh', overflowY: 'auto',
-            background: '#13294b', borderRadius: '12px 12px 0 0', padding: '8px 0 12px',
+            background: '#081426', borderRadius: '12px 12px 0 0', padding: '8px 0 12px',
           }}>
             {items.map((n) => n.grupo ? (
-              <div key={n.grupo} style={{ padding: '12px 20px 4px', font: '700 10px var(--font)', textTransform: 'uppercase', letterSpacing: '.08em', color: '#8fa3c2' }}>{n.grupo}</div>
+              <div key={n.grupo} style={{ padding: '12px 20px 4px', font: '700 10px var(--font)', textTransform: 'uppercase', letterSpacing: '.08em', color: '#9BAEC5' }}>{n.grupo}</div>
             ) : n.calendario ? (
               <button key="cal" type="button" onClick={() => { setAbierto(false); onCalendario?.() }} style={item(false)}>
                 <Icon d={n.d} size={18} w={1.7} /><span>{n.label}</span>
@@ -56,7 +56,7 @@ export default function Tabbar({ onCalendario }) {
       )}
       <nav className="tabbar" style={{
         gridTemplateColumns: `repeat(${tabs.length + 1}, 1fr)`, position: 'fixed', bottom: 0, left: 0, right: 0,
-        background: '#fff', borderTop: `1px solid ${C.borde}`, zIndex: 31,
+        background: 'var(--lateral)', borderTop: `1px solid ${C.borde}`, zIndex: 31,
       }}>
         {tabs.map((t) => (
           <NavLink key={t.to} to={t.to} end={t.fin} style={({ isActive }) => estilo(isActive && !abierto)}>
@@ -76,6 +76,6 @@ export default function Tabbar({ onCalendario }) {
 const item = (activo) => ({
   width: 'calc(100% - 16px)', margin: '2px 8px', display: 'flex', alignItems: 'center', gap: 12,
   padding: '12px 14px', boxSizing: 'border-box', border: 0, cursor: 'pointer', textAlign: 'left',
-  background: activo ? '#2f6fdd' : 'transparent', color: activo ? '#fff' : '#c9d4e5',
-  font: `${activo ? 600 : 400} 15px/1.2 var(--font)`, textDecoration: 'none', borderRadius: 6,
+  background: activo ? 'var(--degradado)' : 'transparent', color: activo ? '#fff' : '#9BAEC5',
+  font: `${activo ? 600 : 400} 15px/1.2 var(--font)`, textDecoration: 'none', borderRadius: 10,
 })

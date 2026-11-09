@@ -119,7 +119,7 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
     }>
       <div style={{ padding: 18, display: 'grid', gap: 14 }}>
         {resultado ? (
-          <div style={{ display: 'grid', gap: 8, padding: 16, background: '#e6f4ea', border: `1px solid ${C.verde}`, font: '400 13px/1.6 var(--font)', color: '#1e6b34', borderRadius: 'var(--radio-md)' }}>
+          <div style={{ display: 'grid', gap: 8, padding: 16, background: 'rgba(0,201,141,.14)', border: `1px solid ${C.verde}`, font: '400 13px/1.6 var(--font)', color: '#6EE7B7', borderRadius: 'var(--radio-md)' }}>
             <strong style={{ font: '700 15px var(--font)' }}>Importación terminada</strong>
             <span>{resultado.creados} baño(s) nuevos · {resultado.actualizados} actualizados · {resultado.omitidos} omitidos por error</span>
             <span>Se crearon {resultado.modelos} modelo(s), {resultado.clientes} cliente(s) y {resultado.ubicaciones} ubicación(es).</span>
@@ -146,7 +146,7 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
                   <span>{ok.length - actualizan} nuevos · {actualizan} ya existen (se actualizan)</span>
                   {Object.entries(porEstado).map(([k, n]) => <span key={k}>{L_ESTADO_ACTIVO[k]}: {n}</span>)}
                   {malas.length > 0 && <span style={{ color: C.rojo }}>{malas.length} con problema (se omiten)</span>}
-                  {conAviso.length > 0 && <span style={{ color: '#8a5a00' }}>{conAviso.length} para revisar (se importan igual)</span>}
+                  {conAviso.length > 0 && <span style={{ color: '#FBBF24' }}>{conAviso.length} para revisar (se importan igual)</span>}
                 </div>
 
                 {crearan && (crearan.modelos.length + crearan.clientes.length + crearan.ubicaciones.length) > 0 && (
@@ -163,7 +163,7 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
                     <thead><tr><th>Fila</th><th>Código</th><th>Modelo</th><th>Color</th><th>Estado</th><th>Cliente</th><th>Ubicación</th><th>Observación</th></tr></thead>
                     <tbody>
                       {[...malas, ...conAviso, ...ok.filter((f) => !f.aviso)].slice(0, 60).map((f) => (
-                        <tr key={f.n} style={{ background: f.problema ? '#fce8e6' : f.aviso ? '#fff4d6' : undefined }}>
+                        <tr key={f.n} style={{ background: f.problema ? 'rgba(239,68,68,.14)' : f.aviso ? 'rgba(245,158,11,.14)' : undefined }}>
                           <td>{f.n}</td><td>{f.codigo}</td><td>{f.modelo || '—'}</td><td>{f.color || '—'}</td>
                           <td>{f.estado ? L_ESTADO_ACTIVO[f.estado] : '—'}</td><td>{f.cliente || '—'}</td><td>{f.ubicacion || '—'}</td>
                           <td>{f.problema || f.aviso || ''}</td>
@@ -179,7 +179,7 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
             )}
           </>
         )}
-        {error && <div style={{ padding: '10px 12px', background: '#fce8e6', border: `1px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#7c1405', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
+        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.14)', border: `1px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
       </div>
     </Modal>
   )

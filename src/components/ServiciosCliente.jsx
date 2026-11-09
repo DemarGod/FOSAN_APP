@@ -116,7 +116,7 @@ function Menu({ opciones }) {
       {abierto && (
         <div role="menu" style={{
           position: 'fixed', right: abierto.right, top: abierto.top, zIndex: 1100, minWidth: 200, padding: 4,
-          background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(19,41,75,.14)',
+          background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(0,0,0,.45)',
         }}>
           {opciones.map((o) => (
             <button key={o.l} type="button" role="menuitem" disabled={o.disabled} title={o.nota}
