@@ -1,4 +1,4 @@
-// Formulario Nuevo cliente / Editar datos (láminas 2.2, 2.3 y 2.4).
+// Formulario Nuevo cliente /
 // Solo datos generales. Contactos, ubicaciones y servicios van en la ficha del cliente.
 // Los campos antiguos (valor mensual, días de limpieza, baños propios, lat/lng, contrato)
 // no se muestran ni se modifican: siguen en la base para Análisis y Rutas semanales.

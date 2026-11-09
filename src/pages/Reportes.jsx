@@ -1,6 +1,6 @@
 // Reportes (lámina 7): consulta, filtros y exportación sin volver a ingresar datos.
 // 7.1 Pestañas con informes · 7.2 Configurar (filtros según el informe) · 7.3 Vista previa con totales · 7.4 Exportar PDF / XLSX / CSV.
-// Pestaña Análisis: lo que antes era la página Análisis (costos y rentabilidad) + Ventas y utilidad.
+// Pestaña Análisis: costos y rentabilidad (pages/Analisis.jsx)
 // Existencias = situación actual (sin fechas históricas). Costos solo con "Ver montos".
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -9,7 +9,6 @@ import { guardarLibro, exportarCSV } from '../lib/excel'
 import Modal from '../components/Modal'
 import { Boton, Campo, Tabla, Ayuda, Pestanas } from '../components/Base'
 import Analisis from './Analisis'
-import ResumenFinanciero from '../components/ResumenFinanciero'
 import { supabase } from '../lib/supabase'
 import { equiposLista, insumosInventario, ubicacionesInsumo, operaciones, flota, personalActivo, parametros, mantenimiento, catCategorias } from '../lib/api'
 import { costoKmVehiculo, mapaParametros, hoyISO } from '../lib/costos'
@@ -184,7 +183,7 @@ export default function Reportes() {
     <div style={{ display: 'grid', gap: 16 }}>
       <h2 style={{ margin: 0 }}>Reportes</h2>
       <Pestanas opciones={tabs} valor={tab} onChange={(v) => setParams({ tab: v }, { replace: true })} />
-      {tab === 'analisis' ? <PestanaAnalisis /> : sel
+      {tab === 'analisis' ? <Analisis /> : sel
         ? <Informe inf={sel} finanzas={finanzas} onVolver={() => setSel(null)} />
         : (
           <>
@@ -200,20 +199,6 @@ export default function Reportes() {
             {TABS.find((t) => t.v === tab)?.nota && <Ayuda>{TABS.find((t) => t.v === tab).nota}</Ayuda>}
           </>
         )}
-    </div>
-  )
-}
-
-// ── Pestaña Análisis: lo que antes era la página Análisis + Ventas y utilidad ──
-function PestanaAnalisis() {
-  const [sub, setSub] = useState('costos')
-  return (
-    <div style={{ display: 'grid', gap: 14 }}>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <Boton tipo={sub === 'costos' ? 'principal' : 'secundario'} onClick={() => setSub('costos')}>Costos y rentabilidad</Boton>
-        <Boton tipo={sub === 'ventas' ? 'principal' : 'secundario'} onClick={() => setSub('ventas')}>Ventas y utilidad</Boton>
-      </div>
-      {sub === 'costos' ? <Analisis /> : <ResumenFinanciero />}
     </div>
   )
 }

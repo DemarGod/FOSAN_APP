@@ -15,11 +15,6 @@ const one = async (q) => {
 // ── Inicio ────────────────────────────────────────────────────────────────
 export const mapaPuntos = () => rows(supabase.from('v_mapa_puntos').select('*').order('activos', { ascending: false }))
 
-
-export const utilidadMensual = () => rows(supabase.from('v_utilidad_mensual').select('*'))
-export const topClientes = () => rows(supabase.from('v_top_clientes').select('*').limit(5))
-
-
 // ── Notificaciones ────────────────────────────────────────────────────────
 export const notificaciones = () => rows(
   supabase.from('notificaciones').select('*').order('creado_en', { ascending: false }).limit(20)
@@ -905,6 +900,3 @@ export const guardarPesoModelo = async (id, peso_kg) => {
   const { error } = await supabase.from('modelos_bano').update({ peso_kg }).eq('id', id)
   if (error) throw error
 }
-
-// ── Exportación ───────────────────────────────────────────────────────────
-export const vistaExport = (nombre) => rows(supabase.from(nombre).select('*'))
