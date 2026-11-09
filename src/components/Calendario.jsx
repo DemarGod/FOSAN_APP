@@ -105,7 +105,7 @@ export default function Calendario({ puedeEditar, onCerrar }) {
               minHeight: 58, padding: 6, textAlign: 'left', cursor: 'pointer',
               display: 'flex', flexDirection: 'column', gap: 4,
             }}>
-              <span style={{ font: '600 13px var(--font)', color: on ? '#7CC4FF' : C.tinta }}>{c.n}</span>
+              <span style={{ font: '600 13px var(--font)', color: on ? '#8CC3F7' : C.tinta }}>{c.n}</span>
               <span style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                 {evs.map((e) => (
                   <span key={e.id} style={{

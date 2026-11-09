@@ -7,8 +7,8 @@ import { C, Icon, I, fechaHora } from '../lib/ui'
 import { nombreRol, esOperador } from '../lib/sesion'
 
 const NIVEL = {
-  alerta: { color: C.rojo, tint: 'rgba(239,68,68,.2)', d: I.alert },
-  aviso: { color: C.amarillo, tint: 'rgba(245,158,11,.2)', d: I.wrench },
+  alerta: { color: C.rojo, tint: 'rgba(239,98,93,.2)', d: I.alert },
+  aviso: { color: C.amarillo, tint: 'rgba(235,170,66,.2)', d: I.wrench },
   info: { color: C.azul, tint: C.tinte, d: I.info },
 }
 
@@ -102,7 +102,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
   return (
     <header style={{
       display: 'flex', alignItems: 'center', gap: 14, height: 72, padding: '0 22px',
-      background: 'rgba(22,48,90,.78)', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${C.borde}`,
+      background: 'var(--header)', borderBottom: `1px solid ${C.borde}`,
       position: 'sticky', top: 0, zIndex: 30,
     }}>
       <div className="sbtab"><MarcaFosan tam={22} tamTexto={17} /></div>
@@ -110,7 +110,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
       {!operador && <div ref={cajaBusca} className="desk-only" style={{ flex: 1, maxWidth: 460, position: 'relative' }}>
         <form onSubmit={buscar} style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          border: `1px solid ${C.borde}`, padding: '10px 14px', background: 'rgba(30,59,104,.85)', borderRadius: 12 }}>
+          border: `1px solid ${C.borde}`, padding: '10px 14px', background: 'rgba(29,56,94,.85)', borderRadius: 12 }}>
           <Icon d={I.busca} size={15} color={C.gris} />
           <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar baños, clientes o secciones"
@@ -135,7 +135,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
 
       {!operador && <>
       <button onClick={onCalendario} title="Calendario" style={{
-        border: `1px solid ${C.borde}`, background: 'rgba(30,59,104,.85)', color: C.navy,
+        border: `1px solid ${C.borde}`, background: 'rgba(29,56,94,.85)', color: C.navy,
         width: 42, height: 42, display: 'grid', placeItems: 'center', cursor: 'pointer', borderRadius: 12 }}>
         <Icon d={I.cal} size={18} w={1.7} />
       </button>
@@ -149,7 +149,7 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
           {sinLeer > 0 && (
             <span style={{
               position: 'absolute', top: 0, right: 0, minWidth: 16, height: 16, padding: '0 3px',
-              background: C.rojo, color: '#fff', borderRadius: 8, boxShadow: '0 0 10px rgba(239,68,68,.6)',
+              background: C.rojo, color: '#fff', borderRadius: 8,
               font: '700 10px/16px var(--font)', textAlign: 'center',
             }}>{sinLeer}</span>
           )}
@@ -206,8 +206,8 @@ export default function Topbar({ perfil, onCalendario, version = 0 }) {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
         <div style={{
-          width: 38, height: 38, background: 'var(--degradado)', color: '#fff', borderRadius: 10,
-          boxShadow: '0 4px 14px rgba(7,139,250,.35)', display: 'grid', placeItems: 'center', font: '700 13px var(--font)',
+          width: 38, height: 38, background: 'var(--azul)', color: '#fff', borderRadius: '50%',
+          display: 'grid', placeItems: 'center', font: '700 13px var(--font)',
         }}>{iniciales}</div>
         <div className="desk-only" style={{ lineHeight: 1.2 }}>
           <div style={{ font: '600 13px var(--font)' }}>{perfil?.nombre || 'Usuario'}</div>
@@ -236,7 +236,7 @@ const Resultado = ({ d, t, sub, onClick }) => (
   }}>
     <Icon d={d} size={16} color={C.navy} />
     <span style={{ minWidth: 0, flex: 1 }}>
-      <span style={{ display: 'block', font: '600 13px var(--font)', color: '#F1F5FA' }}>{t}</span>
+      <span style={{ display: 'block', font: '600 13px var(--font)', color: '#F1F5FB' }}>{t}</span>
       {sub && <span style={{ display: 'block', font: '400 11px var(--font)', color: C.gris, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</span>}
     </span>
   </button>

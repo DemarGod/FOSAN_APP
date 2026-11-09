@@ -82,7 +82,7 @@ export default function Ubicaciones() {
             const on = filtro === f
             return (
               <button key={f} onClick={() => setFiltro(f)} style={{
-                border: 0, background: on ? C.tinte : 'var(--panel)', color: on ? '#7CC4FF' : '#DCE6F2',
+                border: 0, background: on ? C.tinte : 'var(--panel)', color: on ? '#8CC3F7' : '#B8C9DE',
                 font: '600 13px var(--font)', padding: '10px 16px', minHeight: 42, cursor: 'pointer',
               }}>{f}</button>
             )
@@ -123,8 +123,8 @@ function Lista({ visibles, sel, setSel, color, limpiaHoy, sinGeo, editable }) {
   return (
     <section className="card" style={{ display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: '14px 18px', background: C.tinte, borderBottom: `1px solid ${C.borde}` }}>
-        <div style={{ font: '800 24px/1 var(--font)', color: '#7CC4FF' }}>{visibles.length}</div>
-        <div style={{ font: '400 11px var(--font)', color: '#DCE6F2', marginTop: 4 }}>
+        <div style={{ font: '800 24px/1 var(--font)', color: '#8CC3F7' }}>{visibles.length}</div>
+        <div style={{ font: '400 11px var(--font)', color: '#B8C9DE', marginTop: 4 }}>
           puntos en esta vista · toca uno para centrarlo
         </div>
       </div>
@@ -234,7 +234,7 @@ function NuevoPunto({ punto, clientes, onCancelar, onGuardado }) {
           </>
         )}
         <Campo etiqueta="Dirección"><input value={direccion} onChange={(e) => setDireccion(e.target.value)} maxLength={160} placeholder="Se completa sola al hacer clic" /></Campo>
-        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.2)', border: `1px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
+        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,98,93,.2)', border: `1px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button className="btn" onClick={onCancelar}>Cancelar</button>
           <button className="btn btn-azul" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar ubicación'}</button>

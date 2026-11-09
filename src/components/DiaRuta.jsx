@@ -51,7 +51,7 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
           </span>
         </span>
         {Object.entries(SEMAFORO).map(([k, s]) => (
-          <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, font: '600 12px var(--font)', color: '#DCE6F2' }}>
+          <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, font: '600 12px var(--font)', color: '#B8C9DE' }}>
             <Punto color={s.c} />{s.l}: {cuenta(k)}
           </span>
         ))}
@@ -69,7 +69,7 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
         </div>
       )}
 
-      {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.2)', border: `1px solid ${C.rojo}`, font: '400 13px/1.45 var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
+      {error && <div style={{ padding: '10px 12px', background: 'rgba(239,98,93,.2)', border: `1px solid ${C.rojo}`, font: '400 13px/1.45 var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
 
       {/* Paradas */}
       <div style={{ border: `1px solid ${C.borde}`, background: 'var(--panel)', borderRadius: 'var(--radio-md)' }}>
@@ -94,9 +94,9 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
                   <Chip tarea={p.tarea} servicio={servicio} />
                   <span style={{ font: '600 11px var(--font)', color: s.c }}>{s.l}</span>
                 </span>
-                {banos && <span style={{ font: '400 12px var(--font)', color: '#DCE6F2' }}>{servicio === 'limpieza_fosas' ? 'Fosa' : `Baños: ${banos}`}</span>}
+                {banos && <span style={{ font: '400 12px var(--font)', color: '#B8C9DE' }}>{servicio === 'limpieza_fosas' ? 'Fosa' : `Baños: ${banos}`}</span>}
                 {(c.contacto_nombre || c.telefono) && (
-                  <span style={{ font: '400 12px var(--font)', color: '#DCE6F2' }}>
+                  <span style={{ font: '400 12px var(--font)', color: '#B8C9DE' }}>
                     {c.contacto_nombre}{c.contacto_nombre && c.telefono ? ' · ' : ''}
                     {c.telefono && <a href={`tel:${c.telefono.replace(/\s/g, '')}`} style={{ color: C.azul }}>{c.telefono}</a>}
                   </span>
@@ -233,7 +233,7 @@ function Marcar({ p, estado, fecha, onCerrar, onListo, mantInicial = false }) {
             {unidades.filter((u) => malos[u.id]).map((u) => {
               const m = malos[u.id]
               return (
-                <div key={u.id} style={{ display: 'grid', gap: 8, padding: '8px 10px', borderLeft: `4px solid ${C.rojo}`, background: 'rgba(239,68,68,.10)' }}>
+                <div key={u.id} style={{ display: 'grid', gap: 8, padding: '8px 10px', borderLeft: `4px solid ${C.rojo}`, background: 'rgba(239,98,93,.10)' }}>
                   <strong>{u.codigo}</strong>
                   <select value={m.tipo} onChange={(e) => cambiarMalo(u.id, { tipo: e.target.value })} aria-label={`Tipo de mantención de ${u.codigo}`}>
                     {TIPOS_MANT.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -261,7 +261,7 @@ function Marcar({ p, estado, fecha, onCerrar, onListo, mantInicial = false }) {
           <span>Fotos (opcional){fotos.length ? ` · ${fotos.length} elegida(s)` : ''}</span>
           <input type="file" accept="image/*,application/pdf" multiple onChange={(e) => setFotos([...e.target.files])} />
         </label>
-        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.2)', border: `1px solid ${C.rojo}`, color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
+        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,98,93,.2)', border: `1px solid ${C.rojo}`, color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
       </div>
     </Modal>
   )
@@ -294,11 +294,11 @@ function Cerrar({ viaje, pendientes, onCerrar, onListo }) {
         </label>
         {recorridos > 0 && <p style={{ margin: 0 }}>Recorrido del día: <strong>{miles(recorridos)} km</strong></p>}
         {pendientes > 0 && (
-          <div style={{ padding: '10px 12px', background: 'rgba(245,158,11,.2)', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-sm)' }}>
+          <div style={{ padding: '10px 12px', background: 'rgba(235,170,66,.2)', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-sm)' }}>
             Quedan {pendientes} parada(s) pendientes. Al cerrar quedarán como <strong>No se pudo</strong>.
           </div>
         )}
-        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.2)', border: `1px solid ${C.rojo}`, color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
+        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,98,93,.2)', border: `1px solid ${C.rojo}`, color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
       </div>
     </Modal>
   )

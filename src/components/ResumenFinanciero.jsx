@@ -62,9 +62,9 @@ export default function ResumenFinanciero() {
   const ultimoMes = fin[fin.length - 1] || {}
   const seisMeses = fin.slice(-6)
   const kpis = [
-    { v: clp(ultimoMes.ventas), l: `Ventas · ${mesLargo(ultimoMes.mes)}`, color: C.navy, tint: 'rgba(155,174,197,.14)', d: I.money },
-    { v: clp(ultimoMes.costos), l: 'Costos del mes', color: C.amarillo, tint: 'rgba(245,158,11,.2)', d: I.wrench },
-    { v: clp(ultimoMes.utilidad), l: 'Utilidad del mes', color: C.verde, tint: 'rgba(0,201,141,.2)', d: I.chart },
+    { v: clp(ultimoMes.ventas), l: `Ventas · ${mesLargo(ultimoMes.mes)}`, color: C.navy, tint: 'rgba(184,201,222,.14)', d: I.money },
+    { v: clp(ultimoMes.costos), l: 'Costos del mes', color: C.amarillo, tint: 'rgba(235,170,66,.2)', d: I.wrench },
+    { v: clp(ultimoMes.utilidad), l: 'Utilidad del mes', color: C.verde, tint: 'rgba(84,201,154,.2)', d: I.chart },
     { v: ultimoMes.margen != null ? ultimoMes.margen + '%' : '—', l: 'Margen del mes', color: C.azul, tint: C.tinte, d: I.chart },
   ]
 
@@ -163,7 +163,7 @@ export default function ResumenFinanciero() {
           display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
           padding: '14px 18px', background: C.tinte, borderBottom: `1px solid ${C.borde}`,
         }}>
-          <h6 style={{ margin: 0, color: '#7CC4FF' }}>Evolución de utilidad</h6>
+          <h6 style={{ margin: 0, color: '#8CC3F7' }}>Evolución de utilidad</h6>
           <span style={{ font: '400 12px var(--font)', color: C.gris }}>Últimos {seisMeses.length} mes(es)</span>
         </div>
         <div style={{ padding: '18px 18px 8px' }}><GraficoUtilidad datos={seisMeses} /></div>

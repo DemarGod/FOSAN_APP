@@ -67,7 +67,7 @@ export default function Analisis() {
       <div style={{ display: 'flex', gap: 2, marginTop: 16, border: `1px solid ${C.borde}`, width: 'fit-content', maxWidth: '100%', flexWrap: 'wrap', borderRadius: 'var(--radio-md)' }}>
         {VISTAS.map((x) => (
           <button key={x.v} onClick={() => setVista(x.v)} style={{
-            border: 0, background: vista === x.v ? C.tinte : 'var(--panel)', color: vista === x.v ? '#7CC4FF' : '#DCE6F2',
+            border: 0, background: vista === x.v ? C.tinte : 'var(--panel)', color: vista === x.v ? '#8CC3F7' : '#B8C9DE',
             font: '600 13px var(--font)', padding: '10px 16px', minHeight: 42, cursor: 'pointer',
           }}>{x.l}</button>
         ))}
@@ -97,7 +97,7 @@ export default function Analisis() {
             {detalle.resumen && <div style={{ font: '400 13px/1.5 var(--font)' }}>{detalle.resumen}</div>}
             <Tabla min={620} filas={detalle.lineas} cols={[
               { k: 'concepto', l: 'Concepto' },
-              { k: 'formula', l: 'Cálculo', f: (x) => <span style={{ whiteSpace: 'normal', color: '#DCE6F2' }}>{x.formula}</span> },
+              { k: 'formula', l: 'Cálculo', f: (x) => <span style={{ whiteSpace: 'normal', color: '#B8C9DE' }}>{x.formula}</span> },
               { k: 'monto', l: 'Monto', der: true, f: (x) => <span style={{ color: x.ingreso ? '#6EE7B7' : undefined, fontWeight: 600 }}>{x.ingreso ? '+' : '−'}{$(x.monto)}</span> },
             ]} />
           </div>
@@ -131,17 +131,17 @@ function Calidad({ r, vista }) {
   const avisos = (por[vista] || []).filter(Boolean)
   if (!avisos.length) return null
   return (
-    <div style={{ margin: '16px 0 0', padding: '10px 14px', background: 'rgba(245,158,11,.2)', border: `1px solid ${C.amarillo}`, font: '400 12px/1.5 var(--font)', color: '#FCD34D', display: 'grid', gap: 4, borderRadius: 'var(--radio-md)' }}>
+    <div style={{ margin: '16px 0 0', padding: '10px 14px', background: 'rgba(235,170,66,.2)', border: `1px solid ${C.amarillo}`, font: '400 12px/1.5 var(--font)', color: '#F2C26B', display: 'grid', gap: 4, borderRadius: 'var(--radio-md)' }}>
       <strong>Datos que faltan para que esta vista sea exacta</strong>
       {avisos.map((a, i) => <span key={i}>· {a}</span>)}
     </div>
   )
 }
 
-const Est = ({ on }) => (on ? <span title="Incluye kilómetros o datos estimados" style={{ marginLeft: 6, padding: '1px 5px', font: '700 9px var(--font)', letterSpacing: '.06em', textTransform: 'uppercase', background: 'rgba(245,158,11,.2)', color: '#FBBF24', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)' }}>est.</span> : null)
+const Est = ({ on }) => (on ? <span title="Incluye kilómetros o datos estimados" style={{ marginLeft: 6, padding: '1px 5px', font: '700 9px var(--font)', letterSpacing: '.06em', textTransform: 'uppercase', background: 'rgba(235,170,66,.2)', color: '#FBBF24', border: `1px solid ${C.amarillo}`, borderRadius: 'var(--radio-md)' }}>est.</span> : null)
 const SinDato = ({ children = 'Sin contrato' }) => <span style={{ font: '600 11px var(--font)', color: C.gris }}>{children}</span>
 const Margen = ({ p }) => (p === null || p === undefined ? <SinDato>—</SinDato>
-  : <span style={{ fontWeight: 700, color: p < 0.2 ? '#FCA5A5' : '#6EE7B7', background: p < 0.2 ? 'rgba(239,68,68,.2)' : undefined, padding: p < 0.2 ? '2px 6px' : 0 }}>{pct(p)}</span>)
+  : <span style={{ fontWeight: 700, color: p < 0.2 ? '#FCA5A5' : '#6EE7B7', background: p < 0.2 ? 'rgba(239,98,93,.2)' : undefined, padding: p < 0.2 ? '2px 6px' : 0 }}>{pct(p)}</span>)
 const Plata = ({ v }) => (v === null || v === undefined ? <SinDato>—</SinDato> : <span style={{ fontWeight: 700, color: v < 0 ? '#FCA5A5' : '#6EE7B7' }}>{$(v)}</span>)
 
 function Tabla({ cols, filas, onFila, vacio = 'Sin datos para este mes.', min = 640, pie }) {
@@ -301,7 +301,7 @@ function GraficoEquilibrio({ e }) {
         <line x1={L} x2={W - R} y1={Y(0)} y2={Y(0)} stroke={C.borde} strokeWidth="2" />
         <line x1={X(0)} x2={X(xMax)} y1={Y(e.CF)} y2={Y(e.CF)} stroke={C.gris} strokeDasharray="4 4" />
         <line x1={X(0)} x2={X(xMax)} y1={Y(cost(0))} y2={Y(cost(xMax))} stroke={C.amarillo} strokeWidth="3" />
-        <line x1={X(0)} x2={X(xMax)} y1={Y(ing(0))} y2={Y(ing(xMax))} stroke={C.azulClaro} strokeWidth="3" style={{ filter: 'drop-shadow(0 0 4px rgba(24,184,255,.6))' }} />
+        <line x1={X(0)} x2={X(xMax)} y1={Y(ing(0))} y2={Y(ing(xMax))} stroke={C.azulClaro} strokeWidth="3" />
         <line x1={X(pe)} x2={X(pe)} y1={Y(0)} y2={Y(ing(pe))} stroke={C.rojo} strokeWidth="2" />
         <circle cx={X(pe)} cy={Y(ing(pe))} r="6" fill={C.rojo} />
         <text x={X(pe) + 8} y={Y(ing(pe)) - 8} fontFamily="Archivo" fontSize="12" fontWeight="700" fill={C.rojo}>Equilibrio · {etq(pe)}</text>
@@ -309,7 +309,7 @@ function GraficoEquilibrio({ e }) {
         <text x={X(actual) + 6} y={T + 12} fontFamily="Archivo" fontSize="12" fontWeight="700" fill={C.verde}>Hoy · {etq(actual)}</text>
         <text x={W - R} y={H - 4} textAnchor="end" fontFamily="Archivo" fontSize="11" fill={C.gris}>{porAseo ? 'Aseos al mes' : 'Ingreso al mes'}</text>
       </svg>
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8, font: '400 12px var(--font)', color: '#DCE6F2' }}>
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8, font: '400 12px var(--font)', color: '#B8C9DE' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 14, height: 3, background: C.azul }} />Ingresos</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 14, height: 3, background: C.amarillo }} />Costo total (fijos + variables)</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 14, height: 0, borderTop: `2px dashed ${C.gris}` }} />Costos fijos</span>
@@ -482,7 +482,7 @@ function Tendencia({ t }) {
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${t.length}, minmax(0, 120px))`, gap: 12, marginTop: 6 }}>
           {t.map((x) => <div key={x.mes} style={{ font: '400 10px var(--font)', color: C.gris, textAlign: 'center' }}>{mesLargo(x.mes).slice(0, 3)} {x.mes.slice(2, 4)}</div>)}
         </div>
-        <div style={{ display: 'flex', gap: 16, marginTop: 10, font: '400 12px var(--font)', color: '#DCE6F2' }}>
+        <div style={{ display: 'flex', gap: 16, marginTop: 10, font: '400 12px var(--font)', color: '#B8C9DE' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 11, height: 11, background: C.azul }} />Contratos vigentes</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 11, height: 11, background: C.amarillo }} />Costos registrados</span>
         </div>

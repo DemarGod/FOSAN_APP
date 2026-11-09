@@ -29,7 +29,7 @@ export default function Tabbar() {
   const estilo = (activo) => ({
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, minHeight: 58,
     textDecoration: 'none', border: 0, cursor: 'pointer', background: activo ? C.tinte : 'var(--lateral)',
-    color: activo ? '#7CC4FF' : '#DCE6F2', font: '400 10px var(--font)',
+    color: activo ? '#8CC3F7' : '#B8C9DE', font: '400 10px var(--font)',
   })
   return (
     <>
@@ -37,7 +37,7 @@ export default function Tabbar() {
         <div className="tabbar" onClick={() => setAbierto(false)} style={{ position: 'fixed', inset: 0, zIndex: 30, background: 'rgba(2,6,14,.7)' }}>
           <nav onClick={(e) => e.stopPropagation()} style={{
             position: 'absolute', left: 0, right: 0, bottom: 60, maxHeight: '75vh', overflowY: 'auto',
-            background: '#1A3663', borderRadius: '12px 12px 0 0', padding: '8px 0 12px',
+            background: '#102542', borderRadius: '12px 12px 0 0', padding: '8px 0 12px',
           }}>
             {items.map((n) => (
               <NavLink key={n.to} to={n.to} end={n.fin} style={({ isActive }) => item(isActive)}>
@@ -69,6 +69,6 @@ export default function Tabbar() {
 const item = (activo) => ({
   width: 'calc(100% - 16px)', margin: '2px 8px', display: 'flex', alignItems: 'center', gap: 12,
   padding: '12px 14px', boxSizing: 'border-box', border: 0, cursor: 'pointer', textAlign: 'left',
-  background: activo ? 'var(--degradado)' : 'transparent', color: activo ? '#fff' : '#DCE6F2',
+  background: activo ? 'var(--degradado)' : 'transparent', color: activo ? '#fff' : '#B8C9DE',
   font: `${activo ? 600 : 400} 15px/1.2 var(--font)`, textDecoration: 'none', borderRadius: 10,
 })

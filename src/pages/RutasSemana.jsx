@@ -80,7 +80,7 @@ export default function RutasSemana() {
       <Aviso error={error} />
 
       {pendientes.length > 0 && (
-        <div style={{ border: `1px solid ${C.amarillo}`, background: 'rgba(245,158,11,.10)', padding: '12px 14px', marginBottom: 16, display: 'grid', gap: 6, borderRadius: 'var(--radio-md)' }}>
+        <div style={{ border: `1px solid ${C.amarillo}`, background: 'rgba(235,170,66,.10)', padding: '12px 14px', marginBottom: 16, display: 'grid', gap: 6, borderRadius: 'var(--radio-md)' }}>
           <strong style={{ font: '700 13px var(--font)', color: C.navy }}>{pendientes.length} entrega(s) o retiro(s) sin ruta</strong>
           {pendientes.slice(0, 6).map((d) => (
             <span key={d.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', font: '400 12px var(--font)' }}>

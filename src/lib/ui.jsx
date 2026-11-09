@@ -3,23 +3,24 @@
 // Sistema de diseño FOSAN · tema oscuro corporativo (noviembre 2026). Mismos valores que :root en src/index.css.
 // Los nombres se mantienen para no tocar las pantallas: "blanco" es el fondo de tarjeta, "navy" el texto de títulos.
 export const C = {
-  navy: '#F1F5FA',      // títulos y texto destacado
-  azul: '#078BFA',      // azul eléctrico: botones, selección, enlaces
-  azulClaro: '#18B8FF', // azul luminoso: íconos, foco, acentos
-  azulOscuro: '#064B9B',
-  blanco: '#1E3B68',    // fondo de tarjetas y paneles
-  verde: '#00C98D',
-  amarillo: '#F59E0B',
-  rojo: '#EF4444',
-  borde: '#4069A0',
-  tinte: 'rgba(7,139,250,.18)',   // fondo azul translúcido (selección, ayuda)
-  suave: '#234473',     // fondo secundario
-  fila: '#2A4D7E',      // separadores y pistas de barras
-  thead: '#234473',
-  gris: '#DCE6F2',      // texto secundario
-  tinta: '#F1F5FA',     // texto principal
-  fondo: '#16305A',
-  lateral: '#1A3663',
+  navy: '#F1F5FB',      // títulos y texto destacado
+  azul: '#3989E8',      // azul corporativo: botones, selección, enlaces
+  azulClaro: '#58A9F5', // azul claro: íconos, foco, acentos
+  azulOscuro: '#2B6CB8',
+  blanco: '#1D385E',    // fondo de tarjetas y paneles
+  verde: '#54C99A',
+  amarillo: '#EBAA42',
+  rojo: '#EF625D',
+  morado: '#B77AE5',
+  borde: '#345477',
+  tinte: 'rgba(57,137,232,.18)',   // fondo azul translúcido (selección, ayuda)
+  suave: '#223F67',     // fondo secundario
+  fila: '#284A73',      // separadores y pistas de barras
+  thead: '#223F67',
+  gris: '#B8C9DE',      // texto secundario
+  tinta: '#F1F5FB',     // texto principal
+  fondo: '#142B4D',
+  lateral: '#102542',
 }
 
 export const I = {

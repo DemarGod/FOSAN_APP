@@ -79,7 +79,7 @@ export default function Login() {
           {error && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10, padding: '11px 13px',
-              background: 'rgba(239,68,68,.12)', border: `1px solid rgba(239,68,68,.5)`,
+              background: 'rgba(239,98,93,.12)', border: `1px solid rgba(239,98,93,.5)`,
               font: '400 13px/1.45 var(--font)', color: '#FCA5A5', borderRadius: 10 }}>
               <Icon d={I.alert} size={17} color={C.rojo} />
               <span>{error}</span>
@@ -103,33 +103,23 @@ export default function Login() {
   )
 }
 
-// Ondas y líneas abstractas azules del fondo (SVG, sin imágenes externas)
+// Líneas abstractas azules y discretas del fondo (SVG, sin imágenes externas ni brillos)
 function Ondas() {
   return (
     <svg className="login-ondas" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <defs>
         <linearGradient id="onda-a" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#078BFA" stopOpacity="0" />
-          <stop offset=".5" stopColor="#18B8FF" stopOpacity=".55" />
-          <stop offset="1" stopColor="#078BFA" stopOpacity="0" />
+          <stop offset="0" stopColor="#3989E8" stopOpacity="0" />
+          <stop offset=".5" stopColor="#58A9F5" stopOpacity=".55" />
+          <stop offset="1" stopColor="#3989E8" stopOpacity="0" />
         </linearGradient>
-        <filter id="onda-brillo" x="-10%" y="-50%" width="120%" height="200%"><feGaussianBlur stdDeviation="3" /></filter>
-        <radialGradient id="onda-luz" cx=".75" cy=".35" r=".6">
-          <stop offset="0" stopColor="#078BFA" stopOpacity=".28" />
-          <stop offset="1" stopColor="#16305A" stopOpacity="0" />
-        </radialGradient>
       </defs>
-      <rect width="1440" height="900" fill="url(#onda-luz)" />
-      {[0, 3, 6].map((i) => (
-        <path key={'g' + i} fill="none" stroke="url(#onda-a)" strokeWidth="6" opacity=".55" filter="url(#onda-brillo)"
-          d={`M-50 ${560 + i * 22} C 300 ${420 + i * 18}, 620 ${760 - i * 10}, 980 ${560 + i * 12} S 1400 ${380 + i * 20}, 1500 ${470 + i * 16}`} />
-      ))}
       {Array.from({ length: 9 }, (_, i) => (
-        <path key={i} fill="none" stroke="url(#onda-a)" strokeWidth={i % 3 === 0 ? 2 : 0.9} opacity={0.45 + (i % 3) * 0.18}
+        <path key={i} fill="none" stroke="url(#onda-a)" strokeWidth={i % 3 === 0 ? 1.4 : 0.8} opacity={0.25 + (i % 3) * 0.1}
           d={`M-50 ${560 + i * 22} C 300 ${420 + i * 18}, 620 ${760 - i * 10}, 980 ${560 + i * 12} S 1400 ${380 + i * 20}, 1500 ${470 + i * 16}`} />
       ))}
       {Array.from({ length: 5 }, (_, i) => (
-        <path key={'b' + i} fill="none" stroke="url(#onda-a)" strokeWidth="0.8" opacity=".35"
+        <path key={'b' + i} fill="none" stroke="url(#onda-a)" strokeWidth="0.8" opacity=".2"
           d={`M-50 ${180 + i * 26} C 400 ${120 + i * 30}, 900 ${300 - i * 12}, 1500 ${140 + i * 24}`} />
       ))}
     </svg>

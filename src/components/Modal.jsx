@@ -59,7 +59,7 @@ export default function Modal({ titulo, ancho = 820, onCerrar, pie, children, gu
     }}>
       <div onClick={(e) => e.stopPropagation()} onInput={marcar} onChange={marcar} style={{
         background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', overflow: 'hidden', margin: 'auto 0', width: `min(${ancho}px, 100%)`,
-        boxShadow: '0 24px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(24,184,255,.08)',
+        boxShadow: '0 16px 40px rgba(4,12,26,.45)',
       }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px',

@@ -93,11 +93,11 @@ export default function InvInsumos() {
           <span>Artículos activos</span><b>{lista ? datos.filter((i) => i.activo).length : '…'}</b>
         </button>
         <button type="button" className="indicador" onClick={() => filtrar({ alerta: 'bajo' })}
-          style={{ display: 'block', textAlign: 'left', cursor: 'pointer', background: 'rgba(245,158,11,.2)', borderColor: 'rgba(245,158,11,.45)' }}>
+          style={{ display: 'block', textAlign: 'left', cursor: 'pointer', background: 'rgba(235,170,66,.2)', borderColor: 'rgba(235,170,66,.45)' }}>
           <span>Bajo mínimo</span><b>{lista ? datos.filter((i) => ['bajo', 'sin'].includes(alerta(i))).length : '…'}</b>
         </button>
         <button type="button" className="indicador" onClick={() => filtrar({ alerta: 'vence' })}
-          style={{ display: 'block', textAlign: 'left', cursor: 'pointer', background: 'rgba(239,68,68,.2)', borderColor: 'rgba(239,68,68,.45)' }}>
+          style={{ display: 'block', textAlign: 'left', cursor: 'pointer', background: 'rgba(239,98,93,.2)', borderColor: 'rgba(239,98,93,.45)' }}>
           <span>Lotes próximos a vencer (30 días)</span><b>{lista ? lotesPorVencer(datos).length : '…'}</b>
         </button>
       </div>
@@ -546,7 +546,7 @@ function FormMovimiento({ inicial, articulos, ubic, onCerrar, onListo }) {
         </Campo>
 
         {revisar && art && (
-          <div style={{ padding: 14, borderRadius: 'var(--radio-md)', background: 'rgba(0,201,141,.2)', border: `1px solid ${C.verde}` }}>
+          <div style={{ padding: 14, borderRadius: 'var(--radio-md)', background: 'rgba(84,201,154,.2)', border: `1px solid ${C.verde}` }}>
             <b>Revisar</b>
             <div style={{ font: '600 15px var(--font)', margin: '4px 0' }}>{resumen()}</div>
             <small className="text-muted">Solo Confirmar registra el movimiento.</small>

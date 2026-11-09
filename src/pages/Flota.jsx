@@ -66,9 +66,9 @@ export default function Flota() {
 
   const KPIS = [
     ['', 'Activos', C.blanco, activos.length],
-    ['disponible', 'Disponibles', 'rgba(0,201,141,.2)', cuenta('disponible')],
-    ['en_ruta', 'En ruta', 'rgba(7,139,250,.18)', cuenta('en_ruta')],
-    ['mantenimiento', 'En mantenimiento', 'rgba(245,158,11,.2)', cuenta('mantenimiento')],
+    ['disponible', 'Disponibles', 'rgba(84,201,154,.2)', cuenta('disponible')],
+    ['en_ruta', 'En ruta', 'rgba(57,137,232,.18)', cuenta('en_ruta')],
+    ['mantenimiento', 'En mantenimiento', 'rgba(235,170,66,.2)', cuenta('mantenimiento')],
   ]
 
   return (

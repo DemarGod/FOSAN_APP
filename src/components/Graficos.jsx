@@ -2,11 +2,11 @@
 // Reglas: marcas finas con extremos redondeados, eje Y único, cuadrícula suave, leyenda siempre que hay ≥ 2 series,
 // valores con color de texto (no del color de la serie), tooltip al pasar el mouse y opción "Ver tabla" en cada tarjeta.
 // Colores categóricos para fondo oscuro (orden fijo): azul eléctrico, coral, verde, ámbar, rosa.
-// Barras con degradado, cuadrícula discreta, tooltip oscuro con borde azul y animación suave al cargar.
+// Barras con leve degradado, cuadrícula discreta, tooltip plano con borde y animación breve al cargar (sin brillos).
 import { useId, useState } from 'react'
 import { C } from '../lib/ui'
 
-export const SERIE = ['#078BFA', '#FF6B4A', '#00C98D', '#F59E0B', '#F472B6']
+export const SERIE = ['#3989E8', '#E8875F', '#54C99A', '#EBAA42', '#B77AE5']
 const n = (x) => Number(x || 0).toLocaleString('es-CL')
 
 // Tarjeta de gráfico: título, subtítulo, acción "Ver tabla" y el contenido
@@ -64,7 +64,7 @@ function useTip() {
   }
   const Tip = () => (tip ? (
     <div style={{ position: 'absolute', left: tip.x, top: tip.y - 10, transform: 'translate(-50%, -100%)', pointerEvents: 'none',
-      background: 'rgba(22,48,90,.95)', color: '#F1F5FA', border: '1px solid rgba(24,184,255,.55)', boxShadow: '0 8px 24px rgba(0,0,0,.5), 0 0 12px rgba(7,139,250,.25)',
+      background: '#1D385E', color: '#F1F5FB', border: '1px solid #4A6B91', boxShadow: '0 4px 12px rgba(4,12,26,.35)',
       padding: '7px 10px', borderRadius: 8, font: '600 12px/1.4 var(--font)', whiteSpace: 'pre', zIndex: 5 }}>{tip.texto}</div>
   ) : null)
   return { mostrar, ocultar: () => setTip(null), Tip }
@@ -81,7 +81,7 @@ const corto = (v) => (v >= 1e6 ? `${(v / 1e6).toLocaleString('es-CL', { maximumF
 
 // Barras verticales agrupadas: etiquetas (eje X) y series [{ l, c, datos: [] }]
 // Degradado vertical de una barra: del color de la serie (abajo) a una versión luminosa (arriba)
-const luminoso = (c) => (c?.toUpperCase() === '#078BFA' ? '#18B8FF' : c)
+const luminoso = (c) => (c?.toUpperCase() === '#3989E8' ? '#58A9F5' : c)
 function DefsDegradado({ id, series }) {
   return (
     <defs>
@@ -111,7 +111,7 @@ export function Barras({ etiquetas, series, alto = 210, fmt = n, onBarra }) {
         <DefsDegradado id={gid} series={series} />
         {pasos.map((p) => (
           <g key={p}>
-            <line x1={izq} x2={ancho - 4} y1={y(p)} y2={y(p)} stroke="rgba(155,174,197,.12)" strokeWidth={1} strokeDasharray="3 4" />
+            <line x1={izq} x2={ancho - 4} y1={y(p)} y2={y(p)} stroke="rgba(184,201,222,.12)" strokeWidth={1} strokeDasharray="3 4" />
             <text x={izq - 6} y={y(p) + 4} textAnchor="end" fontSize="13" fill={C.gris} style={{ fontFamily: "var(--font)" }}>{corto(p)}</text>
           </g>
         ))}
@@ -135,14 +135,14 @@ export function Barras({ etiquetas, series, alto = 210, fmt = n, onBarra }) {
             </g>
           )
         })}
-        <line x1={izq} x2={ancho - 4} y1={arriba + h} y2={arriba + h} stroke="rgba(155,174,197,.25)" strokeWidth={1} />
+        <line x1={izq} x2={ancho - 4} y1={arriba + h} y2={arriba + h} stroke="rgba(184,201,222,.25)" strokeWidth={1} />
       </svg>
       <Tip />
     </div>
   )
 }
 
-// Líneas con área (estilo de las tarjetas KPI): líneas luminosas de 2,5 px, área con degradado transparente,
+// Líneas con área (estilo de las tarjetas KPI): líneas de 2,4 px sin brillo, área con degradado transparente,
 // guía vertical y puntos al pasar el mouse, tooltip con todas las series. series [{ l, c, datos: [] }]
 const curva = (p) => {
   // Curva suave que pasa por todos los puntos sin "pasarse" por debajo de 0 (monótona por tramos)
@@ -184,34 +184,34 @@ export function Lineas({ etiquetas, series, alto = 210, fmt = n, onPunto }) {
         </defs>
         {pasos.map((p) => (
           <g key={p}>
-            <line x1={izq} x2={ancho - der} y1={Y(p)} y2={Y(p)} stroke="rgba(155,174,197,.12)" strokeWidth={1} strokeDasharray="3 4" />
+            <line x1={izq} x2={ancho - der} y1={Y(p)} y2={Y(p)} stroke="rgba(184,201,222,.12)" strokeWidth={1} strokeDasharray="3 4" />
             <text x={izq - 8} y={Y(p) + 4} textAnchor="end" fontSize="13" fill={C.gris} style={{ fontFamily: 'var(--font)' }}>{corto(p)}</text>
           </g>
         ))}
         {etiquetas.map((et, i) => (
           <text key={et + i} x={X(i)} y={alto - 8} textAnchor="middle" fontSize="14" fill={sel === i ? C.tinta : C.gris} style={{ fontFamily: 'var(--font)' }}>{et}</text>
         ))}
-        {sel != null && <line x1={X(sel)} x2={X(sel)} y1={arriba} y2={arriba + h} stroke="rgba(24,184,255,.45)" strokeWidth={1} strokeDasharray="4 4" />}
+        {sel != null && <line x1={X(sel)} x2={X(sel)} y1={arriba} y2={arriba + h} stroke="rgba(88,169,245,.45)" strokeWidth={1} strokeDasharray="4 4" />}
         {/* Áreas primero (abajo) y luego las líneas */}
         {series.map((s, j) => (
           <path key={'a' + j} className="g-arco" d={`${curva(pts[j])} L${X(etiquetas.length - 1)},${arriba + h} L${X(0)},${arriba + h} Z`} fill={`url(#${gid}-${j})`} />
         ))}
         {series.map((s, j) => (
-          <path key={'l' + j} className="g-linea" d={curva(pts[j])} fill="none" stroke={s.c} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"
-            pathLength="1" style={{ filter: `drop-shadow(0 0 5px ${s.c}aa)`, animationDelay: `${j * 120}ms` }} />
+          <path key={'l' + j} className="g-linea" d={curva(pts[j])} fill="none" stroke={s.c} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
+            pathLength="1" style={{ animationDelay: `${j * 120}ms` }} />
         ))}
         {/* Último punto destacado y puntos del mes elegido */}
         {series.map((s, j) => {
           const [x, y] = pts[j][pts[j].length - 1]
-          return <circle key={'u' + j} cx={x} cy={y} r="3.5" fill={s.c} style={{ filter: `drop-shadow(0 0 5px ${s.c})` }} />
+          return <circle key={'u' + j} cx={x} cy={y} r="3.5" fill={s.c} />
         })}
         {sel != null && series.map((s, j) => (
-          <circle key={'p' + j} cx={pts[j][sel][0]} cy={pts[j][sel][1]} r="5" fill="#16305A" stroke={s.c} strokeWidth="2.5" />
+          <circle key={'p' + j} cx={pts[j][sel][0]} cy={pts[j][sel][1]} r="5" fill="#142B4D" stroke={s.c} strokeWidth="2.5" />
         ))}
       </svg>
       {sel != null && (
         <div style={{ position: 'absolute', left: `${(X(sel) / ancho) * 100}%`, top: 24, transform: `translateX(${sel > etiquetas.length / 2 ? 'calc(-100% - 12px)' : '12px'})`, pointerEvents: 'none',
-          background: 'rgba(22,48,90,.95)', color: '#F1F5FA', border: '1px solid rgba(24,184,255,.55)', boxShadow: '0 8px 24px rgba(0,0,0,.5), 0 0 12px rgba(7,139,250,.25)',
+          background: '#1D385E', color: '#F1F5FB', border: '1px solid #4A6B91', boxShadow: '0 4px 12px rgba(4,12,26,.35)',
           padding: '8px 11px', borderRadius: 8, font: '600 12px/1.5 var(--font)', whiteSpace: 'nowrap', zIndex: 5 }}>
           <div style={{ color: C.gris, fontWeight: 500 }}>{etiquetas[sel]}</div>
           {series.map((s) => (
@@ -235,9 +235,9 @@ export function BarrasH({ items, color = SERIE[0], fmt = n, vacio = 'Sin datos.'
         <button key={it.l} type="button" onClick={it.onClick} title={`${it.l}: ${fmt(it.v)}`}
           style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 38%) 1fr auto', alignItems: 'center', gap: 10, border: 0, background: 'transparent', padding: 0, textAlign: 'left', cursor: it.onClick ? 'pointer' : 'default' }}>
           <span style={{ font: '400 13px var(--font)', color: C.tinta, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.l}</span>
-          <span style={{ height: 10, background: 'rgba(155,174,197,.10)', borderRadius: 999, overflow: 'hidden' }}>
+          <span style={{ height: 10, background: 'rgba(184,201,222,.10)', borderRadius: 999, overflow: 'hidden' }}>
             <span className="g-barra-h" style={{ display: 'block', height: '100%', width: `${(Number(it.v) / max) * 100}%`, minWidth: Number(it.v) ? 6 : 0, borderRadius: 999,
-              background: `linear-gradient(90deg, ${it.c || color}, ${luminoso(it.c || color)})`, boxShadow: `0 0 10px ${(it.c || color)}55` }} />
+              background: it.c || color }} />
           </span>
           <b style={{ font: '700 13px var(--font)', color: C.tinta, minWidth: 28, textAlign: 'right' }}>{fmt(it.v)}</b>
         </button>
@@ -266,9 +266,9 @@ export function Dona({ partes, centro, sub }) {
   return (
     <div style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap', position: 'relative' }}>
       <svg viewBox="0 0 160 160" style={{ width: 150, height: 150, flex: 'none' }} onMouseLeave={ocultar}>
-        <circle cx={cx} cy={cy} r={(R + r) / 2} fill="none" stroke="rgba(155,174,197,.08)" strokeWidth={R - r} />
+        <circle cx={cx} cy={cy} r={(R + r) / 2} fill="none" stroke="rgba(184,201,222,.08)" strokeWidth={R - r} />
         {arcos.map((a, k) => (
-          <path key={a.l} className="g-arco" d={a.d} fill={a.c} fillRule="evenodd" style={{ cursor: a.onClick ? 'pointer' : 'default', animationDelay: `${k * 80}ms`, filter: `drop-shadow(0 0 4px ${a.c}66)` }} onClick={a.onClick}
+          <path key={a.l} className="g-arco" d={a.d} fill={a.c} fillRule="evenodd" style={{ cursor: a.onClick ? 'pointer' : 'default', animationDelay: `${k * 80}ms` }} onClick={a.onClick}
             onMouseMove={(e) => mostrar(e, `${a.l}: ${n(a.v)} (${Math.round((100 * a.v) / total)} %)`)} />
         ))}
         <text x={cx} y={cy + 2} textAnchor="middle" fontSize="24" fontWeight="700" fill={C.tinta} style={{ fontFamily: "var(--font)" }}>{centro ?? n(total)}</text>
@@ -277,7 +277,7 @@ export function Dona({ partes, centro, sub }) {
       <div style={{ display: 'grid', gap: 7, flex: '1 1 140px' }}>
         {partes.map((p) => (
           <button key={p.l} type="button" onClick={p.onClick} style={{ display: 'flex', alignItems: 'center', gap: 8, border: 0, background: 'transparent', padding: 0, cursor: p.onClick ? 'pointer' : 'default', font: '400 13px var(--font)', color: C.tinta, textAlign: 'left' }}>
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: p.c, flex: 'none', boxShadow: `0 0 6px ${p.c}88` }} />
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: p.c, flex: 'none' }} />
             <span style={{ flex: 1 }}>{p.l}</span>
             <b>{n(p.v)}</b>
             <span style={{ color: C.gris, width: 38, textAlign: 'right' }}>{total ? `${Math.round((100 * p.v) / total)} %` : '—'}</span>
@@ -290,7 +290,7 @@ export function Dona({ partes, centro, sub }) {
 }
 
 // Mini tendencia (sparkline) para las tarjetas de indicadores. Solo se usa con datos históricos reales.
-export function Sparkline({ datos = [], color = '#18B8FF', ancho = 96, alto = 34, titulo }) {
+export function Sparkline({ datos = [], color = '#58A9F5', ancho = 96, alto = 34, titulo }) {
   const gid = 'sp' + useId().replace(/:/g, '')
   const v = datos.map(Number)
   if (v.length < 2 || v.every((x) => !x)) return null
@@ -306,7 +306,7 @@ export function Sparkline({ datos = [], color = '#18B8FF', ancho = 96, alto = 34
         </linearGradient>
       </defs>
       <path d={`${linea} L${pts[pts.length - 1][0]},${alto} L${pts[0][0]},${alto} Z`} fill={`url(#${gid})`} />
-      <path d={linea} fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
+      <path d={linea} fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
       <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="2.6" fill={color} />
     </svg>
   )

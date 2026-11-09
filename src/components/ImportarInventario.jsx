@@ -119,7 +119,7 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
     }>
       <div style={{ padding: 18, display: 'grid', gap: 14 }}>
         {resultado ? (
-          <div style={{ display: 'grid', gap: 8, padding: 16, background: 'rgba(0,201,141,.2)', border: `1px solid ${C.verde}`, font: '400 13px/1.6 var(--font)', color: '#6EE7B7', borderRadius: 'var(--radio-md)' }}>
+          <div style={{ display: 'grid', gap: 8, padding: 16, background: 'rgba(84,201,154,.2)', border: `1px solid ${C.verde}`, font: '400 13px/1.6 var(--font)', color: '#6EE7B7', borderRadius: 'var(--radio-md)' }}>
             <strong style={{ font: '700 15px var(--font)' }}>Importación terminada</strong>
             <span>{resultado.creados} baño(s) nuevos · {resultado.actualizados} actualizados · {resultado.omitidos} omitidos por error</span>
             <span>Se crearon {resultado.modelos} modelo(s), {resultado.clientes} cliente(s) y {resultado.ubicaciones} ubicación(es).</span>
@@ -163,7 +163,7 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
                     <thead><tr><th>Fila</th><th>Código</th><th>Modelo</th><th>Color</th><th>Estado</th><th>Cliente</th><th>Ubicación</th><th>Observación</th></tr></thead>
                     <tbody>
                       {[...malas, ...conAviso, ...ok.filter((f) => !f.aviso)].slice(0, 60).map((f) => (
-                        <tr key={f.n} style={{ background: f.problema ? 'rgba(239,68,68,.2)' : f.aviso ? 'rgba(245,158,11,.2)' : undefined }}>
+                        <tr key={f.n} style={{ background: f.problema ? 'rgba(239,98,93,.2)' : f.aviso ? 'rgba(235,170,66,.2)' : undefined }}>
                           <td>{f.n}</td><td>{f.codigo}</td><td>{f.modelo || '—'}</td><td>{f.color || '—'}</td>
                           <td>{f.estado ? L_ESTADO_ACTIVO[f.estado] : '—'}</td><td>{f.cliente || '—'}</td><td>{f.ubicacion || '—'}</td>
                           <td>{f.problema || f.aviso || ''}</td>
@@ -179,7 +179,7 @@ export default function ImportarInventario({ onCerrar, onImportado }) {
             )}
           </>
         )}
-        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.2)', border: `1px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
+        {error && <div style={{ padding: '10px 12px', background: 'rgba(239,98,93,.2)', border: `1px solid ${C.rojo}`, font: '400 12px var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-sm)' }}>{error}</div>}
       </div>
     </Modal>
   )
