@@ -26,6 +26,7 @@ const L_MODALIDAD = { puntual: 'Puntual', recurrente: 'Recurrente' }
 const PROHIBIDO = 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM5.6 5.6l12.8 12.8'
 const chico = { minHeight: 34, padding: '6px 12px' }
 const diasL = (arr) => DIAS.filter((d) => (arr || []).includes(d.v)).map((d) => d.l).join(' · ') || '—'
+const porNumero = (a, b) => String(a.codigo).localeCompare(String(b.codigo), 'es', { numeric: true })
 
 export default function ServiciosCliente({ cliente, editable, finanzas, onCambio }) {
   const navegar = useNavigate()
@@ -51,6 +52,7 @@ export default function ServiciosCliente({ cliente, editable, finanzas, onCambio
             { k: 'codigo', label: 'Código', ancho: 90 },
             { k: 'tipo', label: 'Tipo de servicio', render: (x) => L_TIPO_SERV[x.tipo] || x.tipo },
             { k: 'ubicacion', label: 'Ubicación', render: (x) => x.ubicaciones?.nombre || '—' },
+            { k: 'unidades', label: 'Baños asignados', render: (x) => <BanosAsignados s={x} onVer={(b) => navegar(`/activo/${b.qr_token}`)} /> },
             { k: 'inicio', label: 'Inicio', render: (x) => fecha(x.fecha_inicio) },
             { k: 'termino', label: 'Término', render: (x) => (x.fecha_termino ? fecha(x.fecha_termino) : 'Sin término') },
             { k: 'estado', label: 'Vigencia', render: (x) => <Estado tono={x.estado === 'vigente' ? 'ok' : 'neutro'}>{x.estado === 'vigente' ? 'Vigente' : 'Finalizado'}</Estado> },
@@ -80,6 +82,23 @@ export default function ServiciosCliente({ cliente, editable, finanzas, onCambio
       {form && <FormServicio cliente={cliente} servicio={form} finanzas={finanzas} onCerrar={() => setForm(null)} onGuardado={listo} />}
       {detalle && <DetalleServicio servicio={detalle} finanzas={finanzas} onCerrar={() => setDetalle(null)} />}
       {finalizar && <Finalizar servicio={finalizar} onCerrar={() => setFinalizar(null)} onListo={listo} />}
+    </div>
+  )
+}
+
+// ── Baños FOSAN asignados a un servicio de arriendo (N.º → ficha del equipo) ──
+function BanosAsignados({ s, onVer }) {
+  if (s.tipo !== 'arriendo_limpieza') return '—'
+  const banos = [...(s.activos || [])].sort(porNumero)
+  if (!banos.length) return <span className="text-muted">Ninguno</span>
+  return (
+    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', maxWidth: 260 }}>
+      {banos.map((b) => (
+        <button key={b.codigo} type="button" onClick={() => onVer(b)} title={`Ver ficha del baño ${b.codigo}`}
+          style={{ border: 0, cursor: 'pointer', padding: '2px 8px', borderRadius: 'var(--radio-sm)', background: C.tinte, color: C.azul, font: '600 12px var(--font)' }}>
+          {b.codigo}
+        </button>
+      ))}
     </div>
   )
 }

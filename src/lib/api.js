@@ -201,10 +201,13 @@ export const guardarUbicacion = async (clienteId, id, datos) => {
   if (error) throw error
 }
 
+// Incluye los baños FOSAN que hoy están en arriendo con cada servicio (activos.servicio_id)
 export const serviciosDe = (clienteId) => rows(
-  supabase.from('servicios_cliente').select('*, ubicaciones(nombre)').eq('cliente_id', clienteId)
+  supabase.from('servicios_cliente').select('*, ubicaciones(nombre), activos!servicio_id(codigo, qr_token, estado)').eq('cliente_id', clienteId)
+    .eq('activos.estado', 'en_arriendo')
     .order('estado', { ascending: false }).order('fecha_inicio', { ascending: false })
 )
+
 // ── Servicios del cliente (A, B, C) y equipos externos ───────────────────
 export const categoriasEquipo = () => rows(
   supabase.from('categorias').select('id, nombre').eq('clase', 'equipo').eq('activo', true).order('nombre')
