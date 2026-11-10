@@ -1,85 +1,92 @@
-# Conectar FOSAN a Supabase, GitHub y Netlify
+# Base de datos de FOSAN (Supabase / PostgreSQL)
 
-Todo el modelo de datos vive en esta carpeta. Se ejecuta una sola vez, en orden.
+Esta carpeta tiene todo lo necesario para entender, revisar o volver a montar la base de datos de la app.
 
-## 1. Base de datos en Supabase
+```
+supabase/
+├── README.md        ← este archivo
+├── esquema/         ← CÓMO ESTÁ LA BASE HOY (fuente de verdad)
+│   ├── 00_extensiones_tipos.sql
+│   ├── 01_tablas.sql
+│   ├── 02_funciones.sql
+│   ├── 03_vistas.sql
+│   ├── 04_triggers.sql
+│   ├── 05_seguridad.sql
+│   └── 06_storage.sql
+├── historial/       ← CÓMO SE LLEGÓ A ESO (scripts originales, en orden)
+│   └── README.md    ← índice: qué hizo cada script
+└── herramientas/
+    └── armar_esquema.py  ← regenera esquema/ desde la foto de la base
+```
 
-1. Crear el proyecto en [supabase.com](https://supabase.com) (región South America · São Paulo).
-2. Abrir **SQL Editor** y ejecutar, en este orden:
-   - `01_schema.sql` — tablas, vistas, triggers.
-   - `02_rls.sql` — permisos por rol y bucket de archivos.
-   - `03_seed.sql` — catálogos y datos de ejemplo.
-3. En **Authentication → Users → Add user**, crear los cuatro accesos con los correos que están en la tabla `accesos_autorizados` de `03_seed.sql`. El perfil y el rol se crean solos:
-   - `anselmo@fosan.cl` y `gonzalo@fosan.cl` quedan como `dueno` (control total).
-   - `usuario3@fosan.cl` y `usuario4@fosan.cl` quedan como `lectura` (consultan y exportan, no modifican).
-   Para cambiar los correos o agregar a alguien, edita `accesos_autorizados`; un correo que no esté en esa tabla no obtiene acceso.
-4. En **Project Settings → API**, copiar `Project URL` y `anon public key`.
+- **`esquema/`** se generó directamente desde la base de producción (no se escribió a mano), así que refleja exactamente lo que existe.
+  Si hay dudas entre `esquema/` e `historial/`, manda `esquema/`.
+- **`historial/`** sirve para entender *por qué* algo es como es (cada script explica el cambio en su encabezado).
+  **No** hay que volver a correrlo: varios scripts se corrigieron con otros posteriores.
 
-## 2. Qué guarda cada tabla
+Foto tomada el **10/11/2026**: 49 tablas, 93 funciones, 19 vistas, 73 triggers, 161 reglas de seguridad.
 
-| Tabla | Para qué |
+## Montar una base nueva (por ejemplo, para pruebas)
+
+1. Crear un proyecto en Supabase.
+2. En **SQL Editor**, correr los archivos de `esquema/` **en orden**: `00` → `01` → `02` → `03` → `04` → `05` → `06`.
+   (Si el editor avisa "creates a table without enabling RLS", elegir *Run without RLS*: la seguridad se activa en `05`.)
+3. Cargar los catálogos y datos (la foto trae la estructura, no los datos).
+4. Crear el primer usuario en **Authentication → Users** con un correo que esté en la tabla `accesos_autorizados`;
+   el trigger `trg_perfil_auth` le crea su perfil solo.
+
+Se probó montando los 7 archivos en un Postgres limpio: se crean sin errores y con la misma cantidad de tablas, funciones, vistas, triggers y reglas que producción.
+
+## Cómo está organizada
+
+### Módulos y tablas principales
+
+| Módulo de la app | Tablas |
 | --- | --- |
-| `perfiles` | Los cuatro accesos y su rol |
-| `clientes` | Empresa, contacto, comuna, contrato y coordenadas |
-| `ubicaciones` | Bodega, taller y faenas, con lat/lng para el mapa |
-| `modelos_bano` | Básico, Premium, Accesible y su valor de referencia |
-| `activos` | Una fila por unidad: baños, camiones, generadores, accesorios, con `qr_token` |
-| `vehiculos` | Patente, marca, capacidad, conductor, revisión técnica y permiso |
-| `movimientos_activo` | Trazabilidad: cada traslado y cambio de estado |
-| `documentos_activo` | Facturas, certificados y guías de cada unidad |
-| `observaciones_activo` | Notas de terreno por unidad |
-| `servicios` / `servicio_activos` | Arriendo, limpieza de baños y de fosas, con costo de transporte aparte |
-| `mantenciones` | Baños, camiones y camionetas en una sola tabla, con clase y costo |
-| `ventas` / `costos` | Facturación de Maxxa y costos, base de utilidades y márgenes |
-| `proveedores` / `insumos` / `compras` | Abastecimiento (SAYPOR concentra cerca del 90%) |
-| `eventos` | Calendario: mantenciones, pagos, servicios, alertas, reuniones |
-| `notificaciones` | Avisos de la campana |
+| Usuarios, roles y permisos | `perfiles`, `roles_app`, `permisos_rol`, `accesos_autorizados`, `personal` |
+| Clientes | `clientes`, `cliente_contactos`, `servicios_cliente`, `rubros` |
+| Inventario (baños y equipos) | `activos`, `modelos_bano`, `categorias`, `movimientos_activo`, `observaciones_activo`, `documentos_activo` |
+| Insumos y EPP | `insumos`, `insumo_lotes`, `insumo_existencias`, `movimientos_insumo`, `unidades_medida`, `receta_limpieza` |
+| Operaciones (entregas, retiros, limpiezas) | `despachos`, `despacho_banos`, `operacion_respaldos` |
+| Rutas | `rutas_semana`, `rutas_semana_lineas`, `salidas`, `salida_paradas`, `rutas`, `ruta_paradas` |
+| Flota | `vehiculos` (+ `activos` tipo camión/camioneta), `vehiculo_disponibilidad` |
+| Mantenimiento | `mantenciones` |
+| Finanzas y abastecimiento | `ventas`, `costos`, `compras`, `compra_lineas`, `proveedores`, `servicios`, `servicio_activos` |
+| Mapa | `ubicaciones` |
+| Calendario y avisos | `eventos`, `notificaciones` |
+| Sistema | `ajustes`, `parametros`, `auditoria` (historial de cambios), `importaciones`, `ocupacion_diaria`, `_vistas_42` (registro técnico del script 42) |
 
-## 3. Vistas que consume la app
+### Reglas importantes (las aplica la base, no solo la app)
 
-- Inicio: `v_resumen_inventario`, `v_estado_activos`, `v_servicios_mes`, `v_mapa_puntos`
-- Baños e inventario: `v_banos_kpi`, `v_inventario`
-- Clientes: `v_clientes_resumen`
-- Mantenciones: `v_mantenciones_kpi`
-- Utilidades y ventas: `v_ventas_mensual`, `v_utilidad_mensual`, `v_utilidad_por_servicio`, `v_top_clientes`
-- Exportación a Excel (una vista por pestaña del libro): `export_ingresos_costos`, `export_ventas_utilidad`, `export_servicios`, `export_activos`, `export_mantenciones`, `export_clientes`
+- **Nada se borra**: clientes, equipos y vehículos se *desactivan* o se *dan de baja* con fecha y motivo; el historial se conserva.
+- **Folios correlativos**: operaciones `D-00001`, mantenciones `MANT-###`, servicios, códigos de cliente (secuencias en `00`).
+- **Equipos externos** (del cliente) usan su propia serie `EXT-###`; nunca un número de unidad FOSAN.
+- **Nombres propios en MAYÚSCULAS**: clientes, ubicaciones, contactos y rutas (triggers en `04`).
+- **Un equipo "En mantenimiento" siempre tiene una orden abierta** (`asegurar_orden_mantencion`).
+- **Un baño no puede estar en dos entregas o dos retiros programados a la vez** (`validar_bano_unico`).
+- **La fecha de una operación debe estar dentro del servicio** del cliente (`validar_fecha_operacion`).
+- **Auditoría**: cada alta, cambio o eliminación queda en `auditoria` con quién, cuándo y qué cambió (`registrar_auditoria`).
 
-## 4. Códigos QR
+### Seguridad
 
-Cada activo nace con un `qr_token` único. El QR apunta a la ficha de esa unidad:
+- Todas las tablas tienen **RLS** (seguridad por filas) activada.
+- Permisos por **rol** y **sección**: `permisos_rol` define qué puede ver/editar cada rol en cada sección;
+  las funciones `es_dueno()`, `tiene_acceso()`, `permiso_seccion(seccion, nivel)`, `ve_finanzas()` y `es_planificador()` lo consultan.
+- El **operador** solo lee lo de su ruta: reglas restrictivas `op_limite` (ver `historial/42_seguridad_operador.sql`).
+- El acceso **anónimo** (sin iniciar sesión) a tablas y vistas está cerrado; el login usa la función `correo_para_login`.
+- Las acciones de la app (dar de baja, confirmar operación, cerrar mantención, crear usuario...) son **funciones `security definer`**
+  que validan permisos por dentro; la app las llama con `supabase.rpc('nombre', {...})`.
 
-```
-https://<tu-dominio>/activo/<qr_token>
-```
+### Archivos
 
-Nunca se repite entre unidades y sobrevive a cambios de código interno.
+Bucket `fosan` en Storage: respaldos de operaciones (fotos y firmas). Los documentos de vehículos y equipos se guardan como enlace (Drive).
 
-## 5. Variables de entorno
+## Cómo hacer cambios de aquí en adelante
 
-```
-VITE_SUPABASE_URL=https://xxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJ...
-```
+1. Escribir el cambio en un script nuevo: `historial/NN_descripcion.sql` (siguiente número libre), con un encabezado que explique qué hace y por qué.
+2. Correrlo en Supabase → SQL Editor.
+3. Volver a sacar la foto (`historial/46_foto_base_SOLO_LECTURA.sql` → Export → CSV) y regenerar `esquema/` con
+   `python supabase/herramientas/armar_esquema.py foto_base.csv supabase/esquema`, para que siga reflejando la base real.
+4. Subir todo a GitHub en el mismo commit que el cambio de la app.
 
-Nunca subir el archivo `.env` al repositorio: agregarlo a `.gitignore` antes del primer commit. Si ya se subió, rotar la clave en Supabase.
-
-## 6. GitHub
-
-```bash
-git init
-echo ".env" >> .gitignore
-git add .
-git commit -m "FOSAN: app y esquema de base de datos"
-git branch -M main
-git remote add origin https://github.com/<usuario>/fosan.git
-git push -u origin main
-```
-
-## 7. Netlify
-
-1. **Add new site → Import an existing project** y elegir el repositorio.
-2. La configuración ya viene en `netlify.toml`.
-3. En **Site settings → Environment variables**, agregar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
-4. En Supabase, **Authentication → URL Configuration**, agregar el dominio de Netlify a *Redirect URLs*.
-
-Cada push a `main` publica una nueva versión.
+No guardar scripts sueltos solo en el SQL Editor de Supabase: lo que no está en este repositorio, no existe para el próximo programador.

@@ -22,8 +22,9 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 
 ## 2. Base de datos
 
-El esquema está en la carpeta `supabase/` del proyecto original y ya fue ejecutado
-(`01_schema.sql` → `02_rls.sql` → `03_seed.sql`).
+Todo lo de la base de datos está en la carpeta `supabase/`; empieza por **`supabase/README.md`**:
+`supabase/esquema/` es la base tal como está hoy (generada desde producción) y `supabase/historial/`
+tiene los scripts originales en orden, con un índice de qué hizo cada uno.
 
 Los accesos se crean en **Supabase → Authentication → Users**, con los correos que
 están en la tabla `accesos_autorizados`. El perfil y el rol se generan solos:
