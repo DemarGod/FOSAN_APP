@@ -365,7 +365,7 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
               {exceso > 0 && <strong style={{ font: '700 14px var(--font)', color: C.rojo }}>Esta entrega supera lo solicitado en {exceso} unidad(es).</strong>}
             </div>
           )}
-          {conRetiro && <Unidades titulo={accion === 'cambio' ? 'Unidades a retirar' : 'Unidades'} disponibles={retirables} elegidas={retirar} setElegidas={setRetirar} error={errores.retirar}
+          {conRetiro && <Unidades titulo={accion === 'cambio' ? 'Unidades a retirar' : 'Unidades'} disponibles={retirables} elegidas={retirar} setElegidas={setRetirar} error={errores.retirar} listar
             ayuda={'Solo los asignados a este cliente en esta ubicación.' + (yaEnRetiro.length
               ? ` No aparecen porque ya tienen su retiro programado: ${yaEnRetiro.map((a) => `${a.codigo} (${enRetiro[a.id].folio})`).join(', ')}.` : '')} />}
           {tipoServ && !esArriendo && <Ayuda>{tipoServ === 'limpieza_fosas' ? 'Fosa: no se eligen baños.' : 'Limpieza de baños del cliente: se atienden sus equipos externos.'}</Ayuda>}
@@ -399,11 +399,12 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
   )
 }
 
-function Unidades({ titulo, disponibles, elegidas, setElegidas, error, ayuda, tope = Infinity }) {
+function Unidades({ titulo, disponibles, elegidas, setElegidas, error, ayuda, tope = Infinity, listar = false }) {
   const [texto, setTexto] = useState('')
   const lleno = elegidas.length >= tope
   const ids = new Set(elegidas.map((b) => b.id))
-  const res = disponibles.filter((b) => !ids.has(b.id) && (!texto || String(b.codigo).includes(texto.trim()))).slice(0, 30)
+  const res = disponibles.filter((b) => !ids.has(b.id) && (!texto || String(b.codigo).includes(texto.trim()))).sort((a, b) => String(a.codigo).localeCompare(String(b.codigo), 'es', { numeric: true }))
+    .slice(0, listar ? undefined : 30)
   return (
     <div className="campo">
       <span>{titulo} <b className="obligatorio">*</b></span>
@@ -417,9 +418,9 @@ function Unidades({ titulo, disponibles, elegidas, setElegidas, error, ayuda, to
       {lleno
         ? <small style={{ color: '#FBBF24', fontWeight: 600 }}>Cupo del servicio completo: no se pueden agregar más unidades.</small>
         : <input value={texto} onChange={(e) => setTexto(e.target.value.replace(/\D/g, ''))} placeholder={`Buscar N.º de unidad (${disponibles.length - ids.size} disponibles)`} inputMode="numeric" />}
-      {texto && !lleno && (
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {res.length === 0 && <small>Sin coincidencias.</small>}
+      {(texto || listar) && !lleno && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', maxHeight: 140, overflowY: 'auto' }}>
+          {res.length === 0 && <small>{texto ? 'Sin coincidencias.' : 'No quedan unidades para elegir.'}</small>}
           {res.map((b) => <Boton key={b.id} onClick={() => { setElegidas((p) => [...p, b]); setTexto('') }} style={{ minHeight: 30, padding: '4px 10px' }}>+ {b.codigo}</Boton>)}
         </div>
       )}
