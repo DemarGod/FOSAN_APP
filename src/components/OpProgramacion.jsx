@@ -11,6 +11,7 @@ import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
 import {
   operaciones, banosDeOperacion, banosAsignados, banosConRetiroProgramado, banosDisponibles, crearDespacho, editarOperacion, cancelarOperacion,
   ubicacionesDe, serviciosDe, vehiculos, personalActivo, operacionPorFolio, cupoServicio, registrarExceso, operacionesDeServicios,
+  clienteFicha, contactosDe,
 } from '../lib/api'
 import { rutasDeSemana, lunesDe } from '../lib/rutasSemana'
 import { exportarTabla, exportarCSV } from '../lib/excel'
@@ -18,6 +19,7 @@ import { useSesion, puedeOperar, esDueno } from '../lib/sesion'
 import { hoyISO } from '../lib/costos'
 import { C, I, fecha } from '../lib/ui'
 import Menu from './Menu'
+import { FormUbicacion } from '../pages/FichaCliente'
 
 const L_ESTADO_OP = { programada: 'Programada', realizada: 'Realizada', pendiente: 'Atrasada', cancelada: 'Cancelada' }
 const TONO_OP = { programada: 'info', realizada: 'ok', pendiente: 'atencion', cancelada: 'neutro' }
@@ -163,6 +165,10 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
   }), [])
   const [v, setV] = useState(inicial)
   const [ubic, setUbic] = useState([])
+  const [ubicCargadas, setUbicCargadas] = useState(false)   // ya se sabe si el cliente tiene ubicaciones
+  const [nuevaUbic, setNuevaUbic] = useState(null)          // { cliente, contactos }: formulario "Agregar ubicación" abierto aquí mismo
+  const { perfil } = useSesion()
+  const puedeUbicar = puedeOperar(perfil, 'clientes')
   const [servs, setServs] = useState([])
   const [flota, setFlota] = useState([])
   const [personas, setPersonas] = useState([])
@@ -190,11 +196,11 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
     }).catch(setError)
   }, [])
   useEffect(() => {
-    setUbic([]); setServs([])
+    setUbic([]); setServs([]); setUbicCargadas(false)
     if (!v.cliente_id) return
     ubicacionesDe(v.cliente_id).then((u) => {
       const act = u.filter((x) => x.activa)
-      setUbic(act)
+      setUbic(act); setUbicCargadas(true)
       if (!v.ubicacion_id && act.length === 1) setV((p) => ({ ...p, ubicacion_id: act[0].id }))
     }).catch(setError)
     serviciosDe(v.cliente_id).then((s) => {
@@ -219,6 +225,25 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
   const accion = esArriendo ? v.accion : 'limpieza'
   const conEntrega = esArriendo && ['entrega', 'cambio'].includes(accion)
   const conRetiro = esArriendo && ['retiro', 'cambio'].includes(accion)
+  // Agregar una ubicación al cliente sin salir de la operación (formulario con mapa de la ficha del cliente)
+  const abrirNuevaUbic = async () => {
+    try {
+      setError(null)
+      const [c, k] = await Promise.all([clienteFicha(v.cliente_id), contactosDe(v.cliente_id)])
+      if (!c) throw new Error('No se encontró el cliente.')
+      setNuevaUbic({ cliente: c, contactos: k.filter((x) => x.activo) })
+    } catch (e) { setError(e) }
+  }
+  // Guardada: se recarga la lista y la ubicación nueva queda elegida
+  const ubicacionCreada = async () => {
+    const antes = new Set(ubic.map((x) => x.id))
+    setNuevaUbic(null)
+    const act = (await ubicacionesDe(v.cliente_id)).filter((x) => x.activa)
+    setUbic(act)
+    const creada = act.find((x) => !antes.has(x.id))
+    if (creada) { setV((p) => ({ ...p, ubicacion_id: creada.id, servicio_id: '' })); setErrores({}); setEntregar([]); setRetirar([]) }
+  }
+  const sinUbicaciones = !!v.cliente_id && ubicCargadas && !ubic.length
   const serviciosUbic = servs.filter((s) => !v.ubicacion_id || !s.ubicacion_id || s.ubicacion_id === v.ubicacion_id)
   // Fosa puntual: se hace una sola vez. Si ya tiene una operación (programada o realizada), no se vuelve a elegir.
   const fosaUsada = (s) => s.tipo === 'limpieza_fosas' && s.modalidad !== 'recurrente'
@@ -317,12 +342,26 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
           <Campo etiqueta="Cliente" obligatorio error={errores.cliente_id}>
             <BuscarCliente valor={v.cliente_id} onElegir={(c) => set('cliente_id')({ target: { value: c.id } })} disabled={!nueva} />
           </Campo>
-          <Campo etiqueta="Ubicación" obligatorio error={errores.ubicacion_id} ayuda={v.cliente_id && !ubic.length ? 'El cliente no tiene ubicaciones activas: agrégala en su ficha.' : undefined}>
-            <select value={v.ubicacion_id} onChange={set('ubicacion_id')} disabled={!ubic.length}>
-              <option value="">Seleccionar</option>{ubic.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}
+          <Campo etiqueta="Ubicación" obligatorio error={errores.ubicacion_id}>
+            <select value={v.ubicacion_id} disabled={!v.cliente_id || sinUbicaciones}
+              onChange={(e) => (e.target.value === '__nueva' ? abrirNuevaUbic() : set('ubicacion_id')(e))}>
+              <option value="">{!v.cliente_id ? 'Elige primero el cliente' : sinUbicaciones ? 'Este cliente no tiene ubicaciones' : 'Seleccionar'}</option>
+              {ubic.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}
+              {puedeUbicar && ubic.length > 0 && <option value="__nueva">+ Nueva ubicación…</option>}
             </select>
           </Campo>
-          <Campo etiqueta="Servicio" obligatorio error={errores.servicio_id} ayuda={v.cliente_id && !serviciosUbic.length ? 'No hay servicios vigentes en esta ubicación: créalo en la ficha del cliente.'
+          {sinUbicaciones && (
+            <Ayuda tono="atencion">
+              <span style={{ display: 'grid', gap: 8 }}>
+                <span><b>Este cliente no tiene ninguna ubicación.</b> Para programar la operación hay que decir dónde se hace.</span>
+                {puedeUbicar
+                  ? <span><Boton tipo="principal" icono={I.pin} onClick={abrirNuevaUbic}>Agregar ubicación ahora</Boton></span>
+                  : <span>Tu usuario no puede crear ubicaciones: pídele a quien administra Clientes que la agregue en la ficha del cliente.</span>}
+              </span>
+            </Ayuda>
+          )}
+          <Campo etiqueta="Servicio" obligatorio error={errores.servicio_id} ayuda={sinUbicaciones ? 'Primero agrega la ubicación.' : v.cliente_id && ubicCargadas && !serviciosUbic.length
+            ? <>No hay servicios vigentes en esta ubicación. <a href={`/clientes/${v.cliente_id}?tab=servicios`} target="_blank" rel="noreferrer">Abrir la ficha del cliente para crearlo</a> (se abre en otra pestaña) y vuelve a elegir el cliente aquí.</>
             : servicio ? `Desde ${fecha(servicio.fecha_inicio)}${servicio.fecha_termino ? ' hasta ' + fecha(servicio.fecha_termino) : ' · sin término'}.` : undefined}>
             <select value={v.servicio_id} onChange={set('servicio_id')} disabled={!serviciosUbic.length}>
               <option value="">Seleccionar</option>{serviciosUbic.map((s) => {
@@ -396,6 +435,10 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
         <Ayuda>Guardar programa no registra ejecución ni consume insumos. Las entregas y retiros mueven los baños solo cuando se confirman como realizados.</Ayuda>
         {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
       </div>
+      {nuevaUbic && (
+        <FormUbicacion cliente={nuevaUbic.cliente} ubicacion={{}} otras={ubic} contactos={nuevaUbic.contactos} editable
+          onCerrar={() => setNuevaUbic(null)} onGuardado={() => ubicacionCreada().catch(setError)} />
+      )}
     </Modal>
   )
 }
