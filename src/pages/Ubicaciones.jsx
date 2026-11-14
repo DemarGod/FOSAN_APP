@@ -8,6 +8,7 @@ import {
 import { useSesion, puedeOperar } from '../lib/sesion'
 import { DIAS } from '../lib/costos'
 import { C, Icon, I, L_TIPO_UBIC } from '../lib/ui'
+import { leerCoordenadas, formatoCoordenadas, enlaceGoogleMaps, enChile, ubicacionDesdeTexto } from '../lib/coordenadas'
 
 const FILTROS = ['Todos', 'Arriendo', 'Limpieza', 'Mantención', 'Bodega']
 const hoyDow = () => { const d = new Date().getDay(); return d === 0 ? 7 : d }
@@ -206,7 +207,7 @@ function NuevoPunto({ punto, clientes, onCancelar, onGuardado }) {
       <h6>Punto elegido en el mapa</h6>
       <div style={{ padding: 18, display: 'grid', gap: 14 }}>
         <div style={{ font: '400 12px var(--font)', color: C.gris }}>
-          {coord(punto.lat)}, {coord(punto.lng)} · puedes hacer clic en otro lugar para moverlo
+          <a href={enlaceGoogleMaps(punto.lat, punto.lng)} target="_blank" rel="noreferrer" title="Comprobar el punto en Google Maps">{formatoCoordenadas(punto.lat, punto.lng)}</a> · puedes hacer clic en otro lugar para moverlo
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, background: C.borde, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)' }}>
           {[['cliente', 'Cliente existente'], ['nuevo', 'Nueva ubicación']].map(([v, l]) => (
@@ -248,9 +249,24 @@ function Buscador({ onElegir }) {
   const [q, setQ] = useState('')
   const [res, setRes] = useState([])
   const [buscando, setBuscando] = useState(false)
+  const [aviso, setAviso] = useState('')
   const buscar = async (e) => {
     e.preventDefault()
     if (!q.trim()) return
+    setAviso('')
+    // Coordenadas o enlace de Google Maps / Waze (lo que llega por WhatsApp): va directo al punto, sin buscar la dirección
+    const esEnlace = /https?:\/\/|geo:/i.test(q)
+    if (esEnlace || leerCoordenadas(q)) {
+      setBuscando(true)
+      try {
+        const c = await ubicacionDesdeTexto(q)
+        const punto = { lat: -Math.abs(c.lat), lng: -Math.abs(c.lng) }
+        if (!enChile(punto)) setAviso('Ese punto queda fuera de Chile. Revisa las coordenadas (primero la latitud, después la longitud).')
+        else { onElegir({ ...punto, direccion: '' }); setQ('') }
+      } catch (err) { setAviso(String(err.message || err)) }
+      setBuscando(false)
+      return
+    }
     setBuscando(true)
     try {
       const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=cl&limit=5&q=${encodeURIComponent(q)}`, { headers: { 'Accept-Language': 'es' } })
@@ -262,12 +278,13 @@ function Buscador({ onElegir }) {
     <form onSubmit={buscar} style={{ position: 'relative', flex: 1, minWidth: 240 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 9, border: `1px solid ${C.borde}`, background: 'var(--panel)', padding: '0 12px', minHeight: 42, borderRadius: 'var(--radio-sm)' }}>
         <Icon d={I.busca} size={16} color={C.gris} />
-        <input value={q} onChange={(e) => { setQ(e.target.value); setRes([]) }} placeholder="Buscar dirección (ej. 1 Sur 1200, Talca)"
+        <input value={q} onChange={(e) => { setQ(e.target.value); setRes([]); setAviso('') }} placeholder="Buscar dirección, o pegar coordenadas / enlace de Google Maps o Waze"
           style={{ flex: 1, minWidth: 0, border: 0, outline: 'none', background: 'transparent', font: '400 13px var(--font)' }} />
         <button type="submit" style={{ border: 0, background: 'transparent', color: C.azul, font: '600 12px var(--font)', cursor: 'pointer' }}>
           {buscando ? 'Buscando…' : 'Buscar'}
         </button>
       </div>
+      {aviso && <div style={{ marginTop: 6, font: '400 12px/1.4 var(--font)', color: '#FCA5A5' }}>{aviso}</div>}
       {res.length > 0 && (
         <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, background: 'var(--panel)', border: `1px solid ${C.borde}`, borderTop: 0, borderRadius: 'var(--radio-md)' }}>
           {res.map((r) => (

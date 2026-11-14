@@ -12,10 +12,11 @@ import {
   clienteFicha, rubroNombre, contactosDe, guardarContacto, ubicacionesDe, guardarUbicacion,
   usoUbicacion, historialCliente,
 } from '../lib/api'
-import { formatoTel, telValido, correoValido, decimalDe } from '../lib/validar'
+import { formatoTel, telValido, correoValido } from '../lib/validar'
 import { useSesion, puedeOperar, verFinanzas } from '../lib/sesion'
 import { C, Icon, I, fecha, fechaHora } from '../lib/ui'
 import { TablaCambios } from '../lib/auditoria'
+import { leerCoordenadas, formatoCoordenadas, enlaceGoogleMaps, esEnlaceCorto, enChile, ubicacionDesdeTexto, MENSAJE_SIN_COORDENADAS } from '../lib/coordenadas'
 
 const PESTANAS = [
   { v: 'resumen', l: 'Resumen' },
@@ -310,7 +311,9 @@ function Ubicaciones({ cliente, editable, onCambio }) {
             { k: 'nombre', label: 'Ubicación', render: (x) => <span style={{ fontWeight: 600 }}>{x.nombre}</span> },
             { k: 'comuna', label: 'Comuna', render: (x) => x.comuna || '—' },
             { k: 'direccion', label: 'Dirección', render: (x) => x.direccion || '—' },
-            { k: 'mapa', label: 'En mapa', render: (x) => (x.lat != null && x.lng != null ? 'Sí' : <span style={{ color: C.gris }}>Sin punto</span>) },
+            { k: 'mapa', label: 'Coordenadas', render: (x) => (x.lat != null && x.lng != null
+              ? <a href={enlaceGoogleMaps(x.lat, x.lng)} target="_blank" rel="noreferrer" title="Abrir en Google Maps" onClick={(e) => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>{formatoCoordenadas(x.lat, x.lng)}</a>
+              : <span style={{ color: C.gris }}>Sin punto</span>) },
             { k: 'activa', label: 'Estado', render: (x) => <Estado tono={x.activa ? 'ok' : 'neutro'}>{x.activa ? 'Activa' : 'Inactiva'}</Estado> },
             {
               k: 'acciones', label: 'Acciones', alinear: 'right',
@@ -343,7 +346,7 @@ export function FormUbicacion({ cliente, ubicacion, otras, contactos: contactosI
   const t = (x) => (x === null || x === undefined ? '' : String(x))
   const inicial = useMemo(() => ({
     nombre: t(ubicacion.nombre), direccion: t(ubicacion.direccion), comuna: t(ubicacion.comuna) || (nueva ? cliente.comuna || '' : ''),
-    contacto_id: t(ubicacion.contacto_id), lat: t(ubicacion.lat), lng: t(ubicacion.lng),
+    contacto_id: t(ubicacion.contacto_id), coords: formatoCoordenadas(ubicacion.lat, ubicacion.lng),   // «-35.426400, -71.655400», como en Google Maps
     indicaciones: t(ubicacion.indicaciones), activa: ubicacion.activa !== false,
   }), [])
   const [v, setV] = useState(inicial)
@@ -359,15 +362,30 @@ export function FormUbicacion({ cliente, ubicacion, otras, contactos: contactosI
     setV((p) => ({ ...p, [k]: val })); setErrores({}); setAviso(null)
   }
   const cerrar = () => confirmarSalida(sucio) && onCerrar()
-  const lat = decimalDe(v.lat), lng = decimalDe(v.lng)
+  // Coordenadas escritas o pegadas (texto, enlace de Google Maps o Waze). Chile queda al sur y al oeste: siempre negativas.
+  const leidas = useMemo(() => { const c = leerCoordenadas(v.coords); return c ? { lat: -Math.abs(c.lat), lng: -Math.abs(c.lng) } : null }, [v.coords])
   // Memorizado: el mapa solo se mueve cuando cambian las coordenadas
-  const punto = useMemo(() => (lat !== null && lng !== null && v.lat !== '' && v.lng !== ''
-    ? { lat: -Math.abs(lat), lng: -Math.abs(lng), volar: true } : null), [v.lat, v.lng])
-  const zoomInicial = useMemo(() => (inicial.lat !== '' ? 15 : 10), [])
+  const punto = useMemo(() => (leidas ? { ...leidas, volar: true } : null), [leidas?.lat, leidas?.lng])
+  const zoomInicial = useMemo(() => (inicial.coords !== '' ? 15 : 10), [])
+  const [abriendo, setAbriendo] = useState(false)
 
   const marcar = ({ lat: la, lng: ln }) => {
-    setV((p) => ({ ...p, lat: la.toFixed(6), lng: ln.toFixed(6) }))
-    setMarcando(false)
+    setV((p) => ({ ...p, coords: formatoCoordenadas(la, ln) }))
+    setErrores({}); setMarcando(false)
+  }
+  // Al pegar o salir del campo: lo que se haya escrito queda como «lat, lng». Los enlaces cortos de Google se abren aquí.
+  const ordenarCoords = async (texto) => {
+    const t = String(texto ?? '').trim()
+    if (!t) return
+    const directo = leerCoordenadas(t)
+    if (directo) { setV((p) => ({ ...p, coords: formatoCoordenadas(-Math.abs(directo.lat), -Math.abs(directo.lng)) })); return }
+    if (!esEnlaceCorto(t)) { setErrores((e) => ({ ...e, coords: MENSAJE_SIN_COORDENADAS })); return }
+    setAbriendo(true)
+    try {
+      const c = await ubicacionDesdeTexto(t)
+      setV((p) => ({ ...p, coords: formatoCoordenadas(-Math.abs(c.lat), -Math.abs(c.lng)) })); setErrores({})
+    } catch (err) { setErrores((e) => ({ ...e, coords: String(err.message || err) })) }
+    setAbriendo(false)
   }
 
   const guardar = async () => {
@@ -375,9 +393,8 @@ export function FormUbicacion({ cliente, ubicacion, otras, contactos: contactosI
     if (!v.nombre.trim()) e.nombre = 'El nombre es obligatorio.'
     if (!v.direccion.trim()) e.direccion = 'La dirección o referencia es obligatoria.'
     if (!v.comuna.trim()) e.comuna = 'La comuna es obligatoria.'
-    if ((v.lat === '') !== (v.lng === '')) e.coords = 'Faltan latitud o longitud.'
-    if (v.lat !== '' && (lat === null || Math.abs(lat) < 17 || Math.abs(lat) > 56)) e.coords = 'Latitud fuera de Chile.'
-    if (v.lng !== '' && (lng === null || Math.abs(lng) < 66 || Math.abs(lng) > 76)) e.coords = 'Longitud fuera de Chile.'
+    if (v.coords.trim() !== '' && !leidas) e.coords = esEnlaceCorto(v.coords) ? 'Espera a que se abra el enlace o pega las coordenadas.' : MENSAJE_SIN_COORDENADAS
+    else if (leidas && !enChile(leidas)) e.coords = 'Ese punto queda fuera de Chile. Revisa las coordenadas (primero la latitud, después la longitud).'
     setErrores(e)
     if (Object.keys(e).length) return
 
@@ -395,7 +412,7 @@ export function FormUbicacion({ cliente, ubicacion, otras, contactos: contactosI
       await guardarUbicacion(cliente.id, ubicacion.id, {
         nombre: v.nombre.trim(), direccion: v.direccion.trim(), comuna: v.comuna.trim(),
         contacto_id: v.contacto_id || null, indicaciones: v.indicaciones.trim() || null, activa: v.activa,
-        lat: v.lat !== '' ? -Math.abs(lat) : null, lng: v.lng !== '' ? -Math.abs(lng) : null,
+        lat: leidas ? Number(leidas.lat.toFixed(6)) : null, lng: leidas ? Number(leidas.lng.toFixed(6)) : null,
       })
       onGuardado()
     } catch (err) { setError(err); setGuardando(false) }
@@ -456,11 +473,17 @@ export function FormUbicacion({ cliente, ubicacion, otras, contactos: contactosI
                 {marcando ? 'Haz clic en el mapa…' : punto ? 'Mover punto' : 'Marcar en mapa'}
               </Boton>
             )}
-            <Campo etiqueta="Latitud" style={{ width: 140 }}><input value={v.lat} onChange={set('lat')} inputMode="decimal" placeholder="-35.4263" /></Campo>
-            <Campo etiqueta="Longitud" style={{ width: 140 }}><input value={v.lng} onChange={set('lng')} inputMode="decimal" placeholder="-71.6551" /></Campo>
-            {punto && !soloVer && <Boton onClick={() => setV((p) => ({ ...p, lat: '', lng: '' }))}>Quitar punto</Boton>}
+            <Campo etiqueta="Coordenadas (como en Google Maps)" style={{ flex: '1 1 300px' }}>
+              <input value={v.coords} onChange={set('coords')} placeholder="-35.4263, -71.6551  ·  o pega el enlace de Google Maps o Waze"
+                onBlur={(e) => ordenarCoords(e.target.value)}
+                onPaste={(e) => { const t = e.clipboardData?.getData('text'); if (t) { e.preventDefault(); setV((p) => ({ ...p, coords: t.trim() })); setErrores({}); ordenarCoords(t) } }} />
+            </Campo>
+            {punto && <a href={enlaceGoogleMaps(punto.lat, punto.lng)} target="_blank" rel="noreferrer" className="btn" style={{ textDecoration: 'none' }}>Ver en Google Maps</a>}
+            {punto && !soloVer && <Boton onClick={() => { setV((p) => ({ ...p, coords: '' })); setErrores({}) }}>Quitar punto</Boton>}
           </div>
+          {abriendo && <small>Abriendo el enlace…</small>}
           {errores.coords && <small style={{ color: C.rojo }}>{errores.coords}</small>}
+          {!soloVer && !errores.coords && <small>Pega lo que copias de Google Maps (clic derecho sobre el punto → coordenadas) o el enlace que llega por WhatsApp desde Google Maps o Waze.</small>}
         </div>
 
         <Ayuda>Las coordenadas sirven para mostrar el punto en el mapa; no son seguimiento GPS.</Ayuda>
