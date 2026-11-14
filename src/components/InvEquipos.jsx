@@ -14,6 +14,7 @@ import { exportarTabla, exportarCSV } from '../lib/excel'
 import { useSesion, puedeOperar, esDueno } from '../lib/sesion'
 import { hoyISO } from '../lib/costos'
 import { C, I, COLORES_BANO, fecha } from '../lib/ui'
+import { CARACTERISTICAS, marcasDe } from '../lib/equipos'
 
 export const L_SITUACION = {
   disponible: 'Disponible', reservado: 'Reservado', asignado: 'Asignado', en_traslado: 'En traslado',
@@ -32,7 +33,7 @@ const POR_PAGINA = 20
 const chico = { minHeight: 34, padding: '6px 12px' }
 const atencion = (e) => e.propiedad === 'empresa' && e.situacion !== 'baja'
   && (e.condicion !== 'operativo' || ['en_mantenimiento', 'no_localizado'].includes(e.situacion))
-const FILTRO_VACIO = { numero: '', categoria: '', situacion: '', condicion: '', ubicacion: '', propiedad: 'empresa', atencion: false }
+const FILTRO_VACIO = { numero: '', categoria: '', situacion: '', condicion: '', ubicacion: '', propiedad: 'empresa', marca: '', atencion: false }
 
 export default function InvEquipos() {
   const navegar = useNavigate()
@@ -66,6 +67,7 @@ export default function InvEquipos() {
     if (a.condicion && e.condicion !== a.condicion) return false
     if (a.ubicacion && e.ubicacion !== a.ubicacion) return false
     if (a.propiedad && e.propiedad !== a.propiedad) return false
+    if (a.marca && !e[a.marca]) return false
     if (a.atencion && !atencion(e)) return false
     return true
   }), [lista, aplicado])
@@ -136,6 +138,9 @@ export default function InvEquipos() {
           <Campo etiqueta="Propiedad">
             <select value={f.propiedad} onChange={set('propiedad')}><option value="">Todas</option><option value="empresa">Empresa</option><option value="cliente">Cliente</option></select>
           </Campo>
+          <Campo etiqueta="Característica">
+            <select value={f.marca} onChange={set('marca')}><option value="">Todas</option>{CARACTERISTICAS.map((c) => <option key={c.k} value={c.k}>{c.l}</option>)}</select>
+          </Campo>
           <div style={{ display: 'flex', gap: 8 }}>
             <Boton tipo="principal" type="submit">Aplicar</Boton>
             <Boton onClick={limpiar}>Limpiar</Boton>
@@ -153,7 +158,12 @@ export default function InvEquipos() {
           <Tabla filas={filas.slice((pag - 1) * POR_PAGINA, pag * POR_PAGINA)} vacio={
             <span>Sin resultados para estos filtros. <a href="#" onClick={(e) => { e.preventDefault(); limpiar() }}>Limpiar filtros</a></span>
           } columnas={[
-            { k: 'codigo', label: 'N.º unidad', render: (e) => <b>{e.codigo}</b> },
+            { k: 'codigo', label: 'N.º unidad', render: (e) => (
+              <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                <b>{e.codigo}</b>
+                {marcasDe(e).map((m) => <span key={m} style={{ padding: '1px 7px', borderRadius: 999, border: `1px solid ${C.azulClaro}`, color: C.azulClaro, font: '600 11px var(--font)' }}>{m}</span>)}
+              </span>
+            ) },
             { k: 'cat', label: 'Categoría / modelo', render: (e) => [e.categoria, e.modelo].filter(Boolean).join(' · ') || '—' },
             { k: 'situacion', label: 'Situación', render: (e) => (
               <div>
@@ -211,6 +221,7 @@ function FormEquipo({ onCerrar, onGuardado, onAbrir }) {
   const inicial = useMemo(() => ({
     numero: '', categoria_id: '', marca: '', modelo_id: '', color: '', fecha_incorporacion: hoyISO(),
     propiedad: 'empresa', ubicacion_id: '', condicion: 'operativo', notas: '', propietario_id: '', ubic_cliente: '',
+    con_arnes: false, vip: false,
   }), [])
   const [v, setV] = useState(inicial)
   const [cat, setCat] = useState([])
@@ -272,6 +283,7 @@ function FormEquipo({ onCerrar, onGuardado, onAbrir }) {
       const comun = {
         tipo, categoria_id: v.categoria_id, modelo_id: v.modelo_id || null, marca: v.marca.trim() || null,
         color: v.color || null, fecha_incorporacion: v.fecha_incorporacion, notas: v.notas.trim() || null,
+        ...Object.fromEntries(CARACTERISTICAS.filter((c) => v[c.k]).map((c) => [c.k, true])),   // solo las marcadas
       }
       const r = await crearEquipo(esCliente
         ? { ...comun, propiedad: 'cliente', propietario_id: v.propietario_id, ubicacion_id: v.ubic_cliente, condicion: v.condicion }
@@ -342,6 +354,16 @@ function FormEquipo({ onCerrar, onGuardado, onAbrir }) {
             </select>
           </Campo>
         </div>
+        <div className="campo">
+          <span>Características</span>
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', font: '400 14px var(--font)', minHeight: 40, alignItems: 'center' }}>
+            {CARACTERISTICAS.map((c) => (
+              <label key={c.k} style={{ display: 'flex', gap: 6, alignItems: 'center', cursor: 'pointer' }}>
+                <input type="checkbox" checked={v[c.k]} onChange={(x) => { setV((p) => ({ ...p, [c.k]: x.target.checked })); setErrores({}) }} /> {c.l}
+              </label>
+            ))}
+          </div>
+        </div>
         <Campo etiqueta="Observaciones">
           <textarea value={v.notas} onChange={set('notas')} maxLength={500} style={{ minHeight: 60 }} placeholder="Ej. Observaciones adicionales sobre el equipo…" />
         </Campo>
@@ -383,9 +405,9 @@ function FormEquipo({ onCerrar, onGuardado, onAbrir }) {
 }
 
 // ── 3.3 Exportar ──────────────────────────────────────────────────────────
-const COLUMNAS = ['numero_unidad', 'categoria', 'modelo', 'situacion', 'condicion', 'ubicacion', 'propiedad', 'propietario', 'fecha_incorporacion']
+const COLUMNAS = ['numero_unidad', 'categoria', 'modelo', 'situacion', 'condicion', 'ubicacion', 'propiedad', 'propietario', 'fecha_incorporacion', 'con_arnes', 'vip']
 const fila = (e) => [e.codigo, e.categoria || '', e.modelo || '', L_SITUACION[e.situacion] || e.situacion || '', L_CONDICION[e.condicion] || e.condicion || '',
-  e.ubicacion || '', e.propiedad === 'cliente' ? 'Cliente' : 'Empresa', e.propietario || '', e.fecha_incorporacion || '']
+  e.ubicacion || '', e.propiedad === 'cliente' ? 'Cliente' : 'Empresa', e.propietario || '', e.fecha_incorporacion || '', e.con_arnes ? 'Sí' : '', e.vip ? 'Sí' : '']
 
 function Exportar({ todos, filtrados, onCerrar }) {
   const [formato, setFormato] = useState('xlsx')

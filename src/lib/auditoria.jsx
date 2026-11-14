@@ -15,7 +15,7 @@ const NOMBRES = {
   codigo: 'Código', folio: 'Folio', patente: 'Patente', marca: 'Marca', modelo: 'Modelo', anio: 'Año', kilometraje: 'Odómetro (km)',
   propiedad: 'Propiedad', rol: 'Rol', funcion: 'Función', titulo: 'Título', trabajo_requerido: 'Trabajo requerido', trabajo_realizado: 'Trabajo realizado',
   resultado: 'Resultado', condicion_final: 'Condición final', responsable_ext: 'Responsable', bloquea: 'Deja no disponible',
-  lat: 'Latitud', lng: 'Longitud', banos_propios: 'Baños propios', dias_limpieza: 'Días de limpieza', vigencia: 'Vigencia',
+  lat: 'Latitud', lng: 'Longitud', banos_propios: 'Baños propios', con_arnes: 'Con arnés', vip: 'VIP', dias_limpieza: 'Días de limpieza', vigencia: 'Vigencia',
   cliente: 'Cliente', ubicacion: 'Ubicación', servicio: 'Servicio', vehiculo: 'Vehículo', responsable: 'Responsable', contacto: 'Contacto',
   categoria: 'Categoría', propietario: 'Propietario', operador: 'Operador', ruta: 'Ruta', salida: 'Día de ruta', despacho: 'Operación', perfil: 'Usuario',
   exceso_unidades: 'Unidades sobre el cupo', exceso_motivo: 'Motivo de la urgencia', origen: 'Origen', accion: 'Acción', orden: 'Orden', tarea: 'Tarea',

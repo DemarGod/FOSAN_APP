@@ -14,6 +14,7 @@ import {
 } from '../lib/api'
 import { useSesion, puedeOperar, esDueno } from '../lib/sesion'
 import Documentos from '../components/Documentos'
+import { CARACTERISTICAS, marcasDe } from '../lib/equipos'
 import { hoyISO, ahoraLocal } from '../lib/costos'
 import { C, Icon, I, fecha, fechaHora, COLORES_BANO, L_ESTADO_MANT } from '../lib/ui'
 
@@ -144,6 +145,7 @@ function Datos({ e, editable }) {
           <Fila l="Marca" v={e.marca} />
           <Fila l="Modelo" v={e.modelo} />
           <Fila l="Color" v={e.color} />
+          <Fila l="Características" v={marcasDe(e).length ? CARACTERISTICAS.filter((c) => e[c.k]).map((c) => c.l).join(' · ') : 'Sin características especiales'} />
           <Fila l="Fecha incorporación" v={e.fecha_incorporacion ? fecha(e.fecha_incorporacion) : null} />
           <Fila l="Observaciones" v={e.notas} />
         </div>
@@ -168,7 +170,7 @@ function Datos({ e, editable }) {
 }
 
 function EditarDatos({ e, onCerrar, onGuardado }) {
-  const inicial = useMemo(() => ({ marca: e.marca || '', modelo_id: e.modelo_id || '', color: e.color || '', notas: e.notas || '' }), [])
+  const inicial = useMemo(() => ({ marca: e.marca || '', modelo_id: e.modelo_id || '', color: e.color || '', notas: e.notas || '', con_arnes: !!e.con_arnes, vip: !!e.vip }), [])
   const [v, setV] = useState(inicial)
   const [modelos, setModelos] = useState([])
   const [errores, setErrores] = useState({})
@@ -186,7 +188,9 @@ function EditarDatos({ e, onCerrar, onGuardado }) {
     if (Object.keys(er).length) return
     setGuardando(true)
     try {
-      await actualizarEquipo(e.id, { marca: v.marca.trim(), modelo_id: v.modelo_id || null, color: v.color || null, notas: v.notas.trim() || null })
+      // Arnés y VIP solo se envían si cambiaron (así la edición funciona igual en una base sin esas columnas)
+      const marcas = Object.fromEntries(CARACTERISTICAS.filter((c) => v[c.k] !== inicial[c.k]).map((c) => [c.k, v[c.k]]))
+      await actualizarEquipo(e.id, { marca: v.marca.trim(), modelo_id: v.modelo_id || null, color: v.color || null, notas: v.notas.trim() || null, ...marcas })
       onGuardado()
     } catch (x) { setError(x); setGuardando(false) }
   }
@@ -210,6 +214,16 @@ function EditarDatos({ e, onCerrar, onGuardado }) {
             {[...new Set([...COLORES_BANO, ...(e.color && !COLORES_BANO.includes(e.color) ? [e.color] : [])])].map((c) => <option key={c}>{c}</option>)}
           </select>
         </Campo>
+        <div className="campo">
+          <span>Características</span>
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', font: '400 14px var(--font)', minHeight: 40, alignItems: 'center' }}>
+            {CARACTERISTICAS.map((c) => (
+              <label key={c.k} style={{ display: 'flex', gap: 6, alignItems: 'center', cursor: 'pointer' }}>
+                <input type="checkbox" checked={v[c.k]} onChange={(x) => { setV((p) => ({ ...p, [c.k]: x.target.checked })); setErrores({}) }} /> {c.l}
+              </label>
+            ))}
+          </div>
+        </div>
         <Campo etiqueta="Observaciones"><textarea value={v.notas} onChange={set('notas')} maxLength={500} style={{ minHeight: 60 }} /></Campo>
         <Ayuda>Número y propiedad no se modifican desde esta edición. La ubicación cambia mediante movimientos.</Ayuda>
         {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}

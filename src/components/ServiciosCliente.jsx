@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import Modal from './Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
 import {
-  serviciosDe, ubicacionesDe, contactosDe, categoriasEquipo, externosDe, crearExterno,
+  serviciosDe, ubicacionesDe, contactosDe, categoriasEquipo, externosDe,
   guardarServicio, finalizarServicio,
 } from '../lib/api'
 import { formatoPesos, numeroDe, decimalDe, fechaValida, FECHA_MIN, FECHA_MAX } from '../lib/validar'
@@ -88,6 +88,7 @@ export default function ServiciosCliente({ cliente, editable, finanzas, onCambio
 
 // ── Baños FOSAN asignados a un servicio de arriendo (N.º → ficha del equipo) ──
 function BanosAsignados({ s, onVer }) {
+  if (s.tipo === 'limpieza_cliente') return Number(s.cantidad) > 0 ? `${s.cantidad} del cliente` : '—'
   if (s.tipo !== 'arriendo_limpieza') return '—'
   const banos = [...(s.activos || [])].sort(porNumero)
   if (!banos.length) return <span className="text-muted">Ninguno</span>
@@ -143,9 +144,8 @@ function FormServicio({ cliente, servicio, finanzas, onCerrar, onGuardado }) {
   const [contactos, setContactos] = useState([])
   const [categorias, setCategorias] = useState([])
   const [externos, setExternos] = useState([])
-  const [elegidos, setElegidos] = useState([])          // ids de equipos externos de este servicio
+  const [elegidos, setElegidos] = useState([])          // equipos externos (EXT-###) que este servicio ya tenía; se conservan tal cual
   const elegidosIniciales = useRef([])
-  const [nuevoExt, setNuevoExt] = useState(null)
   const [nuevaUbic, setNuevaUbic] = useState(false)
   const [nuevoContacto, setNuevoContacto] = useState(false)
   // Contacto creado desde el mismo formulario del servicio: queda elegido
@@ -183,6 +183,8 @@ function FormServicio({ cliente, servicio, finanzas, onCerrar, onGuardado }) {
         const mios = servicio.id ? ext.filter((e) => e.servicio_id === servicio.id).map((e) => e.id) : []
         elegidosIniciales.current = mios
         setElegidos(mios)
+        // Servicio antiguo con equipos externos y sin cantidad anotada: se propone esa cantidad
+        if (mios.length && servicio.tipo === 'limpieza_cliente') setV((p) => (p.cantidad === '' ? { ...p, cantidad: String(mios.length) } : p))
         if (nuevo && u.filter((x) => x.activa).length === 1) setV((p) => ({ ...p, ubicacion_id: u.find((x) => x.activa).id }))
         if (nuevo) {
           const principal = k.find((x) => x.principal && x.activo)
@@ -201,8 +203,6 @@ function FormServicio({ cliente, servicio, finanzas, onCerrar, onGuardado }) {
   }
   const entero = (x) => x.replace(/\D/g, '').slice(0, 3)
   const limp = Number(v.limpiezas_semana || 0)
-  // Externos que se pueden elegir: los de este cliente que no atiende otro servicio vigente
-  const disponiblesExt = externos.filter((e) => !e.servicio_id || e.servicio_id === servicio.id || !e.servicio_vigente)
   const ubicNombre = (id) => ubic.find((u) => u.id === id)?.nombre
 
   const validar = () => {
@@ -223,9 +223,7 @@ function FormServicio({ cliente, servicio, finanzas, onCerrar, onGuardado }) {
       if (v.limpiezas_semana === '' || limp > 7) e.limpiezas_semana = 'Entre 0 y 7.'
       if (v.dias.length > limp) e.dias = `Elegiste ${v.dias.length} día(s) y son ${limp} limpieza(s) por semana.`
     }
-    if (v.tipo === 'limpieza_cliente' && !elegidos.length && (nuevo || !Number(servicio.cantidad))) {
-      e.externos = 'Elige o registra al menos un equipo externo.'
-    }
+    if (v.tipo === 'limpieza_cliente' && !(Number(v.cantidad) >= 1)) e.cantidad = 'Indica cuántos baños del cliente se limpian (mínimo 1).'
     if (v.tipo === 'limpieza_fosas') {
       if (!v.modalidad) e.modalidad = 'Elige la modalidad.'
       if (v.modalidad === 'recurrente' && !v.frecuencia) e.frecuencia = 'Elige la frecuencia.'
@@ -249,7 +247,7 @@ function FormServicio({ cliente, servicio, finanzas, onCerrar, onGuardado }) {
       ...(finanzas ? { valor_mensual: numeroDe(v.valor_mensual) } : {}),
       // Solo los campos del apartado elegido; los demás quedan vacíos
       categoria_id: A ? v.categoria_id : null,
-      cantidad: A ? Number(v.cantidad) : B ? (elegidos.length || Number(servicio.cantidad) || null) : null,
+      cantidad: A || B ? Number(v.cantidad) : null,
       frecuencia: A || B ? v.frecuencia : F && v.modalidad === 'recurrente' ? v.frecuencia : null,
       limpiezas_semana: A || B ? limp : null,
       dias: A || B ? (v.dias.length ? v.dias : null) : null,
@@ -258,7 +256,8 @@ function FormServicio({ cliente, servicio, finanzas, onCerrar, onGuardado }) {
       acceso: F ? v.acceso.trim() || null : null,
     }
     try {
-      await guardarServicio(cliente.id, servicio.id, datos, B ? elegidos : [], elegidosIniciales.current)
+      // Los equipos externos que el servicio ya tuviera no se tocan (misma lista antes y después)
+      await guardarServicio(cliente.id, servicio.id, datos, elegidosIniciales.current, elegidosIniciales.current)
       onGuardado()
     } catch (err) { setError(err); setGuardando(false) }
   }
@@ -339,37 +338,17 @@ function FormServicio({ cliente, servicio, finanzas, onCerrar, onGuardado }) {
 
         {/* ── B: Limpieza de baños del cliente ── */}
         {v.tipo === 'limpieza_cliente' && (
-          <Apartado titulo="Limpieza de baños del cliente" nota="Equipo del cliente: no aumenta el inventario propio disponible.">
-            <div className="campo">
-              <span>Equipos externos a atender <b className="obligatorio">*</b></span>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                {disponiblesExt.length === 0 && <span className="text-muted">Este cliente aún no tiene equipos externos registrados.</span>}
-                {disponiblesExt.map((e) => {
-                  const on = elegidos.includes(e.id)
-                  return (
-                    <button key={e.id} type="button" onClick={() => { setErrores({}); setElegidos((p) => (on ? p.filter((x) => x !== e.id) : [...p, e.id])) }}
-                      style={{
-                        minHeight: 34, padding: '0 10px', borderRadius: 'var(--radio-sm)', cursor: 'pointer',
-                        border: `1px solid ${on ? C.azul : C.borde}`, background: on ? C.tinte : C.blanco,
-                        color: on ? C.azul : C.tinta, font: '600 13px var(--font)',
-                      }}>
-                      {on ? '✓ ' : ''}{e.codigo} · {e.detalle || 'Baño del cliente'}{e.codigo_cliente ? ` (${e.codigo_cliente})` : ''}
-                    </button>
-                  )
-                })}
-                {nuevoExt === null && (
-                  <a href="#" onClick={(ev) => { ev.preventDefault(); setNuevoExt({ categoria_id: categorias.find((c) => c.nombre === 'Baño químico')?.id || '', detalle: '', codigo_cliente: '', ubicacion_id: v.ubicacion_id }) }}
-                    style={{ font: '600 13px var(--font)' }}>+ Registrar equipo externo</a>
-                )}
-              </div>
-              {errores.externos && <small style={{ color: C.rojo }}>{errores.externos}</small>}
-              {!nuevo && !elegidos.length && Number(servicio.cantidad) > 0 && (
-                <small>Este servicio tenía {servicio.cantidad} baño(s) del cliente anotados sin registrar. Regístralos como equipos externos.</small>
-              )}
+          <Apartado titulo="Limpieza de baños del cliente" nota="Baños del cliente: FOSAN solo los limpia. No cuentan en el inventario propio.">
+            <div className="cols2" style={{ gap: 14 }}>
+              <Campo etiqueta="Cantidad de baños del cliente" obligatorio ayuda="Cuántos baños propios del cliente se limpian en esta ubicación." error={errores.cantidad}>
+                <input value={v.cantidad} onChange={set('cantidad', entero)} inputMode="numeric" placeholder="8" />
+              </Campo>
             </div>
-            {nuevoExt && (
-              <EquipoExterno cliente={cliente} ubic={ubic} categorias={categorias} datos={nuevoExt} setDatos={setNuevoExt}
-                onCreado={(e) => { setExternos((p) => [...p, e]); setElegidos((p) => [...p, e.id]); setNuevoExt(null) }} />
+            {elegidos.length > 0 && (
+              <small className="text-muted">
+                Este servicio ya tenía {elegidos.length} equipo(s) externo(s) registrado(s) ({externos.filter((e) => elegidos.includes(e.id)).map((e) => e.codigo).join(', ')}): se mantienen.
+                {Number(v.cantidad) < elegidos.length ? ' Para las rutas se cuenta el mayor de los dos números.' : ''}
+              </small>
             )}
             <div className="cols2" style={{ gap: 14 }}><Frecuencia v={v} set={set} entero={entero} errores={errores} /></div>
             <DiasCampo v={v} setV={setV} limp={limp} error={errores.dias} />
@@ -457,65 +436,6 @@ function DiasCampo({ v, setV, limp, error }) {
   )
 }
 
-// ── Registrar equipo externo (dentro del apartado B) ──────────────────────
-function EquipoExterno({ cliente, ubic, categorias, datos, setDatos, onCreado }) {
-  const [errores, setErrores] = useState({})
-  const [error, setError] = useState(null)
-  const [guardando, setGuardando] = useState(false)
-  const set = (k) => (e) => { setDatos((p) => ({ ...p, [k]: e.target.value })); setErrores({}) }
-  const guardar = async () => {
-    const e = {}
-    if (!datos.categoria_id) e.categoria_id = 'Elige la categoría.'
-    if (!datos.ubicacion_id) e.ubicacion_id = 'Elige la ubicación.'
-    setErrores(e)
-    if (Object.keys(e).length) return
-    setGuardando(true)
-    try {
-      const r = await crearExterno({
-        propietario_id: cliente.id, categoria_id: datos.categoria_id, ubicacion_id: datos.ubicacion_id,
-        detalle: datos.detalle.trim() || null, codigo_cliente: datos.codigo_cliente.trim() || null,
-      })
-      onCreado(r)
-    } catch (err) {
-      setError(err.code === '23505' ? { message: 'Ese identificador del cliente ya está registrado.' } : err)
-      setGuardando(false)
-    }
-  }
-  return (
-    <div style={{ border: `1px solid ${C.azul}`, borderRadius: 'var(--radio-md)', padding: 14, display: 'grid', gap: 12, background: C.suave }}>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <h6 style={{ margin: 0, flex: 1 }}>Equipo externo</h6>
-        <button type="button" onClick={() => setDatos(null)} aria-label="Cerrar" style={{ border: 0, background: 'transparent', cursor: 'pointer', color: C.gris, font: '700 16px var(--font)' }}>✕</button>
-      </div>
-      <div className="cols2" style={{ gap: 12 }}>
-        <Campo etiqueta="Código externo" ayuda="Se genera automáticamente (EXT-###)."><input value="Automático" readOnly /></Campo>
-        <Campo etiqueta="Categoría" obligatorio error={errores.categoria_id}>
-          <select value={datos.categoria_id} onChange={set('categoria_id')}>
-            <option value="">Seleccionar</option>
-            {categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-          </select>
-        </Campo>
-        <Campo etiqueta="Descripción"><input value={datos.detalle} onChange={set('detalle')} maxLength={80} placeholder="Baño en obra" /></Campo>
-        <Campo etiqueta="Identificador del cliente" ayuda="Opcional: el número o marca que usa el cliente.">
-          <input value={datos.codigo_cliente} onChange={set('codigo_cliente')} maxLength={30} />
-        </Campo>
-        <Campo etiqueta="Propietario" ayuda="No editable."><input value={cliente.nombre} readOnly /></Campo>
-        <Campo etiqueta="Ubicación" obligatorio error={errores.ubicacion_id}>
-          <select value={datos.ubicacion_id} onChange={set('ubicacion_id')}>
-            <option value="">Seleccionar</option>
-            {ubic.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}
-          </select>
-        </Campo>
-      </div>
-      {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <Boton onClick={() => setDatos(null)}>Cancelar</Boton>
-        <Boton tipo="principal" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar equipo'}</Boton>
-      </div>
-    </div>
-  )
-}
-
 // ── Ver detalle (solo lectura) ────────────────────────────────────────────
 function DetalleServicio({ servicio: s, finanzas, onCerrar }) {
   const [ext, setExt] = useState([])
@@ -532,7 +452,7 @@ function DetalleServicio({ servicio: s, finanzas, onCerrar }) {
         {fila('Ubicación', s.ubicaciones?.nombre)}
         {fila('Vigencia', `${fecha(s.fecha_inicio)} → ${s.fecha_termino ? fecha(s.fecha_termino) : 'sin término'}`)}
         {s.tipo === 'arriendo_limpieza' && fila('Cantidad solicitada', s.cantidad)}
-        {s.tipo === 'limpieza_cliente' && fila('Equipos externos', ext.length ? ext.map((e) => e.codigo).join(', ') : `${s.cantidad || 0} sin registrar`)}
+        {s.tipo === 'limpieza_cliente' && fila('Baños del cliente', `${Math.max(Number(s.cantidad) || 0, ext.length)}${ext.length ? ` (registrados: ${ext.map((e) => e.codigo).join(', ')})` : ''}`)}
         {s.tipo !== 'limpieza_fosas' && fila('Limpieza', `${L_FRECUENCIA[s.frecuencia] || '—'} · ${s.limpiezas_semana ?? 0} por semana · ${diasL(s.dias)}`)}
         {s.tipo === 'limpieza_fosas' && fila('Modalidad', `${L_MODALIDAD[s.modalidad] || '—'}${s.modalidad === 'recurrente' ? ` · ${L_FRECUENCIA[s.frecuencia] || ''}` : ''}`)}
         {s.tipo === 'limpieza_fosas' && fila('Volumen estimado', s.volumen_m3 != null ? `${String(s.volumen_m3).replace('.', ',')} m³` : '—')}

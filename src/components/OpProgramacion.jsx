@@ -1,6 +1,7 @@
 // Operaciones → Programación (láminas 4.1 Vista general, 4.2 Nueva operación, 4.3 Detalle, 4.4a Exportar, 4.4b Cancelar).
 // Programar NO ejecuta: no mueve baños ni consume insumos. La ejecución se confirma en Mi ruta (o en la operación, paquete 8b).
 // Cada operación es un despacho; las Rutas semanales la ven en "Por programar" para ubicarla en un día.
+import { sufijoMarcas } from '../lib/equipos'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Modal from './Modal'
@@ -411,7 +412,7 @@ function Unidades({ titulo, disponibles, elegidas, setElegidas, error, ayuda, to
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {elegidas.map((b) => (
           <span key={b.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 'var(--radio-sm)', background: C.tinte, font: '600 13px var(--font)' }}>
-            {b.codigo}<button type="button" aria-label={`Quitar ${b.codigo}`} onClick={() => setElegidas((p) => p.filter((x) => x.id !== b.id))} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: C.gris }}>✕</button>
+            {b.codigo}{sufijoMarcas(b)}<button type="button" aria-label={`Quitar ${b.codigo}`} onClick={() => setElegidas((p) => p.filter((x) => x.id !== b.id))} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: C.gris }}>✕</button>
           </span>
         ))}
       </div>
@@ -421,7 +422,7 @@ function Unidades({ titulo, disponibles, elegidas, setElegidas, error, ayuda, to
       {(texto || listar) && !lleno && (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', maxHeight: 140, overflowY: 'auto' }}>
           {res.length === 0 && <small>{texto ? 'Sin coincidencias.' : 'No quedan unidades para elegir.'}</small>}
-          {res.map((b) => <Boton key={b.id} onClick={() => { setElegidas((p) => [...p, b]); setTexto('') }} style={{ minHeight: 30, padding: '4px 10px' }}>+ {b.codigo}</Boton>)}
+          {res.map((b) => <Boton key={b.id} onClick={() => { setElegidas((p) => [...p, b]); setTexto('') }} style={{ minHeight: 30, padding: '4px 10px' }}>+ {b.codigo}{sufijoMarcas(b)}</Boton>)}
         </div>
       )}
       {error ? <small style={{ color: C.rojo }}>{error}</small> : <small>{ayuda}</small>}

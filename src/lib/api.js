@@ -110,14 +110,14 @@ export const normalizarRut = (rut) => String(rut || '').replace(/[^0-9kK]/g, '')
 export const clientesListado = async () => {
   const [c, u, s] = await Promise.all([
     rows(supabase.from('clientes')
-      .select('id, codigo, nombre, nombre_comercial, rut, tipo_cliente, comuna, telefono, correo, activo, motivo_desactivacion, desactivado_en')
+      .select('id, codigo, nombre, nombre_comercial, rut, tipo_cliente, comuna, telefono, correo, activo, motivo_desactivacion, desactivado_en, banos_propios')
       .order('nombre')),
     rows(supabase.from('ubicaciones').select('cliente_id').eq('tipo', 'cliente').eq('activa', true).not('cliente_id', 'is', null)),
     rows(supabase.from('servicios_cliente').select('cliente_id').eq('estado', 'vigente')),
   ])
   const cuenta = (lista) => lista.reduce((m, x) => { m[x.cliente_id] = (m[x.cliente_id] || 0) + 1; return m }, {})
   const nu = cuenta(u), ns = cuenta(s)
-  return c.map((x) => ({ ...x, ubicaciones: nu[x.id] || 0, servicios_vigentes: ns[x.id] || 0 }))
+  return c.map((x) => ({ ...x, ubicaciones: nu[x.id] || 0, servicios_vigentes: ns[x.id] || 0, banos_propios: Number(x.banos_propios) || 0 }))
 }
 // Otro cliente con el mismo RUT (comparado sin puntos ni guion)
 export const clientePorRut = async (rut, excluirId = null) => {
@@ -524,7 +524,16 @@ export const usoCatalogo = async (tipo, id) => {
 }
 
 // ── Inventario → Equipos (láminas 3.1 a 3.4) ────────────────────────────
-export const equiposLista = () => rows(supabase.from('v_equipos').select('*').order('numero', { ascending: true, nullsFirst: false }).limit(5000))
+// Equipos marcados "con arnés" o "VIP" (script 47). Si las columnas aún no existen en la base, no falla: devuelve vacío.
+const marcasEquipos = async () => {
+  const { data, error } = await supabase.from('activos').select('id, con_arnes, vip').or('con_arnes.eq.true,vip.eq.true')
+  return error ? {} : Object.fromEntries((data || []).map((x) => [x.id, x]))
+}
+const conMarcas = async (lista) => {
+  const m = await marcasEquipos()
+  return lista.map((e) => ({ ...e, con_arnes: !!m[e.id]?.con_arnes, vip: !!m[e.id]?.vip }))
+}
+export const equiposLista = () => rows(supabase.from('v_equipos').select('*').order('numero', { ascending: true, nullsFirst: false }).limit(5000)).then(conMarcas)
 export const siguienteNumeroUnidad = async () => {
   const { data, error } = await supabase.rpc('siguiente_numero_unidad')
   if (error) throw error
@@ -533,7 +542,8 @@ export const siguienteNumeroUnidad = async () => {
 // ¿Ya existe ese N.º de unidad? (102 = 0102). Devuelve el equipo o null
 export const equipoPorNumero = async (numero) => {
   const n = String(numero).replace(/^0+/, '')
-  const r = await rows(supabase.from('v_equipos').select('id, codigo, qr_token, situacion').eq('propiedad', 'empresa').eq('tipo', 'bano_quimico'))
+  // Una sola numeración para todos los equipos propios (baños, casetas, duchas…)
+  const r = await rows(supabase.from('v_equipos').select('id, codigo, qr_token, situacion').eq('propiedad', 'empresa'))
   return r.find((x) => String(x.codigo).replace(/^0+/, '') === n) || null
 }
 // Alta de equipo. La base pone situación, deja el registro inicial en Movimientos y, si es del cliente, el código EXT-###
@@ -558,7 +568,8 @@ export const equipoPorQr = async (token) => {
     e.ubicacion_id ? one(supabase.from('ubicaciones').select('direccion, comuna, lat, lng').eq('id', e.ubicacion_id)) : null,
     e.servicio_id ? one(supabase.from('servicios_cliente').select('codigo, cliente_id').eq('id', e.servicio_id)) : null,
   ])
-  return { ...e, ...a, ubic: u, servicio: s }
+  const m = (await marcasEquipos())[a.id]
+  return { ...e, ...a, ubic: u, servicio: s, con_arnes: !!m?.con_arnes, vip: !!m?.vip }
 }
 // Última entrega confirmada del equipo (orden y fecha)
 export const ultimaEntrega = async (activoId) => {
@@ -840,7 +851,7 @@ export const banosDisponibles = async () => {
       .eq('accion', 'entrega').eq('despachos.estado', 'programado')),
   ])
   const tomados = new Set(ocupados.map((o) => o.activo_id))
-  return lista.filter((b) => !tomados.has(b.id))
+  return conMarcas(lista.filter((b) => !tomados.has(b.id)))
 }
 
 // ── Transporte ────────────────────────────────────────────────────────────

@@ -50,6 +50,7 @@ export default function Clientes() {
       if (filtro.estado === 'inactivos' && c.activo) return false
       if (filtro.servicios === 'con' && !(c.servicios_vigentes > 0)) return false
       if (filtro.servicios === 'sin' && c.servicios_vigentes > 0) return false
+      if (filtro.servicios === 'propios' && !(c.banos_propios > 0)) return false   // FOSAN les limpia baños que son del cliente
       if (!t) return true
       return (c.nombre || '').toLowerCase().includes(t) || (c.nombre_comercial || '').toLowerCase().includes(t)
         || (c.codigo || '').toLowerCase().includes(t) || (tr.length >= 3 && normalizarRut(c.rut).includes(tr))
@@ -67,9 +68,9 @@ export default function Clientes() {
   const verInactivos = () => { setEstado('inactivos'); setFiltro({ texto: '', estado: 'inactivos' }); setTexto(''); setPagina(1) }
 
   const exportar = () => exportarTabla(
-    ['Código', 'RUT', 'Nombre / razón social', 'Nombre comercial', 'Tipo', 'Comuna', 'Teléfono', 'Correo', 'Ubicaciones', 'Servicios vigentes', 'Estado'],
+    ['Código', 'RUT', 'Nombre / razón social', 'Nombre comercial', 'Tipo', 'Comuna', 'Teléfono', 'Correo', 'Ubicaciones', 'Servicios vigentes', 'Baños propios', 'Estado'],
     visibles.map((c) => [c.codigo, c.rut, c.nombre, c.nombre_comercial, c.tipo_cliente === 'persona' ? 'Persona' : 'Empresa',
-      c.comuna, c.telefono, c.correo, c.ubicaciones, c.servicios_vigentes, c.activo ? 'Activo' : 'Inactivo']),
+      c.comuna, c.telefono, c.correo, c.ubicaciones, c.servicios_vigentes, c.banos_propios || 0, c.activo ? 'Activo' : 'Inactivo']),
     'Clientes',
   )
 
@@ -93,6 +94,7 @@ export default function Clientes() {
       )),
     },
     { k: 'servicios_vigentes', label: 'Servicios vigentes', alinear: 'right' },
+    { k: 'banos_propios', label: 'Baños propios', alinear: 'right', render: (c) => (c.banos_propios > 0 ? <b>{c.banos_propios}</b> : <span style={{ color: C.gris }}>—</span>) },
     {
       k: 'activo', label: 'Estado', render: (c) => c.activo
         ? <Estado tono="ok">Activo</Estado>
@@ -129,6 +131,10 @@ export default function Clientes() {
         <div style={marcado('')}><Indicador icono={I.users} color={C.verde} rotulo="Clientes activos" valor={cargando ? '…' : activos.length} alClic={() => porServicios('')} /></div>
         <div style={marcado('con')}><Indicador icono={I.doc} color={C.azul} rotulo="Con servicios vigentes" valor={cargando ? '…' : activos.filter((c) => c.servicios_vigentes > 0).length} alClic={() => porServicios('con')} /></div>
         <div style={marcado('sin')}><Indicador icono={PROHIBIDO} color={C.rojo} rotulo="Sin servicios vigentes" valor={cargando ? '…' : activos.filter((c) => !c.servicios_vigentes).length} alClic={() => porServicios('sin')} /></div>
+        <div style={marcado('propios')} title="Clientes a los que FOSAN les limpia baños que son del cliente">
+          <Indicador icono={I.drop} color={C.amarillo} rotulo={`Con baños propios${cargando ? '' : ` · ${activos.reduce((s, c) => s + c.banos_propios, 0)} baños`}`}
+            valor={cargando ? '…' : activos.filter((c) => c.banos_propios > 0).length} alClic={() => porServicios('propios')} />
+        </div>
       </div>
 
       <section className="card">

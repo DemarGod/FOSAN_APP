@@ -42,5 +42,6 @@ limpieza de clientes, importación desde Maxxa, entre otros). Su resultado **sí
 | `44_planificar_rutas.sql` | 21 | Quién planifica rutas semanales: dueño o rol con permiso de registrar en Operaciones. |
 | `45_operaciones_duplicadas.sql` | 22 | Un baño no puede estar en dos entregas o dos retiros programados a la vez. |
 | `46_foto_base_SOLO_LECTURA.sql` | 25 | Solo lectura: saca la "foto" de la base para regenerar `../esquema/`. |
+| `47_arnes_vip_casetas_duchas.sql` | 26 | Equipos con arnés y VIP (casillas y filtro), categorías Caseta y Ducha con la misma numeración que los baños. |
 
 Números que faltan (`22`, `30`, `36`, `39`, `41`): eran consultas de solo lectura o diagnósticos y se retiraron del repositorio.

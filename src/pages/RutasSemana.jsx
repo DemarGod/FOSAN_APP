@@ -5,6 +5,7 @@ import {
   DIAS_RUTA, SEMAFORO, lunesDe, fechaDia, diaCorto, etiquetaSemana,
 } from '../lib/rutasSemana'
 import { sumarDias, hoyISO } from '../lib/costos'
+import { exportarRutasSemana } from '../lib/exportarRutas'
 import { C, Icon, I } from '../lib/ui'
 import { Cargando, Aviso, Kpis } from '../components/Listado'
 import Modal from '../components/Modal'
@@ -27,6 +28,7 @@ export default function RutasSemana() {
   const [form, setForm] = useState(null)
   const [ver, setVer] = useState(null)
   const [error, setError] = useState(null)
+  const [exportando, setExportando] = useState(false)
 
   const cargar = () => Promise.all([rutasDeSemana(lunes), avanceSemana(lunes), porProgramar()])
     .then(([r, a, p]) => { setRutas(r); setAvance(a); setPendientes(p) }).catch(setError)
@@ -36,6 +38,12 @@ export default function RutasSemana() {
   const nombreOp = (id) => ops.find((o) => o.id === id)?.nombre || 'Sin operador'
   const accion = async (fn, ok) => {
     try { setError(null); await fn(); if (ok) ok(); await cargar() } catch (e) { setError(e) }
+  }
+  // Excel de la semana que se está viendo: una hoja por ruta, para imprimir y entregar a los operadores
+  const exportar = async () => {
+    setExportando(true); setError(null)
+    try { await exportarRutasSemana(lunes, rutas || [], nombreOp) } catch (e) { setError(e) }
+    setExportando(false)
   }
   const eliminar = (r) => window.confirm(`¿Eliminar la ruta ${r.nombre} de la semana del ${etiquetaSemana(r.lunes)}?`) && accion(() => borrarRutaSemana(r.id))
   const copiar = (r) => window.confirm(`Se crea ${r.nombre} para la semana del ${etiquetaSemana(sumarDias(r.lunes, 7))} con las mismas limpiezas. Las entregas y retiros no se copian.`)
@@ -55,6 +63,11 @@ export default function RutasSemana() {
             Planifica cada semana quién visita a qué cliente y qué día. Cada operador ve solo su ruta de la semana en curso.
           </p>
         </div>
+        <button className="btn" onClick={exportar} disabled={!rutas?.length || exportando}
+          title={rutas?.length ? `Descarga el Excel de la semana ${etiquetaSemana(lunes)} (una hoja por ruta)` : 'No hay rutas en esta semana'}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <Icon d={I.descarga} size={16} />{exportando ? 'Exportando…' : 'Exportar'}
+        </button>
         {planifica && (
           <button className="btn btn-azul" onClick={() => setForm({})} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <Icon d={I.plus} size={16} />Nueva ruta

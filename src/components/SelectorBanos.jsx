@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { C, Icon, I } from '../lib/ui'
+import { marcasDe } from '../lib/equipos'
 
 // Lista de baños con filtro por tipo/modelo y casillas para elegir unidades.
 export default function SelectorBanos({ banos = [], elegidos = [], onChange, vacio = 'No hay baños disponibles.' }) {
@@ -40,6 +41,7 @@ export default function SelectorBanos({ banos = [], elegidos = [], onChange, vac
               <Icon d={I.cabina} size={15} color={C.navy} />
               <span style={{ font: '600 13px var(--font)', minWidth: 0, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={b.codigo}>{b.codigo}</span>
               <span style={{ font: '400 12px var(--font)', color: b.modelos_bano ? C.gris : '#FBBF24', flex: 1, minWidth: 0 }}>{etiqueta(b)}</span>
+              {marcasDe(b).map((m) => <span key={m} style={{ padding: '1px 7px', borderRadius: 999, border: `1px solid ${C.azulClaro}`, color: C.azulClaro, font: '600 11px var(--font)' }}>{m}</span>)}
             </label>
           )
         })}
