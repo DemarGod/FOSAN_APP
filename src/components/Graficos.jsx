@@ -32,12 +32,18 @@ export function TarjetaGrafico({ titulo, sub, tabla, children, accion }) {
   )
 }
 
-function TablaSimple({ columnas, filas }) {
+// alClic(i): opcional; cada fila lleva al mismo lugar que su parte del gráfico
+function TablaSimple({ columnas, filas, alClic }) {
   return (
     <div className="scroller">
       <table style={{ fontSize: 13 }}>
         <thead><tr>{columnas.map((c, i) => <th key={c} style={{ textAlign: i ? 'right' : 'left' }}>{c}</th>)}</tr></thead>
-        <tbody>{filas.map((f, i) => <tr key={i}>{f.map((x, j) => <td key={j} style={{ textAlign: j ? 'right' : 'left' }}>{typeof x === 'number' ? n(x) : x}</td>)}</tr>)}</tbody>
+        <tbody>{filas.map((f, i) => (
+          <tr key={i} onClick={alClic ? () => alClic(i) : undefined} title={alClic ? `Ver ${f[0]}` : undefined}
+            style={alClic ? { cursor: 'pointer' } : undefined}>
+            {f.map((x, j) => <td key={j} style={{ textAlign: j ? 'right' : 'left', ...(alClic && !j ? { color: C.azulClaro } : {}) }}>{typeof x === 'number' ? n(x) : x}</td>)}
+          </tr>
+        ))}</tbody>
       </table>
     </div>
   )

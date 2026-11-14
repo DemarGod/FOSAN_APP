@@ -2,7 +2,7 @@
 // Situación = uso operativo · Condición = estado físico · Ubicación = dónde está.
 // El N.º de unidad es entero, único y no se cambia ni se reutiliza. Los vehículos están en Flota.
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import Modal from './Modal'
 import ImportarInventario from './ImportarInventario'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
@@ -26,6 +26,8 @@ export const L_CONDICION = {
 export const TONO_SITUACION = {
   disponible: 'ok', reservado: 'info', asignado: 'info', en_traslado: 'info', en_mantenimiento: 'atencion', no_localizado: 'error', baja: 'neutro',
 }
+// "Otros" del gráfico de Inicio: lo que no es asignado, reservado, disponible, en mantenimiento ni baja
+const SITUACIONES_PRINCIPALES = ['asignado', 'reservado', 'disponible', 'en_mantenimiento', 'baja']
 export const TONO_CONDICION = { operativo: 'ok', requiere_limpieza: 'atencion', requiere_reparacion: 'error', sin_evaluar: 'neutro' }
 // Condición inicial → estado que leen hoy las rutas (la base traduce a situación)
 const ESTADO_INICIAL = { operativo: 'disponible', requiere_limpieza: 'en_limpieza', requiere_reparacion: 'mantencion', sin_evaluar: 'disponible' }
@@ -42,8 +44,15 @@ export default function InvEquipos() {
   const exporta = esDueno(perfil) || !!perfil?.permisos?.banos?.exportar
   const [datos, setDatos] = useState(null)
   const [error, setError] = useState(null)
-  const [f, setF] = useState(FILTRO_VACIO)
-  const [aplicado, setAplicado] = useState(FILTRO_VACIO)
+  // Desde Inicio (gráfico "Situación de los equipos"): /inventario?tab=equipos&situacion=asignado
+  const [params, setParams] = useSearchParams()
+  const desdeEnlace = useMemo(() => {
+    const s = params.get('situacion')
+    return s && (L_SITUACION[s] || s === 'otros') ? { ...FILTRO_VACIO, situacion: s } : FILTRO_VACIO
+  }, [])
+  const [f, setF] = useState(desdeEnlace)
+  const [aplicado, setAplicado] = useState(desdeEnlace)
+  useEffect(() => { if (params.get('situacion')) setParams({ tab: 'equipos' }, { replace: true }) }, [])
   const [pagina, setPagina] = useState(1)
   const [form, setForm] = useState(false)
   const [exportar, setExportar] = useState(false)
@@ -63,7 +72,7 @@ export default function InvEquipos() {
     const a = aplicado
     if (a.numero && !String(e.codigo).replace(/^0+/, '').startsWith(a.numero.replace(/^0+/, '')) && !String(e.codigo).toLowerCase().includes(a.numero.toLowerCase())) return false
     if (a.categoria && e.categoria !== a.categoria) return false
-    if (a.situacion ? e.situacion !== a.situacion : e.situacion === 'baja') return false
+    if (a.situacion === 'otros' ? SITUACIONES_PRINCIPALES.includes(e.situacion) : a.situacion ? e.situacion !== a.situacion : e.situacion === 'baja') return false
     if (a.condicion && e.condicion !== a.condicion) return false
     if (a.ubicacion && e.ubicacion !== a.ubicacion) return false
     if (a.propiedad && e.propiedad !== a.propiedad) return false
@@ -127,7 +136,7 @@ export default function InvEquipos() {
             <select value={f.categoria} onChange={set('categoria')}><option value="">Todas</option>{opciones('categoria').map((x) => <option key={x}>{x}</option>)}</select>
           </Campo>
           <Campo etiqueta="Situación">
-            <select value={f.situacion} onChange={set('situacion')}><option value="">Todas (sin bajas)</option>{Object.entries(L_SITUACION).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+            <select value={f.situacion} onChange={set('situacion')}><option value="">Todas (sin bajas)</option>{Object.entries(L_SITUACION).map(([k, l]) => <option key={k} value={k}>{l}</option>)}<option value="otros">Otros (en traslado, no localizado)</option></select>
           </Campo>
           <Campo etiqueta="Condición">
             <select value={f.condicion} onChange={set('condicion')}><option value="">Todas</option>{Object.entries(L_CONDICION).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>

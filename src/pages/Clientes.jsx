@@ -51,6 +51,7 @@ export default function Clientes() {
       if (filtro.servicios === 'con' && !(c.servicios_vigentes > 0)) return false
       if (filtro.servicios === 'sin' && c.servicios_vigentes > 0) return false
       if (filtro.servicios === 'propios' && !(c.banos_propios > 0)) return false   // FOSAN les limpia baños que son del cliente
+      if (filtro.servicios === 'sinubic' && c.ubicaciones > 0) return false         // les falta agregar la ubicación
       if (!t) return true
       return (c.nombre || '').toLowerCase().includes(t) || (c.nombre_comercial || '').toLowerCase().includes(t)
         || (c.codigo || '').toLowerCase().includes(t) || (tr.length >= 3 && normalizarRut(c.rut).includes(tr))
@@ -134,6 +135,11 @@ export default function Clientes() {
         <div style={marcado('propios')} title="Clientes a los que FOSAN les limpia baños que son del cliente">
           <Indicador icono={I.drop} color={C.amarillo} rotulo={`Con baños propios${cargando ? '' : ` · ${activos.reduce((s, c) => s + c.banos_propios, 0)} baños`}`}
             valor={cargando ? '…' : activos.filter((c) => c.banos_propios > 0).length} alClic={() => porServicios('propios')} />
+        </div>
+        <div style={marcado('sinubic')} title="Clientes activos que todavía no tienen ninguna ubicación. Pulsa para verlos en la tabla.">
+          <Indicador icono={I.pin} color={cargando || activos.every((c) => c.ubicaciones > 0) ? C.verde : C.amarillo}
+            rotulo={`Sin ubicación${cargando ? '' : ` · ${activos.filter((c) => c.ubicaciones > 0).length} de ${activos.length} ya la tienen`}`}
+            valor={cargando ? '…' : activos.filter((c) => !(c.ubicaciones > 0)).length} alClic={() => porServicios('sinubic')} />
         </div>
       </div>
 

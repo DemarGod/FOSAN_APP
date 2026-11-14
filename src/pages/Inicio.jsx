@@ -144,19 +144,19 @@ export default function Inicio({ onCalendario }) {
         </TarjetaGrafico>
 
         <TarjetaGrafico titulo="Situación de los equipos" sub="Equipos propios · situación actual"
-          tabla={{ columnas: ['Situación', 'Equipos'], filas: graf.situacion.map((p) => [p.l, p.v]) }}>
-          <Dona partes={graf.situacion.map((p) => ({ ...p, onClick: () => navegar('/inventario') }))} sub="equipos" />
+          tabla={{ columnas: ['Situación', 'Equipos'], filas: graf.situacion.map((p) => [p.l, p.v]), alClic: (i) => navegar(`/inventario?tab=equipos&situacion=${graf.situacion[i].s}`) }}>
+          <Dona partes={graf.situacion.map((p) => ({ ...p, onClick: () => navegar(`/inventario?tab=equipos&situacion=${p.s}`) }))} sub="equipos" />
         </TarjetaGrafico>
 
         {puedeVer(perfil, 'mantenciones') && (
           <TarjetaGrafico titulo="Estado del mantenimiento" sub="Equipos y vehículos"
-            tabla={{ columnas: ['Estado', 'Mantenimientos'], filas: graf.mant.map((p) => [p.l, p.v]) }}>
+            tabla={{ columnas: ['Estado', 'Mantenimientos'], filas: graf.mant.map((p) => [p.l, p.v]), alClic: () => navegar('/mantenimiento') }}>
             <BarrasH items={graf.mant.map((p) => ({ ...p, onClick: () => navegar('/mantenimiento') }))} />
           </TarjetaGrafico>
         )}
 
         <TarjetaGrafico titulo="Clientes con más baños" sub="Top 5 por unidades asignadas"
-          tabla={{ columnas: ['Cliente', 'Baños'], filas: graf.top.map((p) => [p.l, p.v]) }}>
+          tabla={{ columnas: ['Cliente', 'Baños'], filas: graf.top.map((p) => [p.l, p.v]), alClic: (i) => navegar('/clientes?q=' + encodeURIComponent(graf.top[i].l)) }}>
           <BarrasH items={graf.top.map((p) => ({ ...p, onClick: () => navegar('/clientes?q=' + encodeURIComponent(p.l)) }))} vacio="Sin baños asignados." />
         </TarjetaGrafico>
 
@@ -168,7 +168,7 @@ export default function Inicio({ onCalendario }) {
           </TarjetaGrafico>
         ) : (
           <TarjetaGrafico titulo="Estado de la flota" sub="Vehículos activos"
-            tabla={{ columnas: ['Estado', 'Vehículos'], filas: graf.flota.map((p) => [p.l, p.v]) }}>
+            tabla={{ columnas: ['Estado', 'Vehículos'], filas: graf.flota.map((p) => [p.l, p.v]), alClic: () => navegar('/flota') }}>
             <BarrasH items={graf.flota.map((p) => ({ ...p, onClick: () => navegar('/flota') }))} vacio="Sin vehículos." />
           </TarjetaGrafico>
         )}
@@ -341,11 +341,11 @@ function armarGraficos(g) {
   const eq = g?.equipos || []
   const cuenta = (f) => eq.filter(f).length
   const situacion = [
-    { l: 'Asignados', v: cuenta((e) => e.situacion === 'asignado'), c: SERIE[0] },
-    { l: 'Reservados', v: cuenta((e) => e.situacion === 'reservado'), c: SERIE[1] },
-    { l: 'Disponibles', v: cuenta((e) => e.situacion === 'disponible'), c: SERIE[2] },
-    { l: 'En mantenimiento', v: cuenta((e) => e.situacion === 'en_mantenimiento'), c: SERIE[3] },
-    { l: 'Otros', v: cuenta((e) => !['asignado', 'reservado', 'disponible', 'en_mantenimiento'].includes(e.situacion)), c: SERIE[4] },
+    { s: 'asignado', l: 'Asignados', v: cuenta((e) => e.situacion === 'asignado'), c: SERIE[0] },
+    { s: 'reservado', l: 'Reservados', v: cuenta((e) => e.situacion === 'reservado'), c: SERIE[1] },
+    { s: 'disponible', l: 'Disponibles', v: cuenta((e) => e.situacion === 'disponible'), c: SERIE[2] },
+    { s: 'en_mantenimiento', l: 'En mantenimiento', v: cuenta((e) => e.situacion === 'en_mantenimiento'), c: SERIE[3] },
+    { s: 'otros', l: 'Otros', v: cuenta((e) => !['asignado', 'reservado', 'disponible', 'en_mantenimiento'].includes(e.situacion)), c: SERIE[4] },
   ].filter((p) => p.v > 0 || p.l !== 'Otros')
   const m = g?.mant || []
   const mant = [
