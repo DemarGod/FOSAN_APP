@@ -3,8 +3,10 @@ import Modal from './Modal'
 import { iniciarDia, marcarParadaRuta, marcarParadaRutaVarios, cerrarDia, SEMAFORO, L_TAREA, DIAS_RUTA } from '../lib/rutasSemana'
 import { hoyISO } from '../lib/costos'
 import { C, Icon, I } from '../lib/ui'
-import { subirRespaldo } from '../lib/api'
-import { Lienzo, aBlob } from './OpRespaldos'
+import { subirRespaldo, guardarConstancia } from '../lib/api'
+import { Lienzo, aBlob, L_SERV } from './OpRespaldos'
+import { htmlConstancia, aDataUrl } from '../lib/respaldosDrive'
+import { useSesion } from '../lib/sesion'
 
 const num = (x) => String(x ?? '').replace(/\D/g, '').slice(0, 8)
 const miles = (n) => Number(n).toLocaleString('es-CL')
@@ -134,18 +136,21 @@ export default function DiaRuta({ viaje, editable, onCambio }) {
         <button className="btn btn-azul" style={{ minHeight: 46, justifySelf: 'start' }} onClick={() => setCerrar(true)}>Cerrar ruta del día</button>
       )}
 
-      {marcar && <Marcar {...marcar} fecha={v.fecha} onCerrar={() => setMarcar(null)} onListo={() => { setMarcar(null); onCambio() }} />}
+      {marcar && <Marcar {...marcar} fecha={v.fecha} viaje={v} onCerrar={() => setMarcar(null)} onListo={() => { setMarcar(null); onCambio() }} />}
       {cerrar && <Cerrar viaje={v} pendientes={cuenta('pendiente')} onCerrar={() => setCerrar(false)} onListo={() => { setCerrar(false); onCambio() }} />}
     </div>
   )
 }
 
 // Confirmar una parada, con observación y aviso de mantención
-function Marcar({ p, estado, fecha, onCerrar, onListo, mantInicial = false }) {
+function Marcar({ p, estado, fecha, viaje, onCerrar, onListo, mantInicial = false }) {
+  const { perfil } = useSesion()
   const [obs, setObs] = useState('')
-  // Respaldo opcional (se guarda en Google Drive): firma de quien recibe y fotos
+  // Respaldo opcional (se guarda en Google Drive): firma de quien recibe, firma del chofer y fotos
   const [firma, setFirma] = useState(null)
   const [firmante, setFirmante] = useState('')
+  const [firmaChofer, setFirmaChofer] = useState(null)
+  const [chofer, setChofer] = useState(perfil?.nombre || '')
   const [fotos, setFotos] = useState([])
   const [mant, setMant] = useState(mantInicial)
   // Baños con falla: { [id]: { tipo, otro, retirado } } — cada baño con su propia mantención
@@ -176,13 +181,35 @@ function Marcar({ p, estado, fecha, onCerrar, onListo, mantInicial = false }) {
 
 
     if (ok && firma && firmante.trim().length < 3) return setError('Escribe el nombre de quien firma.')
+    if (ok && firmaChofer && chofer.trim().length < 3) return setError('Escribe el nombre del chofer que firma.')
     if (fotos.some((f) => f.size > 10 * 1024 * 1024)) return setError('Máximo 10 MB por foto.')
     setOcupado(true); setError(null)
     try { await marcarParadaRutaVarios(p.id, estado, obs, items) } catch (e) { setError(String(e.message || e)); setOcupado(false); return }    // La parada ya quedó marcada; si falla el respaldo, se avisa pero no se deshace
-    const destino = { paradaId: p.id, folio: p.despacho?.folio || `Ruta ${fecha} ${p.clientes?.nombre || ''}`.trim() }
+    const ahora = new Date().toISOString()
+    const destino = { paradaId: p.id, folio: p.despacho?.folio || 'Limpieza', cliente: p.clientes?.nombre, fechaOp: ahora }
     try {
-      if (ok && firma) await subirRespaldo(p.despacho_id, await aBlob(firma), 'firma', { ...destino, nombre: 'firma.png', firmante: firmante.trim() })
-      for (const f of fotos) await subirRespaldo(p.despacho_id, f, 'archivo', destino)
+      const bCliente = ok && firma ? await aBlob(firma) : null, bChofer = ok && firmaChofer ? await aBlob(firmaChofer) : null
+      if (bCliente) await subirRespaldo(p.despacho_id, bCliente, 'firma', { ...destino, firmante: firmante.trim() })
+      if (bChofer) await subirRespaldo(p.despacho_id, bChofer, 'firma_chofer', { ...destino, firmante: chofer.trim() })
+      let i = 0
+      for (const f of fotos) await subirRespaldo(p.despacho_id, f, 'archivo', { ...destino, indice: ++i })
+      // Parada realizada: su constancia con las firmas queda en Drive (CONSTANCIAS/<mes>/)
+      if (ok) {
+        const c = p.clientes || {}, serv = p.despacho?.servicio_tipo
+        const o = {
+          folio: destino.folio, cliente: c.nombre, ubicacion: [c.direccion, c.comuna].filter(Boolean).join(', ') || null,
+          unidades: p.despacho?.banos || (p.codigos?.length ? p.codigos.join(', ') : p.banos ? `${p.banos} baño(s)` : null),
+          patente: viaje?.vehiculo, responsable: chofer.trim() || perfil?.nombre, fecha_programada: fecha, fecha_realizada: ahora,
+          observaciones: obs.trim() || null, recibido_por: firmante.trim() || null,
+        }
+        const tarea = L_TAREA[p.tarea] || p.tarea
+        await guardarConstancia(p.despacho_id, htmlConstancia(o, {
+          accion: L_SERV[serv] && serv !== 'arriendo_limpieza' ? L_SERV[serv] : `${L_SERV[serv] ? L_SERV[serv] + ' · ' : ''}${tarea}`,
+          servicio: L_SERV[serv] || (p.tarea === 'limpieza' ? 'Limpieza de baños' : null),
+          cliente: bCliente ? { imagen: await aDataUrl(bCliente), nombre: firmante.trim() } : null,
+          chofer: bChofer ? { imagen: await aDataUrl(bChofer), nombre: chofer.trim() } : (o.responsable ? { nombre: o.responsable } : null),
+        }), destino)
+      }
     } catch (e) {
       window.alert(`La parada quedó marcada, pero no se pudo guardar el respaldo (${e.message || e}). Avisa a administración.`)
     }
@@ -252,9 +279,16 @@ function Marcar({ p, estado, fecha, onCerrar, onListo, mantInicial = false }) {
         )}
         {ok && (
           <div style={{ display: 'grid', gap: 8 }}>
-            <strong>Firma de quien recibe (opcional)</strong>
+            <strong>Firma de quien recibe · cliente (opcional)</strong>
             <input value={firmante} onChange={(e) => setFirmante(e.target.value)} maxLength={80} placeholder="Nombre del encargado" />
             <Lienzo onCambio={setFirma} />
+          </div>
+        )}
+        {ok && (
+          <div style={{ display: 'grid', gap: 8 }}>
+            <strong>Firma del chofer (opcional)</strong>
+            <input value={chofer} onChange={(e) => setChofer(e.target.value)} maxLength={80} placeholder="Nombre del chofer" />
+            <Lienzo onCambio={setFirmaChofer} />
           </div>
         )}
         <label className="campo">

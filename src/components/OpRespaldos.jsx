@@ -1,10 +1,12 @@
 // Operaciones → Respaldos (lámina 4.1) y ejecución confirmada.
-// Cada operación realizada tiene: constancia imprimible, archivos subidos (fotos, guías) y firma de recepción.
+// Cada operación realizada tiene: constancia (imprimible y en PDF en Drive), archivos subidos (fotos, guías),
+// firma de recepción del cliente y firma del chofer. En Drive se ordenan por tipo y mes (lib/respaldosDrive.js).
 // Los respaldos no se editan ni se borran. Las operaciones de una ruta se confirman en Mi ruta.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Modal from './Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
-import { operaciones, paradasRealizadas, respaldosDe, subirRespaldo, confirmarOperacion, abrirRespaldo, esImagenRespaldo } from '../lib/api'
+import { operaciones, paradasRealizadas, respaldosDe, subirRespaldo, guardarConstancia, confirmarOperacion, abrirRespaldo, esImagenRespaldo } from '../lib/api'
+import { htmlConstancia, aDataUrl } from '../lib/respaldosDrive'
 import { useSesion } from '../lib/sesion'
 import { hoyISO, sumarDias, ahoraLocal } from '../lib/costos'
 import { C, I, fecha, fechaHora } from '../lib/ui'
@@ -80,28 +82,45 @@ export function RespaldoModal({ o, onCerrar }) {
   const { perfil } = useSesion()
   const puede = !!perfil
   const [lista, setLista] = useState(null)
-  const [firmar, setFirmar] = useState(false)
+  const [firmar, setFirmar] = useState(null)     // 'firma' (cliente) | 'firma_chofer'
   const [error, setError] = useState(null)
+  const [aviso, setAviso] = useState(null)
   const [subiendo, setSubiendo] = useState(false)
+  const [guardandoPdf, setGuardandoPdf] = useState(false)
   const input = useRef(null)
   const cargar = () => respaldosDe(o.parada_id ? { parada: o.parada_id } : o.id).then(setLista).catch(setError)  
   useEffect(() => { cargar() }, [o.id])
   const archivos = (lista || []).filter((r) => r.tipo === 'archivo')
   const firmas = (lista || []).filter((r) => r.tipo === 'firma')
+  const firmasChofer = (lista || []).filter((r) => r.tipo === 'firma_chofer')
+  const constancias = (lista || []).filter((r) => r.tipo === 'constancia')
+  const destino = { folio: o.folio, paradaId: o.parada_id, cliente: o.cliente, fechaOp: o.fecha_realizada || o.fecha_programada }
+  const ultima = (l) => { const f = l[l.length - 1]; return f ? { imagen: f.dataUrl || f.url, nombre: f.firmante } : null }
+  // Guarda en Drive (CONSTANCIAS/<mes>/) la constancia con las firmas que tiene ahora
+  const guardarPdf = async () => {
+    setGuardandoPdf(true); setError(null); setAviso(null)
+    try {
+      const html = htmlConstancia(o, { accion: servicioYAccion(o), servicio: servicioTexto(o), cliente: ultima(firmas), chofer: ultima(firmasChofer) })
+      await guardarConstancia(o.parada_id ? null : o.id, html, destino)
+      setAviso('Constancia guardada en Drive (carpeta CONSTANCIAS).'); await cargar()
+    } catch (x) { setError(x) }
+    setGuardandoPdf(false)
+  }
 
   const subir = async (files) => {
     setError(null)
     const grandes = [...files].filter((x) => x.size > MAX_MB * 1024 * 1024)
     if (grandes.length) { setError({ message: `Máximo ${MAX_MB} MB por archivo.` }); return }
     setSubiendo(true)
-    try { for (const x of files) await subirRespaldo(o.parada_id ? null : o.id, x, 'archivo', { folio: o.folio, paradaId: o.parada_id }); await cargar() } catch (x) { setError(x) }
+    try { let i = archivos.length; for (const x of files) await subirRespaldo(o.parada_id ? null : o.id, x, 'archivo', { ...destino, indice: ++i }); await cargar() } catch (x) { setError(x) }
     setSubiendo(false)
   }
 
   return (
     <Modal titulo={`Respaldo · ${o.folio}`} ancho={760} onCerrar={onCerrar} pie={<>
       <Boton onClick={onCerrar}>Cerrar</Boton>
-      <Boton tipo="principal" icono={I.doc} onClick={() => imprimirConstancia(o, firmas)} disabled={lista === null}>Constancia imprimible</Boton>
+      <Boton icono={I.doc} onClick={() => imprimirConstancia(o, ultima(firmas), ultima(firmasChofer))} disabled={lista === null}>Constancia imprimible</Boton>
+      <Boton tipo="principal" icono={I.descarga} onClick={guardarPdf} disabled={lista === null || guardandoPdf || !puede}>{guardandoPdf ? 'Guardando…' : constancias.length ? 'Guardar constancia actualizada en Drive' : 'Guardar constancia en Drive'}</Boton>
     </>}>
       <div style={{ padding: 18, display: 'grid', gap: 14 }}>
         <div style={{ font: '400 14px/1.7 var(--font)' }}>
@@ -132,23 +151,36 @@ export function RespaldoModal({ o, onCerrar }) {
           )}
         </section>
 
-        <section style={{ display: 'grid', gap: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <h6 style={{ margin: 0, flex: 1 }}>Firma de recepción</h6>
-            <Boton icono={I.lapiz} onClick={() => setFirmar(true)} disabled={!puede} style={chico}>{firmas.length ? 'Agregar otra firma' : 'Agregar firma'}</Boton>
-          </div>
-          {firmas.length === 0 && <span className="text-muted">Sin firma.</span>}
-          {firmas.map((r) => (
-            <div key={r.id} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              {r.url && <img src={r.url} alt="Firma" style={{ height: 80, background: '#fff', border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-sm)' }} />}
-              <span style={{ font: '400 13px/1.5 var(--font)' }}><b>{r.firmante || '—'}</b><br />{fechaHora(r.creado_en)}</span>
+        {[['firma', 'Firma del cliente (recepción)', firmas, 'Agregar firma del cliente'], ['firma_chofer', 'Firma del chofer', firmasChofer, 'Agregar firma del chofer']].map(([tipo, titulo, l, boton]) => (
+          <section key={tipo} style={{ display: 'grid', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <h6 style={{ margin: 0, flex: 1 }}>{titulo}</h6>
+              <Boton icono={I.lapiz} onClick={() => setFirmar(tipo)} disabled={!puede} style={chico}>{l.length ? 'Agregar otra' : boton}</Boton>
             </div>
+            {lista !== null && l.length === 0 && <span className="text-muted">Sin firma.</span>}
+            {l.map((r) => (
+              <div key={r.id} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                {r.url && <img src={r.url} alt="Firma" style={{ height: 80, background: '#fff', border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-sm)' }} />}
+                <span style={{ font: '400 13px/1.5 var(--font)' }}><b>{r.firmante || '—'}</b><br />{fechaHora(r.creado_en)}</span>
+              </div>
+            ))}
+          </section>
+        ))}
+
+        <section style={{ display: 'grid', gap: 8 }}>
+          <h6 style={{ margin: 0 }}>Constancias guardadas en Drive ({constancias.length})</h6>
+          {lista !== null && constancias.length === 0 && <span className="text-muted">Aún no hay. Se guarda sola al confirmar la operación, o con el botón "Guardar constancia en Drive".</span>}
+          {constancias.map((r) => (
+            <a key={r.id} href="#" onClick={(e) => { e.preventDefault(); abrirRespaldo(r).catch(setError) }} style={{ font: '400 13px var(--font)' }}>
+              {r.nombre} <span className="text-muted">· {fechaHora(r.creado_en)}</span>
+            </a>
           ))}
         </section>
+        {aviso && <Ayuda>{aviso}</Ayuda>}
         {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
       </div>
-      {firmar && <FirmaModal nombreInicial={o.recibido_por || ''} onCerrar={() => setFirmar(false)}
-        onFirmar={async (blob, firmante) => { await subirRespaldo(o.parada_id ? null : o.id, blob, 'firma', { nombre: 'firma.png', firmante, folio: o.folio, paradaId: o.parada_id }); setFirmar(false); cargar() }} />}    </Modal>
+      {firmar && <FirmaModal chofer={firmar === 'firma_chofer'} nombreInicial={firmar === 'firma_chofer' ? o.responsable || '' : o.recibido_por || ''} onCerrar={() => setFirmar(null)}
+        onFirmar={async (blob, firmante) => { await subirRespaldo(o.parada_id ? null : o.id, blob, firmar, { ...destino, firmante }); setFirmar(null); cargar() }} />}    </Modal>
   )
 }
 
@@ -170,7 +202,7 @@ export function Lienzo({ onCambio }) {
   return (
     <div style={{ display: 'grid', gap: 6 }}>
       <canvas ref={ref} onPointerDown={abajo} onPointerMove={mover} onPointerUp={arriba} onPointerLeave={arriba}
-        style={{ width: '100%', height: 180, background: 'var(--panel)', border: `1px dashed ${C.gris}`, borderRadius: 'var(--radio-md)', touchAction: 'none', cursor: 'crosshair' }} />
+        style={{ width: '100%', height: 180, background: '#fff', border: `1px dashed ${C.gris}`, borderRadius: 'var(--radio-md)', touchAction: 'none', cursor: 'crosshair' }} />
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <small className="text-muted">Firme dentro del recuadro.</small>
         <Boton onClick={limpiar} style={{ minHeight: 30, padding: '4px 10px' }}>Limpiar</Boton>
@@ -180,7 +212,7 @@ export function Lienzo({ onCambio }) {
 }
 export const aBlob = (canvas) => new Promise((res) => canvas.toBlob((b) => res(b), 'image/png'))
 
-function FirmaModal({ nombreInicial, onCerrar, onFirmar }) {
+function FirmaModal({ nombreInicial, chofer = false, onCerrar, onFirmar }) {
   const [lienzo, setLienzo] = useState(null)
   const [nombre, setNombre] = useState(nombreInicial)
   const [error, setError] = useState(null)
@@ -192,12 +224,12 @@ function FirmaModal({ nombreInicial, onCerrar, onFirmar }) {
     try { await onFirmar(await aBlob(lienzo), nombre.trim()) } catch (x) { setError(x); setGuardando(false) }
   }
   return (
-    <Modal titulo="Firma de recepción" ancho={520} onCerrar={onCerrar} pie={<>
+    <Modal titulo={chofer ? 'Firma del chofer' : 'Firma del cliente (recepción)'} ancho={520} onCerrar={onCerrar} pie={<>
       <Boton onClick={onCerrar}>Cancelar</Boton>
       <Boton tipo="principal" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar firma'}</Boton>
     </>}>
       <div style={{ padding: 18, display: 'grid', gap: 12 }}>
-        <Campo etiqueta="Nombre de quien recibe" obligatorio><input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={80} /></Campo>
+        <Campo etiqueta={chofer ? 'Nombre del chofer' : 'Nombre de quien recibe'} obligatorio><input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={80} /></Campo>
         <Lienzo onCambio={setLienzo} />
         {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
       </div>
@@ -207,8 +239,9 @@ function FirmaModal({ nombreInicial, onCerrar, onFirmar }) {
 
 // ── Confirmar ejecución (operaciones fuera de ruta) ───────────────────────
 export function ConfirmarEjecucion({ o, onCerrar, onListo }) {
-  const [v, setV] = useState({ fecha: ahoraLocal(), recibido: '', resultado: '' })
+  const [v, setV] = useState({ fecha: ahoraLocal(), recibido: '', resultado: '', chofer: o.responsable || '' })
   const [lienzo, setLienzo] = useState(null)
+  const [lienzoChofer, setLienzoChofer] = useState(null)
   const [archivos, setArchivos] = useState([])
   const [paso, setPaso] = useState(1)
   const [error, setError] = useState(null)
@@ -218,6 +251,7 @@ export function ConfirmarEjecucion({ o, onCerrar, onListo }) {
     if (!v.fecha) return setError({ message: 'Indica fecha y hora de ejecución.' })
     if (v.fecha > ahoraLocal()) return setError({ message: 'La fecha no puede ser futura.' })
     if (lienzo && v.recibido.trim().length < 3) return setError({ message: 'Indica el nombre de quien firma.' })
+    if (lienzoChofer && v.chofer.trim().length < 3) return setError({ message: 'Indica el nombre del chofer que firma.' })
     if (archivos.some((x) => x.size > MAX_MB * 1024 * 1024)) return setError({ message: `Máximo ${MAX_MB} MB por archivo.` })
     setPaso(2)
   }
@@ -226,11 +260,23 @@ export function ConfirmarEjecucion({ o, onCerrar, onListo }) {
     try {
       await confirmarOperacion(o.id, new Date(v.fecha).toISOString(), v.recibido.trim(), v.resultado.trim())
     } catch (x) { setError(x); setGuardando(false); setPaso(1); return }
+    // Respaldos en Drive: firmas, fotos y la constancia en PDF. Si algo falla, la operación ya quedó confirmada.
+    const realizada = new Date(v.fecha).toISOString()
+    const destino = { folio: o.folio, cliente: o.cliente, fechaOp: v.fecha }
     try {
-      if (lienzo) await subirRespaldo(o.id, await aBlob(lienzo), 'firma', { nombre: 'firma.png', firmante: v.recibido.trim(), folio: o.folio })
-      for (const x of archivos) await subirRespaldo(o.id, x, 'archivo', { folio: o.folio })
+      const bCliente = lienzo ? await aBlob(lienzo) : null, bChofer = lienzoChofer ? await aBlob(lienzoChofer) : null
+      if (bCliente) await subirRespaldo(o.id, bCliente, 'firma', { ...destino, firmante: v.recibido.trim() })
+      if (bChofer) await subirRespaldo(o.id, bChofer, 'firma_chofer', { ...destino, firmante: v.chofer.trim() })
+      let i = 0
+      for (const x of archivos) await subirRespaldo(o.id, x, 'archivo', { ...destino, indice: ++i })
+      const html = htmlConstancia({ ...o, fecha_realizada: realizada, recibido_por: v.recibido.trim() || o.recibido_por, resultado: v.resultado.trim() || o.resultado }, {
+        accion: servicioYAccion(o), servicio: servicioTexto(o),
+        cliente: bCliente ? { imagen: await aDataUrl(bCliente), nombre: v.recibido.trim() } : null,
+        chofer: bChofer ? { imagen: await aDataUrl(bChofer), nombre: v.chofer.trim() } : (v.chofer.trim() ? { nombre: v.chofer.trim() } : null),
+      })
+      await guardarConstancia(o.id, html, destino)
     } catch (x) {
-      window.alert(`La operación quedó confirmada, pero no se pudo subir el respaldo (${x.message || x}). Súbelo desde la pestaña Respaldos.`)
+      window.alert(`La operación quedó confirmada, pero no se pudo guardar todo el respaldo en Drive (${x.message || x}). Complétalo desde la pestaña Respaldos.`)
     }
     onListo()
   }
@@ -249,51 +295,29 @@ export function ConfirmarEjecucion({ o, onCerrar, onListo }) {
           <Campo etiqueta="Recibió en terreno"><input value={v.recibido} onChange={set('recibido')} maxLength={80} placeholder="Nombre del encargado" /></Campo>
         </div>
         <Campo etiqueta="Observaciones del resultado"><textarea value={v.resultado} onChange={set('resultado')} maxLength={400} style={{ minHeight: 56 }} /></Campo>
-        <div className="campo"><span>Firma de recepción (opcional)</span><Lienzo onCambio={setLienzo} /></div>
+        <div className="campo"><span>Firma del cliente · recepción (opcional)</span><Lienzo onCambio={setLienzo} /></div>
+        <Campo etiqueta="Chofer / responsable"><input value={v.chofer} onChange={set('chofer')} maxLength={80} placeholder="Nombre del chofer" /></Campo>
+        <div className="campo"><span>Firma del chofer (opcional)</span><Lienzo onCambio={setLienzoChofer} /></div>
         <Campo etiqueta="Archivos (opcional)" ayuda="Fotos o guía de despacho escaneada (imagen o PDF).">
           <input type="file" multiple accept="image/*,application/pdf" onChange={(e) => setArchivos([...e.target.files])} />
         </Campo>
         {paso === 2
           ? <Ayuda tono="atencion">¿Confirmas que se ejecutó? {efecto} Esta acción no se deshace: una corrección se hace con otra operación.</Ayuda>
-          : <Ayuda>Solo la ejecución confirmada actualiza el inventario. {efecto}</Ayuda>}
+          : <Ayuda>Solo la ejecución confirmada actualiza el inventario. {efecto} Al confirmar, la constancia con las firmas se guarda en Drive.</Ayuda>}
         {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
       </div>
     </Modal>
   )
 }
 
+// Servicio de la operación para la constancia: "SER-012 · Arriendo de baños químicos"
+const servicioTexto = (o) => (o.servicio_codigo ? `${o.servicio_codigo} · ${L_SERV[o.servicio_tipo] || ''}` : L_SERV[o.servicio_tipo] || null)
+
 // ── Constancia imprimible (se abre en una ventana y se imprime o guarda como PDF) ──
-const esc = (s) => String(s ?? '—').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
-function imprimirConstancia(o, firmas = []) {
+// Mismo formato que la constancia que se guarda en Drive (lib/respaldosDrive.js)
+function imprimirConstancia(o, cliente, chofer) {
   const w = window.open('', '_blank', 'width=820,height=1000')
   if (!w) { window.alert('El navegador bloqueó la ventana. Permite ventanas emergentes para imprimir la constancia.'); return }
-  const fila = (l, v) => `<tr><th>${esc(l)}</th><td>${esc(v)}</td></tr>`
-  const f = firmas[firmas.length - 1]
-  w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Constancia ${esc(o.folio)}</title>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
-<style>
-  body{font-family:Archivo,system-ui,sans-serif;color:#201e1d;margin:32px}
-  header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #13294b;padding-bottom:10px;margin-bottom:18px}
-  h1{margin:0;font-size:28px;color:#13294b} h2{margin:0;font-size:16px}
-  table{width:100%;border-collapse:collapse;font-size:14px} th{text-align:left;width:190px;color:#5f6368;font-weight:600;padding:7px 8px;border-bottom:1px solid #dbe3ee} td{padding:7px 8px;border-bottom:1px solid #dbe3ee}
-  .firma{margin-top:28px;display:flex;gap:40px;align-items:flex-end} .firma div{flex:1;border-top:1px solid #201e1d;padding-top:6px;font-size:13px;text-align:center}
-  .firma img{max-height:110px;display:block;margin:0 auto 4px} small{color:#5f6368}
-  @media print{button{display:none}}
-</style></head><body>
-<header><div><h1>FOSAN</h1><small>Constancia de operación</small></div><div style="text-align:right"><h2>${esc(o.folio)}</h2><small>${esc(servicioYAccion(o))}</small></div></header>
-<table>
-${fila('Cliente', o.cliente)}${fila('RUT', o.rut)}${fila('Ubicación', o.ubicacion)}${fila('Servicio', o.servicio_codigo ? `${o.servicio_codigo} · ${L_SERV[o.servicio_tipo] || ''}` : null)}
-${fila('Acción', L_ACCION[o.tipo] || o.tipo)}${fila('Unidades', o.unidades)}${fila('Patente', o.patente)}${fila('Responsable', o.responsable)}
-${fila('Fecha programada', fecha(o.fecha_programada))}${fila('Fecha de ejecución', o.fecha_realizada ? fechaHora(o.fecha_realizada) : null)}
-${fila('Recibió en terreno', f?.firmante || o.recibido_por)}${fila('Observaciones', [o.observaciones, o.resultado].filter(Boolean).join(' · ') || null)}
-</table>
-<div class="firma">
-  <div>${(f?.dataUrl || f?.url) ? `<img src="${esc(f.dataUrl || f.url)}" alt="Firma">` : '<br><br><br>'}Firma de recepción · ${esc(f?.firmante || o.recibido_por || '')}</div>
-  <div><br><br><br>Responsable FOSAN · ${esc(o.responsable || '')}</div>
-</div>
-<p><small>Emitida el ${esc(fechaHora(new Date().toISOString()))}. Documento generado por el sistema de gestión FOSAN.</small></p>
-<button onclick="window.print()">Imprimir</button>
-<script>window.onload=function(){setTimeout(function(){window.print()},400)}</script>
-</body></html>`)
+  w.document.write(htmlConstancia(o, { accion: servicioYAccion(o), servicio: servicioTexto(o), cliente, chofer: chofer || (o.responsable ? { nombre: o.responsable } : null), imprimir: true }))
   w.document.close()
 }

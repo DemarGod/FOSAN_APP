@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { DRIVE_URL } from './drive'
+import { destinoRespaldo } from './respaldosDrive'
 
 const rows = async (q) => {
   const { data, error } = await q
@@ -733,18 +734,31 @@ const llamarDrive = async (cuerpo) => {
   if (!r.ok) throw new Error('Google Drive: ' + r.error)
   return r
 }
-export const subirRespaldo = async (despachoId, archivo, tipo, { nombre, firmante, folio, paradaId } = {}) => {
+// tipo: 'firma' (cliente) · 'firma_chofer' · 'archivo' (fotos, guías). Carpeta y nombre en Drive: lib/respaldosDrive.js
+//   cliente, fechaOp: para el nombre del archivo · indice: N.º de foto dentro del mismo envío
+export const subirRespaldo = async (despachoId, archivo, tipo, { firmante, folio, paradaId, cliente, fechaOp, indice } = {}) => {
   const final = tipo === 'archivo' ? await comprimirImagen(archivo) : archivo
-  const nom = String(nombre && tipo === 'firma' ? nombre : final.name || nombre || (tipo === 'firma' ? 'firma.png' : 'archivo'))
-  const etiqueta = `${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}_${tipo === 'firma' ? 'firma_' : ''}${nom}`
-  const r = await llamarDrive({ accion: 'subir', carpeta: folio || despachoId, nombre: etiqueta, tipo: final.type || 'application/octet-stream', base64: await aBase64(final) })
+  const tipoMime = final.type || (tipo === 'archivo' ? 'application/octet-stream' : 'image/png')
+  const d = destinoRespaldo({ tipo, fechaOp, folio, cliente, firmante, original: final.name || archivo?.name, tipoMime, indice })
+  // "carpeta" queda por si el script de Google aún es la versión 1 (guarda en una carpeta por folio, como antes)
+  const r = await llamarDrive({ accion: 'subir', ruta: d.ruta, carpeta: folio || despachoId, nombre: d.nombre, tipo: tipoMime, base64: await aBase64(final) })
   const { data: u } = await supabase.auth.getUser()
   const { error: e2 } = await supabase.from('operacion_respaldos').insert({
-    despacho_id: despachoId || null, parada_id: paradaId || null, tipo, ruta: 'drive:' + r.id, nombre: nom, firmante: firmante || null, creado_por: u?.user?.id,
+    despacho_id: despachoId || null, parada_id: paradaId || null, tipo, ruta: 'drive:' + r.id, nombre: d.nombre, firmante: firmante || null, creado_por: u?.user?.id,
   })
   if (e2) throw e2
 }
-export const esImagenRespaldo = (r) => r.tipo === 'firma' || /\.(png|jpe?g|webp|gif|heic)$/i.test(r.nombre || r.ruta || '')
+// Constancia de la operación (HTML con las firmas) → el script de Google la guarda como PDF en CONSTANCIAS/<mes>/
+export const guardarConstancia = async (despachoId, html, { folio, paradaId, cliente, fechaOp } = {}) => {
+  const d = destinoRespaldo({ tipo: 'constancia', fechaOp, folio, cliente })
+  const r = await llamarDrive({ accion: 'pdf', ruta: d.ruta, nombre: d.nombre, html })
+  const { data: u } = await supabase.auth.getUser()
+  const { error } = await supabase.from('operacion_respaldos').insert({
+    despacho_id: despachoId || null, parada_id: paradaId || null, tipo: 'constancia', ruta: 'drive:' + r.id, nombre: d.nombre, creado_por: u?.user?.id,
+  })
+  if (error) throw error
+}
+export const esImagenRespaldo = (r) => r.tipo === 'firma' || r.tipo === 'firma_chofer' || (r.tipo !== 'constancia' && /\.(png|jpe?g|webp|gif|heic)$/i.test(r.nombre || r.ruta || ''))
 const cacheDrive = {}
 const traerDrive = async (ids) => {
   const faltan = ids.filter((id) => !cacheDrive[id])
@@ -795,12 +809,12 @@ export const paradasRealizadas = async () => {
   const v = Object.fromEntries(viajes.map((x) => [x.id, x]))
   return par.map((p) => {
     const r = resp.filter((x) => x.parada_id === p.id), s = v[p.salida_id] || {}
-    const firmas = r.filter((x) => x.tipo === 'firma')
+    const firmas = r.filter((x) => x.tipo === 'firma')   // firma del cliente (la del chofer y la constancia se cuentan aparte)
     return {
       id: 'parada-' + p.id, parada_id: p.id, estado: 'hecho', tipo: p.tarea, folio: `Ruta ${s.ruta || ''}`.trim(),
       cliente: p.clientes?.nombre || '—', rut: p.clientes?.rut, ubicacion: [p.clientes?.direccion, p.clientes?.comuna].filter(Boolean).join(', ') || null,
       fecha_programada: s.fecha, fecha_realizada: p.hecha_en, unidades: p.banos ? `${p.banos} baño(s)` : null, patente: s.vehiculo,
-      observaciones: p.observacion, archivos: r.length - firmas.length, firmas: firmas.length, recibido_por: firmas[firmas.length - 1]?.firmante || null,
+      observaciones: p.observacion, archivos: r.filter((x) => x.tipo === 'archivo').length, firmas: firmas.length, recibido_por: firmas[firmas.length - 1]?.firmante || null,
     }
   })
 }
