@@ -1,7 +1,7 @@
-import { C, Icon, I } from '../lib/ui'
+import { Icon, I } from '../lib/ui'
 
 export function Cargando({ children = 'Cargando…' }) {
-  return <div style={{ padding: 24, font: '400 13px var(--font)', color: C.gris }}>{children}</div>
+  return <div style={{ padding: 24, font: '400 13px var(--font)', color: 'var(--gris)' }}>{children}</div>
 }
 
 export function Aviso({ error }) {
@@ -9,9 +9,9 @@ export function Aviso({ error }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
-      background: 'rgba(239,98,93,.2)', border: `1px solid ${C.rojo}`, margin: '0 0 16px',
+      background: 'rgba(239,98,93,.2)', border: `1px solid var(--rojo)`, margin: '0 0 16px',
       font: '400 12px/1.45 var(--font)', color: '#FCA5A5', borderRadius: 'var(--radio-md)' }}>
-      <Icon d={I.alert} size={17} color={C.rojo} />
+      <Icon d={I.alert} size={17} color={'var(--rojo)'} />
       <span>{String(error.message || error)}</span>
     </div>
   )
@@ -19,13 +19,13 @@ export function Aviso({ error }) {
 
 function iconoKpi(l) {
   const x = (l || '').toLowerCase()
-  if (/fuera de servicio|baja|urgente/.test(x)) return { d: I.alert, color: C.rojo }
-  if (/manten/.test(x)) return { d: I.gear, color: C.amarillo }
-  if (/disponible|operativ|realizad|complet/.test(x)) return { d: I.check, color: C.verde }
-  if (/arriendo|en servicio|activ|próxim|proxim/.test(x)) return { d: I.clip, color: C.azul }
-  if (/limpieza|servicio/.test(x)) return { d: I.drop, color: C.azul }
-  if (/total/.test(x)) return { d: I.cabina, color: C.navy }
-  return { d: '', color: C.gris }
+  if (/fuera de servicio|baja|urgente/.test(x)) return { d: I.alert, color: 'var(--rojo)' }
+  if (/manten/.test(x)) return { d: I.gear, color: 'var(--amarillo)' }
+  if (/disponible|operativ|realizad|complet/.test(x)) return { d: I.check, color: 'var(--verde)' }
+  if (/arriendo|en servicio|activ|próxim|proxim/.test(x)) return { d: I.clip, color: 'var(--azul)' }
+  if (/limpieza|servicio/.test(x)) return { d: I.drop, color: 'var(--azul)' }
+  if (/total/.test(x)) return { d: I.cabina, color: 'var(--navy)' }
+  return { d: '', color: 'var(--gris)' }
 }
 
 export function Kpis({ items = [] }) {
@@ -33,7 +33,7 @@ export function Kpis({ items = [] }) {
   return (
     <div className="kpis" style={{
       gridTemplateColumns: `repeat(auto-fit, minmax(130px, 1fr))`, gap: 2,
-      background: C.borde, border: `1px solid ${C.borde}`, margin: '18px 0', borderRadius: 'var(--radio-md)' }}>
+      background: 'var(--borde)', border: `1px solid var(--borde)`, margin: '18px 0', borderRadius: 'var(--radio-md)' }}>
       {items.map((k) => {
         const ic = iconoKpi(k.l)
         return (
@@ -43,7 +43,7 @@ export function Kpis({ items = [] }) {
               {ic.d && <Icon d={ic.d} size={18} color={ic.color} />}
             </div>
             <div style={{
-              font: '400 10px/1.3 var(--font)', color: C.gris, marginTop: 5,
+              font: '400 10px/1.3 var(--font)', color: 'var(--gris)', marginTop: 5,
               textTransform: 'uppercase', letterSpacing: '.05em',
             }}>{k.l}</div>
           </div>

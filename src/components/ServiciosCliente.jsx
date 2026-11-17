@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import Modal from './Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
 import {
-  serviciosDe, ubicacionesDe, contactosDe, categoriasEquipo, externosDe,
+  serviciosDe, reservadosPorServicio, ubicacionesDe, contactosDe, categoriasEquipo, externosDe,
   guardarServicio, finalizarServicio,
 } from '../lib/api'
 import { formatoPesos, numeroDe, decimalDe, fechaValida, FECHA_MIN, FECHA_MAX } from '../lib/validar'
@@ -35,7 +35,13 @@ export default function ServiciosCliente({ cliente, editable, finanzas, onCambio
   const [form, setForm] = useState(null)        // {} nuevo · servicio a editar
   const [detalle, setDetalle] = useState(null)
   const [finalizar, setFinalizar] = useState(null)
-  const cargar = () => serviciosDe(cliente.id).then(setLista).catch(setError)
+  const [reservados, setReservados] = useState({})
+  const cargar = () => {
+    serviciosDe(cliente.id).then(setLista).catch(setError)
+    reservadosPorServicio(cliente.id).then(setReservados).catch(() => setReservados({}))
+  }
+  const nuevaOrden = (x) => navegar(`/operaciones?tab=programacion&nueva=1&cliente=${cliente.id}&servicio=${x.id}${x.ubicacion_id ? `&ubicacion=${x.ubicacion_id}` : ''}`)
+  const puedeOrden = (x) => editable && x.estado === 'vigente' && cliente.activo
   useEffect(() => { cargar() }, [cliente.id])
   const listo = () => { setForm(null); setFinalizar(null); cargar(); onCambio() }
 
@@ -52,21 +58,21 @@ export default function ServiciosCliente({ cliente, editable, finanzas, onCambio
             { k: 'codigo', label: 'Código', ancho: 90 },
             { k: 'tipo', label: 'Tipo de servicio', render: (x) => L_TIPO_SERV[x.tipo] || x.tipo },
             { k: 'ubicacion', label: 'Ubicación', render: (x) => x.ubicaciones?.nombre || '—' },
-            { k: 'unidades', label: 'Baños asignados', render: (x) => <BanosAsignados s={x} onVer={(b) => navegar(`/activo/${b.qr_token}`)} /> },
+            { k: 'unidades', label: 'Baños', render: (x) => <BanosAsignados s={x} reservados={reservados[x.id] || []} onVer={(b) => navegar(`/activo/${b.qr_token}`)} /> },
             { k: 'inicio', label: 'Inicio', render: (x) => fecha(x.fecha_inicio) },
             { k: 'termino', label: 'Término', render: (x) => (x.fecha_termino ? fecha(x.fecha_termino) : 'Sin término') },
             { k: 'estado', label: 'Vigencia', render: (x) => <Estado tono={x.estado === 'vigente' ? 'ok' : 'neutro'}>{x.estado === 'vigente' ? 'Vigente' : 'Finalizado'}</Estado> },
             {
               k: 'acciones', label: 'Acciones', alinear: 'right', render: (x) => (
                 <div style={{ display: 'inline-flex', gap: 6 }}>
+                  {puedeOrden(x) && <Boton tipo="principal" icono={I.plus} onClick={() => nuevaOrden(x)} style={chico}>Nueva orden</Boton>}
                   <Boton onClick={() => (editable && x.estado === 'vigente' ? setForm(x) : setDetalle(x))} style={chico}>
                     {editable && x.estado === 'vigente' ? 'Ver / Editar' : 'Ver'}
                   </Boton>
                   <Menu altoFila={44} opciones={[
                     { l: 'Ver detalle', d: I.ojo, onClick: () => setDetalle(x) },
                     { l: 'Editar acuerdo', d: I.lapiz, onClick: () => setForm(x), disabled: !editable || x.estado !== 'vigente' },
-                    { l: 'Crear orden', d: I.doc, disabled: !editable || x.estado !== 'vigente' || !cliente.activo,
-                      onClick: () => navegar(`/operaciones?tab=programacion&nueva=1&cliente=${cliente.id}&servicio=${x.id}${x.ubicacion_id ? `&ubicacion=${x.ubicacion_id}` : ''}`) },
+                    { l: 'Nueva orden', d: I.doc, disabled: !puedeOrden(x), onClick: () => nuevaOrden(x) },
                     { l: 'Finalizar servicio', d: PROHIBIDO, color: C.rojo, onClick: () => setFinalizar(x), disabled: !editable || x.estado !== 'vigente' },
                   ]} />
                 </div>
@@ -76,7 +82,8 @@ export default function ServiciosCliente({ cliente, editable, finanzas, onCambio
         </div>
       )}
       <Ayuda>
-        Finalizar un servicio no confirma el retiro de equipos. "Crear orden" abre una nueva operación con cliente, ubicación y servicio ya cargados.
+        Finalizar un servicio no confirma el retiro de equipos. "Nueva orden" abre una nueva operación con cliente, ubicación y servicio ya cargados.
+        En Baños: <b>Reservado</b> = en una entrega programada; <b>Asignado</b> = la entrega ya se realizó y el baño está con el cliente.
       </Ayuda>
 
       {form && <FormServicio cliente={cliente} servicio={form} finanzas={finanzas} onCerrar={() => setForm(null)} onGuardado={listo} />}
@@ -86,18 +93,30 @@ export default function ServiciosCliente({ cliente, editable, finanzas, onCambio
   )
 }
 
-// ── Baños FOSAN asignados a un servicio de arriendo (N.º → ficha del equipo) ──
-function BanosAsignados({ s, onVer }) {
+// ── Baños de un servicio de arriendo, uno bajo otro (N.º → ficha del equipo) ──
+// Reservado (blanco): está en una entrega programada · Asignado (verde): la entrega se realizó y está con el cliente.
+function BanosAsignados({ s, reservados = [], onVer }) {
   if (s.tipo === 'limpieza_cliente') return Number(s.cantidad) > 0 ? `${s.cantidad} del cliente` : '—'
   if (s.tipo !== 'arriendo_limpieza') return '—'
-  const banos = [...(s.activos || [])].sort(porNumero)
-  if (!banos.length) return <span className="text-muted">Ninguno</span>
+  const asignados = [...(s.activos || [])].sort(porNumero)
+  const ya = new Set(asignados.map((b) => b.codigo))
+  const filas = [
+    ...asignados.map((b) => ({ ...b, asignado: true })),
+    ...[...reservados].filter((b) => !ya.has(b.codigo)).sort(porNumero).map((b) => ({ ...b, asignado: false })),
+  ]
+  if (!filas.length) return <span className="text-muted">Ninguno</span>
   return (
-    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', maxWidth: 260 }}>
-      {banos.map((b) => (
-        <button key={b.codigo} type="button" onClick={() => onVer(b)} title={`Ver ficha del baño ${b.codigo}`}
-          style={{ border: 0, cursor: 'pointer', padding: '2px 8px', borderRadius: 'var(--radio-sm)', background: C.tinte, color: C.azul, font: '600 12px var(--font)' }}>
-          {b.codigo}
+    <div style={{ display: 'grid', gap: 4, justifyItems: 'start' }}>
+      {filas.map((b) => (
+        <button key={b.codigo} type="button" onClick={() => onVer(b)}
+          title={b.asignado ? `Asignado: ver ficha del baño ${b.codigo}` : `Reservado en la entrega ${b.folio || ''}${b.fecha_programada ? ` del ${fecha(b.fecha_programada)}` : ''}`}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '3px 10px', borderRadius: 'var(--radio-sm)', whiteSpace: 'nowrap',
+            border: `1px solid ${b.asignado ? '#3FB585' : '#D3DDE9'}`,
+            background: b.asignado ? '#54C99A' : '#FFFFFF',
+            color: b.asignado ? '#0B2A1C' : '#13294B', font: '600 12px var(--font)', minWidth: 118, justifyContent: 'space-between',
+          }}>
+          <b>{b.codigo}</b><span style={{ fontWeight: 500 }}>{b.asignado ? 'Asignado' : 'Reservado'}</span>
         </button>
       ))}
     </div>

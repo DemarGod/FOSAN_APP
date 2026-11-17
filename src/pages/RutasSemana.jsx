@@ -6,7 +6,7 @@ import {
 } from '../lib/rutasSemana'
 import { sumarDias, hoyISO } from '../lib/costos'
 import { exportarRutasSemana } from '../lib/exportarRutas'
-import { C, Icon, I } from '../lib/ui'
+import { Icon, I } from '../lib/ui'
 import { Cargando, Aviso, Kpis } from '../components/Listado'
 import Modal from '../components/Modal'
 import FormRutaSemana from '../components/FormRutaSemana'
@@ -58,8 +58,8 @@ export default function RutasSemana() {
     <div>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 12 }}>
         <div style={{ flex: '1 1 260px' }}>
-          <h1 style={{ margin: 0, font: '800 24px/1.2 var(--font)', color: C.navy }}>Rutas semanales</h1>
-          <p style={{ margin: '4px 0 0', font: '400 13px var(--font)', color: C.gris }}>
+          <h1 style={{ margin: 0, font: '800 24px/1.2 var(--font)', color: 'var(--navy)' }}>Rutas semanales</h1>
+          <p style={{ margin: '4px 0 0', font: '400 13px var(--font)', color: 'var(--gris)' }}>
             Planifica cada semana quién visita a qué cliente y qué día. Cada operador ve solo su ruta de la semana en curso.
           </p>
         </div>
@@ -78,33 +78,33 @@ export default function RutasSemana() {
       {/* Semana */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 18, flexWrap: 'wrap' }}>
         <button className="btn" onClick={() => setLunes(sumarDias(lunes, -7))} aria-label="Semana anterior">‹</button>
-        <strong style={{ font: '700 15px var(--font)', color: C.navy, minWidth: 170, textAlign: 'center' }}>Semana {etiquetaSemana(lunes)}</strong>
+        <strong style={{ font: '700 15px var(--font)', color: 'var(--navy)', minWidth: 170, textAlign: 'center' }}>Semana {etiquetaSemana(lunes)}</strong>
         <button className="btn" onClick={() => setLunes(sumarDias(lunes, 7))} aria-label="Semana siguiente">›</button>
         {lunes !== lunesDe(hoy) && <button className="btn" onClick={() => setLunes(lunesDe(hoy))}>Esta semana</button>}
       </div>
 
-      <Kpis items={[
+      <div className="tema-oscuro" style={{ background: 'transparent' }}><Kpis items={[
         { l: 'Rutas', v: rutas?.length ?? '—' },
         { l: 'Paradas', v: total },
         { l: 'Realizadas', v: hechas },
         { l: 'No se pudo', v: fallidas },
         { l: 'Km recorridos', v: miles(km) },
-      ]} />
+      ]} /></div>
       <Aviso error={error} />
 
       {pendientes.length > 0 && (
-        <div style={{ border: `1px solid ${C.amarillo}`, background: 'rgba(235,170,66,.10)', padding: '12px 14px', marginBottom: 16, display: 'grid', gap: 6, borderRadius: 'var(--radio-md)' }}>
-          <strong style={{ font: '700 13px var(--font)', color: C.navy }}>{pendientes.length} entrega(s) o retiro(s) sin ruta</strong>
+        <div style={{ border: '1px solid #F0C77A', background: '#FFF8EA', color: '#3D2E12', padding: '12px 14px', marginBottom: 16, display: 'grid', gap: 6, borderRadius: 'var(--radio-md)' }}>
+          <strong style={{ font: '700 13px var(--font)', color: 'var(--navy)' }}>{pendientes.length} entrega(s) o retiro(s) sin ruta</strong>
           {pendientes.slice(0, 6).map((d) => (
             <span key={d.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', font: '400 12px var(--font)' }}>
-              <Chip tarea={d.tipo} servicio={d.servicio_tipo} /><strong>{d.cliente}</strong><span style={{ color: C.gris }}>#{d.folio} · {d.servicio_tipo === 'limpieza_fosas' ? 'fosa' : d.banos || 'sin baños'}</span>            </span>
+              <Chip tarea={d.tipo} servicio={d.servicio_tipo} /><strong>{d.cliente}</strong><span style={{ color: 'var(--gris)' }}>#{d.folio} · {d.servicio_tipo === 'limpieza_fosas' ? 'fosa' : d.banos || 'sin baños'}</span>            </span>
           ))}
-          <span style={{ font: '400 12px var(--font)', color: C.gris }}>Ábrelos desde “Editar planilla” de una ruta para asignarles un día.</span>
+          <span style={{ font: '400 12px var(--font)', color: 'var(--gris)' }}>Ábrelos desde “Editar planilla” de una ruta para asignarles un día.</span>
         </div>
       )}
 
       {!rutas ? <Cargando /> : rutas.length === 0 ? (
-        <div style={{ padding: 22, border: `1px solid ${C.borde}`, background: 'var(--panel)', font: '400 14px/1.5 var(--font)', borderRadius: 'var(--radio-md)' }}>
+        <div style={{ padding: 22, border: `1px solid var(--borde)`, background: 'var(--panel)', font: '400 14px/1.5 var(--font)', borderRadius: 'var(--radio-md)' }}>
           No hay rutas para esta semana.{planifica && ' Crea una nueva o copia la de la semana anterior.'}
           {planifica && <div style={{ marginTop: 12 }}><button className="btn" onClick={() => setLunes(sumarDias(lunes, -7))}>Ver semana anterior</button></div>}
         </div>
@@ -115,36 +115,36 @@ export default function RutasSemana() {
             const kmR = dias.reduce((s, v) => s + Number(v.km_real || 0), 0)
             const comenzada = dias.some((v) => v.iniciada_en || v.estado !== 'planificada')
             return (
-              <div key={r.id} style={{ border: `1px solid ${C.borde}`, background: 'var(--panel)', borderRadius: 'var(--radio-md)' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: `1px solid ${C.borde}` }}>
+              <div key={r.id} className="tema-oscuro" style={{ border: `1px solid var(--borde)`, background: 'var(--panel)', borderRadius: 'var(--radio-md)' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: `1px solid var(--borde)` }}>
                   <span style={{ flex: '1 1 220px' }}>
-                    <strong style={{ display: 'block', font: '700 16px var(--font)', color: C.navy }}>{r.nombre}</strong>
-                    <span style={{ font: '400 12px var(--font)', color: C.gris }}>
+                    <strong style={{ display: 'block', font: '700 16px var(--font)', color: 'var(--navy)' }}>{r.nombre}</strong>
+                    <span style={{ font: '400 12px var(--font)', color: 'var(--gris)' }}>
                       {nombreOp(r.operador_id)} · {r.activos?.codigo || 'sin vehículo'} · {r.rutas_semana_lineas?.length || 0} cliente(s){kmR ? ` · ${miles(kmR)} km` : ''}
                     </span>
                   </span>
                   <button className="btn" onClick={() => setVer(r)}><Icon d={I.ojo} size={15} /> Ver avance</button>
                   {planifica && <button className="btn" onClick={() => setForm(r)}><Icon d={I.lapiz} size={15} /> Editar planilla</button>}
                   {planifica && <button className="btn" onClick={() => copiar(r)}>Copiar a la semana siguiente</button>}
-                  {planifica && !comenzada && <button className="btn" onClick={() => eliminar(r)} style={{ color: C.rojo }}>Eliminar</button>}
+                  {planifica && !comenzada && <button className="btn" onClick={() => eliminar(r)} style={{ color: 'var(--rojo)' }}>Eliminar</button>}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 1, background: C.fila }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 1, background: 'var(--fila)' }}>
                   {DIAS_RUTA.map((d) => {
                     const f = fechaDia(r.lunes, d.v)
                     const v = dias.find((x) => x.fecha === f)
                     const pend = v ? v.total - v.hechas - v.fallidas : 0
                     const est = !v ? 'Libre' : v.estado === 'cerrada' ? `Cerrado · ${miles(v.km_real)} km` : v.iniciada_en ? 'En ruta' : 'Sin iniciar'
                     return (
-                      <div key={d.v} style={{ background: f === hoy ? C.tinte : 'var(--panel)', padding: '8px 10px', display: 'grid', gap: 4, minWidth: 0 }}>
-                        <span style={{ font: '700 12px var(--font)', color: C.navy }}>{d.l} {diaCorto(f)}</span>
+                      <div key={d.v} style={{ background: f === hoy ? 'var(--tinte)' : 'var(--panel)', padding: '8px 10px', display: 'grid', gap: 4, minWidth: 0 }}>
+                        <span style={{ font: '700 12px var(--font)', color: 'var(--navy)' }}>{d.l} {diaCorto(f)}</span>
                         {v && (
-                          <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap', font: '700 11px var(--font)' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Punto color={SEMAFORO.hecha.c} />{v.hechas}</span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Punto color={SEMAFORO.pendiente.c} />{pend}</span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Punto color={SEMAFORO.no_realizada.c} />{v.fallidas}</span>
+                          <span style={{ display: 'flex', gap: 10, flexWrap: 'wrap', font: '700 13px var(--font)' }}>
+                            <span title="Realizadas" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Punto color={SEMAFORO.hecha.c} grande />{v.hechas}</span>
+                            <span title="Pendientes" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Punto color={SEMAFORO.pendiente.c} grande />{pend}</span>
+                            <span title="No se pudo" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Punto color={SEMAFORO.no_realizada.c} grande />{v.fallidas}</span>
                           </span>
                         )}
-                        <span style={{ font: '400 11px var(--font)', color: C.gris, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{est}</span>
+                        <span style={{ font: '400 11px var(--font)', color: 'var(--gris)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{est}</span>
                       </div>
                     )
                   })}
@@ -176,9 +176,9 @@ function Avance({ ruta, operador, puedeMarcar, onCerrar }) {
   const viaje = dias?.find((v) => v.fecha === dia)
   return (
     <Modal titulo={`${ruta.nombre} · ${operador} · semana ${etiquetaSemana(ruta.lunes)}`} ancho={780} onCerrar={onCerrar}>
-      <div style={{ padding: 18, display: 'grid', gap: 14, background: C.suave }}>
+      <div style={{ padding: 18, display: 'grid', gap: 14, background: 'var(--suave)' }}>
         <Aviso error={error} />
-        {!dias ? <Cargando /> : dias.length === 0 ? <span style={{ color: C.gris }}>Esta ruta no tiene días con paradas.</span> : (
+        {!dias ? <Cargando /> : dias.length === 0 ? <span style={{ color: 'var(--gris)' }}>Esta ruta no tiene días con paradas.</span> : (
           <>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {dias.map((v) => {

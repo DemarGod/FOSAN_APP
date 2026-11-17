@@ -174,7 +174,6 @@ function FormArticulo({ articulo, ubic, onCerrar, onGuardado }) {
   const { perfil } = useSesion()
   const finanzas = verFinanzas(perfil)
   const nuevo = !articulo.id
-  const tieneStock = !nuevo && articulo.existencias.some((e) => Number(e.cantidad) !== 0)
   const receta = Array.isArray(articulo.receta_limpieza) ? articulo.receta_limpieza[0] : articulo.receta_limpieza
   const [cat, setCat] = useState([])
   const [uni, setUni] = useState([])
@@ -257,11 +256,6 @@ function FormArticulo({ articulo, ubic, onCerrar, onGuardado }) {
           <Campo etiqueta="Código" obligatorio ayuda={nuevo ? 'Se sugiere según la categoría.' : undefined} error={errores.codigo}>
             <input value={v.codigo} onChange={set('codigo')} maxLength={12} readOnly={!nuevo} />
           </Campo>
-          <div style={{ display: 'grid', gap: 6, alignContent: 'end', font: '600 13px var(--font)' }}>
-            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={v.control_lote} onChange={set('control_lote')} disabled={tieneStock} /> Control por lote</label>
-            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={v.requiere_vencimiento} onChange={set('requiere_vencimiento')} disabled={tieneStock} /> Requiere vencimiento</label>
-            {tieneStock && <small className="text-muted" style={{ fontWeight: 400 }}>No se cambia mientras tenga stock.</small>}
-          </div>
           <Campo etiqueta="Nombre" obligatorio error={errores.nombre}><input value={v.nombre} onChange={set('nombre')} maxLength={80} /></Campo>
           <Campo etiqueta="Stock mínimo" obligatorio error={errores.stock_minimo}><input value={v.stock_minimo} onChange={set('stock_minimo')} inputMode="decimal" /></Campo>
           <Campo etiqueta="Categoría" obligatorio error={errores.categoria_id}>
@@ -299,7 +293,7 @@ function FormArticulo({ articulo, ubic, onCerrar, onGuardado }) {
           </details>
         )}
 
-        <Ayuda>Crear el artículo no agrega stock: registra la cantidad inicial como Entrada. El vencimiento exige control por lote. La unidad base se bloquea cuando hay movimientos.</Ayuda>
+        <Ayuda>Crear el artículo no agrega stock: registra la cantidad inicial como Entrada. La unidad base se bloquea cuando hay movimientos.</Ayuda>
         {error && <Ayuda tono="error">{String(error.message || error)}</Ayuda>}
       </div>
     </Modal>
@@ -336,7 +330,7 @@ function FichaArticulo({ i, ubic, editable, exporta, onCerrar, onEditar, onMover
           <div style={{ display: 'grid', gap: 4, font: '400 14px/1.7 var(--font)' }}>
             <span><b>Categoría:</b> {i.categorias?.nombre || '—'}</span>
             <span><b>Unidad base:</b> {i.unidades_medida?.nombre || i.unidad} ({unidad(i)})</span>
-            <span><b>Control por lote:</b> {i.control_lote ? 'Sí' : 'No'} · <b>Requiere vencimiento:</b> {i.requiere_vencimiento ? 'Sí' : 'No'}</span>
+            {(i.control_lote || i.requiere_vencimiento) && <span><b>Control por lote:</b> {i.control_lote ? 'Sí' : 'No'} · <b>Requiere vencimiento:</b> {i.requiere_vencimiento ? 'Sí' : 'No'}</span>}
             <span><b>Stock mínimo:</b> {num(i.stock_minimo)} {unidad(i)} en {nombreUbic(i.ubicacion_minimo_id)}</span>
             <span><b>Total en todas las ubicaciones:</b> {num(i.stock_actual)} {unidad(i)}</span>
             <span><b>Estado:</b> {i.activo ? 'Activo' : 'Inactivo'}</span>

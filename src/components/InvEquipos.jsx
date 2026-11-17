@@ -4,7 +4,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import Modal from './Modal'
-import ImportarInventario from './ImportarInventario'
 import { Boton, Campo, Tabla, Estado, Ayuda } from './Base'
 import {
   equiposLista, mantencionesAbiertas, siguienteNumeroUnidad, equipoPorNumero, crearEquipo,
@@ -14,7 +13,7 @@ import { exportarTabla, exportarCSV } from '../lib/excel'
 import { useSesion, puedeOperar, esDueno } from '../lib/sesion'
 import { hoyISO } from '../lib/costos'
 import { C, I, COLORES_BANO, fecha } from '../lib/ui'
-import { CARACTERISTICAS, marcasDe } from '../lib/equipos'
+import { CARACTERISTICAS, CASILLA, marcasDe } from '../lib/equipos'
 
 export const L_SITUACION = {
   disponible: 'Disponible', reservado: 'Reservado', asignado: 'Asignado', en_traslado: 'En traslado',
@@ -57,7 +56,6 @@ export default function InvEquipos() {
   const [form, setForm] = useState(false)
   const [exportar, setExportar] = useState(false)
   const [aviso, setAviso] = useState(null)
-  const [importar, setImportar] = useState(false)
   const [mants, setMants] = useState({})        // mantención abierta por equipo
   const cargar = () => {
     equiposLista().then(setDatos).catch(setError)
@@ -96,7 +94,6 @@ export default function InvEquipos() {
     <div style={{ display: 'grid', gap: 16 }}>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
         <Boton tipo="principal" icono={I.plus} onClick={() => setForm(true)} disabled={!editable}>Agregar equipo</Boton>
-        {editable && <Boton onClick={() => setImportar(true)}>Importar inventario (Excel)</Boton>}
         {exporta && <Boton icono={I.descarga} onClick={() => setExportar(true)} disabled={!lista.length}>Exportar</Boton>}
       </div>
 
@@ -219,7 +216,6 @@ export default function InvEquipos() {
 
       {form && <FormEquipo onCerrar={() => setForm(false)} onAbrir={verFicha}
         onGuardado={(r) => { setForm(false); setAviso(`Equipo ${r.codigo} creado. Quedó su registro inicial en Movimientos.`); cargar() }} />}
-      {importar && <ImportarInventario onCerrar={() => setImportar(false)} onImportado={() => { setImportar(false); cargar() }} />}
       {exportar && <Exportar todos={lista} filtrados={filas} onCerrar={() => setExportar(false)} />}
     </div>
   )
@@ -263,7 +259,7 @@ function FormEquipo({ onCerrar, onGuardado, onAbrir }) {
   const set = (k) => (e) => { setV((p) => ({ ...p, [k]: e.target.value, ...(k === 'categoria_id' ? { modelo_id: '' } : {}), ...(k === 'propietario_id' ? { ubic_cliente: '' } : {}) })); setErrores({}); setExiste(null) }
   const sucio = JSON.stringify({ ...v, numero: '', categoria_id: '', ubicacion_id: '' }) !== JSON.stringify({ ...inicial, numero: '', categoria_id: '', ubicacion_id: '' })
   const cerrar = () => (!sucio || window.confirm('Hay cambios sin guardar. ¿Descartarlos?')) && onCerrar()
-  const esCliente = v.propiedad === 'cliente'
+  const esCliente = false   // Agregar equipo es solo para equipos de FOSAN (se quitó la opción Propiedad)
   const catSel = cat.find((c) => c.id === v.categoria_id)
   const modelos = mod.filter((m) => m.categoria_id === v.categoria_id)
 
@@ -337,18 +333,6 @@ function FormEquipo({ onCerrar, onGuardado, onAbrir }) {
           <Campo etiqueta="Fecha de incorporación" obligatorio error={errores.fecha_incorporacion}>
             <input type="date" value={v.fecha_incorporacion} max={hoyISO()} onChange={set('fecha_incorporacion')} />
           </Campo>
-          <div className="campo">
-            <span>Propiedad <b className="obligatorio">*</b></span>
-            <div style={{ display: 'flex', gap: 18, font: '400 14px var(--font)', minHeight: 40, alignItems: 'center' }}>
-              <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}><input type="radio" checked={!esCliente} onChange={() => set('propiedad')({ target: { value: 'empresa' } })} /> Empresa</label>
-              <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}><input type="radio" checked={esCliente} onChange={() => set('propiedad')({ target: { value: 'cliente' } })} /> Cliente</label>
-            </div>
-            <span style={{ font: '400 12px/1.4 var(--font)', color: C.gris }}>
-              {esCliente
-                ? 'Equipo del cliente: es suyo, no de FOSAN. Se registra para atenderlo en el servicio "Limpieza de baños del cliente" (rutas y respaldos). No cuenta como inventario propio ni se arrienda.'
-                : 'Equipo de FOSAN: cuenta en el inventario y se puede arrendar.'}
-            </span>
-          </div>
           {!esCliente && (
             <Campo etiqueta="Ubicación inicial" obligatorio error={errores.ubicacion_id}>
               <select value={v.ubicacion_id} onChange={set('ubicacion_id')}>
@@ -368,7 +352,7 @@ function FormEquipo({ onCerrar, onGuardado, onAbrir }) {
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', font: '400 14px var(--font)', minHeight: 40, alignItems: 'center' }}>
             {CARACTERISTICAS.map((c) => (
               <label key={c.k} style={{ display: 'flex', gap: 6, alignItems: 'center', cursor: 'pointer' }}>
-                <input type="checkbox" checked={v[c.k]} onChange={(x) => { setV((p) => ({ ...p, [c.k]: x.target.checked })); setErrores({}) }} /> {c.l}
+                <input type="checkbox" checked={v[c.k]} onChange={(x) => { setV((p) => ({ ...p, [c.k]: x.target.checked })); setErrores({}) }} style={CASILLA} /> {c.l}
               </label>
             ))}
           </div>
@@ -376,28 +360,6 @@ function FormEquipo({ onCerrar, onGuardado, onAbrir }) {
         <Campo etiqueta="Observaciones">
           <textarea value={v.notas} onChange={set('notas')} maxLength={500} style={{ minHeight: 60 }} placeholder="Ej. Observaciones adicionales sobre el equipo…" />
         </Campo>
-
-        {esCliente && (
-          <section style={{ border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', padding: 14, display: 'grid', gap: 12, background: C.suave }}>
-            <h6 style={{ margin: 0 }}>Solo si propiedad = Cliente</h6>
-            <div className="cols2" style={{ gap: 12 }}>
-              <Campo etiqueta="Cliente propietario" obligatorio error={errores.propietario_id}>
-                <select value={v.propietario_id} onChange={set('propietario_id')}>
-                  <option value="">Seleccione un cliente</option>
-                  {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                </select>
-              </Campo>
-              <Campo etiqueta="Ubicación del cliente" obligatorio error={errores.ubic_cliente}
-                ayuda={v.propietario_id && !obras.length ? 'Este cliente no tiene ubicaciones activas: agrégala en su ficha.' : undefined}>
-                <select value={v.ubic_cliente} onChange={set('ubic_cliente')} disabled={!obras.length}>
-                  <option value="">Seleccione una ubicación</option>
-                  {obras.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}
-                </select>
-              </Campo>
-            </div>
-            <small className="text-muted">No cuenta como inventario propio disponible.</small>
-          </section>
-        )}
 
         {existe && (
           <Ayuda tono="error">

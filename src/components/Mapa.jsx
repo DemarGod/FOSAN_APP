@@ -19,6 +19,24 @@ export const colorPunto = (p) => {
   return COLORES.otro
 }
 
+// Limpiezas por cliente (de v_limpiezas_cliente) → { cliente_id: { veces, dias } }
+export const indiceLimpiezas = (lista) =>
+  Object.fromEntries((lista || []).map((x) => [x.cliente_id, { veces: Number(x.veces_semana), dias: x.dias || [] }]))
+// Día ISO de hoy: 1 = lunes … 7 = domingo
+export const hoyDow = () => { const d = new Date().getDay(); return d === 0 ? 7 : d }
+// Limpieza del punto en ese día (o null)
+export const limpiezaDelDia = (p, limp, dia) => {
+  const l = p.cliente_id && limp?.[p.cliente_id]
+  return l && l.dias.includes(dia) ? l : null
+}
+// Color con limpiezas (el mismo en Inicio y en Inventario → Mapa): mantención > limpieza del día > arriendo > bodega
+export const colorConLimpieza = (limp, dia) => (p) => {
+  if (Number(p.en_mantencion) > 0 || p.tipo === 'taller') return COLORES.mantencion
+  const l = limpiezaDelDia(p, limp, dia)
+  if (l) return l.veces >= 2 ? COLORES.limpieza2 : COLORES.limpieza1
+  return colorPunto(p)
+}
+
 export const LEYENDA = [
   { l: 'Arrendados', c: COLORES.arriendo },
   { l: 'En mantención', c: COLORES.mantencion },

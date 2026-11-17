@@ -10,6 +10,7 @@ import { C } from '../lib/ui'
 const MENSAJE = 'Hay cambios sin guardar. ¿Salir sin guardar?'
 const ES_CANCELAR = /^(cancelar|descartar|volver)$/i
 const PILA = []   // ventanas abiertas: Esc cierra solo la de más arriba
+const ORIGINAL = { overflow: '' }
 
 export default function Modal({ titulo, ancho = 820, onCerrar, pie, children, guardia = true }) {
   const sucio = useRef(false)
@@ -21,15 +22,18 @@ export default function Modal({ titulo, ancho = 820, onCerrar, pie, children, gu
   cerrarRef.current = cerrar
 
   useEffect(() => {
-    const previo = document.body.style.overflow
+    // El desplazamiento de la página se bloquea con la primera ventana y se devuelve al cerrar la última
+    // (con ventanas una sobre otra, la página quedaba sin poder bajar ni subir hasta recargar).
+    if (!PILA.length) ORIGINAL.overflow = document.body.style.overflow === 'hidden' ? '' : document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const yo = {}
     PILA.push(yo)
     const esc = (e) => { if (e.key === 'Escape' && PILA[PILA.length - 1] === yo) cerrarRef.current() }
     document.addEventListener('keydown', esc)
     return () => {
-      document.body.style.overflow = previo; document.removeEventListener('keydown', esc)
+      document.removeEventListener('keydown', esc)
       const i = PILA.indexOf(yo); if (i >= 0) PILA.splice(i, 1)
+      if (!PILA.length) document.body.style.overflow = ORIGINAL.overflow
     }
   }, [])
 

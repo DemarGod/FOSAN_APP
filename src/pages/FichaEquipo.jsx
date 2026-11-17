@@ -14,7 +14,7 @@ import {
 } from '../lib/api'
 import { useSesion, puedeOperar, esDueno } from '../lib/sesion'
 import Documentos from '../components/Documentos'
-import { CARACTERISTICAS, marcasDe } from '../lib/equipos'
+import { CARACTERISTICAS, CASILLA, marcasDe } from '../lib/equipos'
 import { hoyISO, ahoraLocal } from '../lib/costos'
 import { C, Icon, I, fecha, fechaHora, COLORES_BANO, L_ESTADO_MANT } from '../lib/ui'
 
@@ -219,7 +219,7 @@ function EditarDatos({ e, onCerrar, onGuardado }) {
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', font: '400 14px var(--font)', minHeight: 40, alignItems: 'center' }}>
             {CARACTERISTICAS.map((c) => (
               <label key={c.k} style={{ display: 'flex', gap: 6, alignItems: 'center', cursor: 'pointer' }}>
-                <input type="checkbox" checked={v[c.k]} onChange={(x) => { setV((p) => ({ ...p, [c.k]: x.target.checked })); setErrores({}) }} /> {c.l}
+                <input type="checkbox" checked={v[c.k]} onChange={(x) => { setV((p) => ({ ...p, [c.k]: x.target.checked })); setErrores({}) }} style={CASILLA} /> {c.l}
               </label>
             ))}
           </div>

@@ -44,5 +44,6 @@ limpieza de clientes, importación desde Maxxa, entre otros). Su resultado **sí
 | `46_foto_base_SOLO_LECTURA.sql` | 25 | Solo lectura: saca la "foto" de la base para regenerar `../esquema/`. |
 | `47_arnes_vip_casetas_duchas.sql` | 26 | Equipos con arnés y VIP (casillas y filtro), categorías Caseta y Ducha con la misma numeración que los baños. |
 | `48_respaldos_firma_chofer_constancia.sql` | 30 | Respaldos: tipos nuevos firma del chofer y constancia en PDF (Drive ordenado en FIRMAS, FOTOS, ARCHIVOS y CONSTANCIAS por mes). |
+| `49_mapa_arriendo_limpieza.sql` | 31 | Mapa: la vista `v_mapa_puntos` entrega baños arrendados y el cliente de cada punto (filtros Arriendo y Limpieza y colores). |
 
 Números que faltan (`22`, `30`, `36`, `39`, `41`): eran consultas de solo lectura o diagnósticos y se retiraron del repositorio.

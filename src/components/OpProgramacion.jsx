@@ -13,11 +13,11 @@ import {
   ubicacionesDe, serviciosDe, vehiculos, personalActivo, operacionPorFolio, cupoServicio, registrarExceso, operacionesDeServicios,
   clienteFicha, contactosDe,
 } from '../lib/api'
-import { rutasDeSemana, lunesDe } from '../lib/rutasSemana'
+import { rutasDeSemana, lunesDe, agregarOperacionARuta } from '../lib/rutasSemana'
 import { exportarTabla, exportarCSV } from '../lib/excel'
 import { useSesion, puedeOperar, esDueno } from '../lib/sesion'
 import { hoyISO } from '../lib/costos'
-import { C, I, fecha } from '../lib/ui'
+import { I, fecha } from '../lib/ui'
 import Menu from './Menu'
 import { FormUbicacion } from '../pages/FichaCliente'
 
@@ -85,19 +85,19 @@ export default function OpProgramacion({ irARutas }) {
       </div>
 
       <div className="kpis">
-        {[['programada', 'Programadas', C.blanco], ['realizada', 'Realizadas', 'rgba(84,201,154,.2)'], ['pendiente', 'Atrasadas', 'rgba(235,170,66,.2)']].map(([k, l, bg]) => (
+        {[['programada', 'Programadas', 'var(--blanco)'], ['realizada', 'Realizadas', 'rgba(84,201,154,.2)'], ['pendiente', 'Atrasadas', 'rgba(235,170,66,.2)']].map(([k, l, bg]) => (
           <button key={k} type="button" className="indicador" onClick={() => filtrar({ estado: k })}
-            style={{ display: 'block', textAlign: 'left', cursor: 'pointer', background: bg, ...(aplicado.estado === k ? { outline: `2px solid ${C.azul}`, outlineOffset: -2 } : {}) }}>
+            style={{ display: 'block', textAlign: 'left', cursor: 'pointer', background: bg, ...(aplicado.estado === k ? { outline: `2px solid var(--azul)`, outlineOffset: -2 } : {}) }}>
             <span>{l}</span><b>{datos ? cuenta(k) : '…'}</b>
           </button>
         ))}
-        <div style={{ font: '400 12px/1.5 var(--font)', color: C.gris, alignSelf: 'center' }}>
+        <div style={{ font: '400 12px/1.5 var(--font)', color: 'var(--gris)', alignSelf: 'center' }}>
           Según el período filtrado. Atrasada = programada para un día que ya pasó y aún no realizada.
         </div>
       </div>
 
       <section className="card">
-        <form onSubmit={(e) => { e.preventDefault(); setAplicado(f) }} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, padding: 16, borderBottom: `1px solid ${C.borde}`, alignItems: 'end' }}>
+        <form onSubmit={(e) => { e.preventDefault(); setAplicado(f) }} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, padding: 16, borderBottom: `1px solid var(--borde)`, alignItems: 'end' }}>
           <Campo etiqueta="Desde"><input type="date" value={f.desde} max={f.hasta || undefined} onChange={set('desde')} /></Campo>
           <Campo etiqueta="Hasta"><input type="date" value={f.hasta} min={f.desde || undefined} onChange={set('hasta')} /></Campo>
           <Campo etiqueta="Servicio">
@@ -119,7 +119,7 @@ export default function OpProgramacion({ irARutas }) {
           </div>
         </form>
         {error && <div style={{ padding: 16 }}><Ayuda tono="error">{String(error.message || error)}</Ayuda></div>}
-        {datos === null && !error ? <div style={{ padding: 24, color: C.gris }}>Cargando…</div> : (
+        {datos === null && !error ? <div style={{ padding: 24, color: 'var(--gris)' }}>Cargando…</div> : (
           <Tabla filas={filas} vacio="Sin operaciones para estos filtros." columnas={[
             { k: 'fecha', label: 'Fecha', render: (o) => fecha(o.fecha_programada) },
             { k: 'serv', label: 'Servicio y acción', render: servicioYAccion },
@@ -134,7 +134,7 @@ export default function OpProgramacion({ irARutas }) {
                     { l: 'Ver detalle', d: I.ojo, onClick: () => setDetalle(o) },
                     { l: 'Editar programación', d: I.lapiz, onClick: () => setForm(o), disabled: !editable || o.estado !== 'programado' },
                     { l: 'Asignar a ruta', d: I.pin, onClick: () => irARutas(), disabled: !editable || o.estado !== 'programado' },
-                    { l: 'Cancelar', d: PROHIBIDO, color: C.rojo, onClick: () => setCancelar(o), disabled: !editable || o.estado !== 'programado' },
+                    { l: 'Cancelar', d: PROHIBIDO, color: 'var(--rojo)', onClick: () => setCancelar(o), disabled: !editable || o.estado !== 'programado' },
                   ]} />
                 </div>
               ),
@@ -182,8 +182,8 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
   const [error, setError] = useState(null)
   const [guardando, setGuardando] = useState(false)
   const [cupo, setCupo] = useState(null)              // { solicitada, asignadas, reservadas } del servicio
-  const [urgente, setUrgente] = useState(!!op.exceso_unidades)
-  const [motivoUrg, setMotivoUrg] = useState(op.exceso_motivo || '')
+  // Operaciones antiguas marcadas como urgencia: al editarlas se respeta lo que ya tenían
+  const excesoPrevio = nueva ? 0 : Number(op.exceso_unidades) || 0
   const [opsServ, setOpsServ] = useState([])          // operaciones de los servicios del cliente (fosa puntual)
 
   useEffect(() => {
@@ -305,11 +305,11 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
       else if (accion !== 'retiro' && servicio.fecha_termino && v.fecha > servicio.fecha_termino) e.fecha = `El servicio ${servicio.codigo} termina el ${fecha(servicio.fecha_termino)}: después solo se programa el retiro.`
     }
     if (conEntrega && !entregar.length) e.entregar = 'Elige las unidades a entregar.'
-    else if (exceso > 0 && !urgente) e.entregar = `Supera lo solicitado por el servicio (${cupo.solicitada}). Edita la cantidad del servicio o marca la urgencia.`
-    else if ((exceso > 0 || urgente) && motivoUrg.trim().length < 5) e.entregar = 'Escribe el motivo de la urgencia (obligatorio).'
+    else if (exceso > excesoPrevio) e.entregar = `Supera lo solicitado por el servicio (${cupo.solicitada}). Para entregar más, edita la cantidad del servicio en la ficha del cliente.`
     if (conRetiro && !retirar.length) e.retirar = 'Elige las unidades a retirar.'
     if (!v.vehiculo_id) e.vehiculo_id = 'Elige la patente.'
     if (!v.responsable_id) e.responsable_id = 'Elige el responsable.'
+    if (v.ruta && v.fecha && [0, 6].includes(new Date(`${v.fecha}T12:00:00Z`).getUTCDay())) e.ruta = 'Las rutas son de lunes a viernes: elige un día hábil o deja la operación sin ruta.'
     setErrores(e)
     if (Object.keys(e).length) return
     setGuardando(true); setError(null)
@@ -324,9 +324,13 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
     ]
     try {
       const id = nueva ? await crearDespacho({ ...datos, origen: 'operaciones' }, banos) : (await editarOperacion(op.id, datos, banos), op.id)
-      // Urgencia: queda registrada en la operación y avisa en Notificaciones
-      if (exceso > 0) await registrarExceso(id, exceso, motivoUrg.trim())
-      else if (!nueva && op.exceso_unidades) await registrarExceso(id, 0, '')
+      // Operación antigua con urgencia: si ya no supera lo solicitado, se limpia la marca
+      if (excesoPrevio && exceso === 0) await registrarExceso(id, 0, '')
+      // Con ruta: queda en la planilla de esa ruta (chofer, vehículo y baños) para verla en Operaciones → Rutas
+      if (v.ruta) {
+        try { await agregarOperacionARuta(v.ruta, { cliente_id: v.cliente_id, tarea: accion, fecha: v.fecha, despacho_id: id }) }
+        catch (x) { window.alert(`La operación quedó guardada, pero no se pudo poner en la ruta: ${x.message || x}\nAgrégala desde Operaciones → Rutas → Editar planilla.`) }
+      }
       onGuardado()
     } catch (x) { setError(x); setGuardando(false) }
   }
@@ -379,39 +383,20 @@ function FormOperacion({ op, onCerrar, onGuardado }) {
             </Campo>
           )}
           {conEntrega && <Unidades titulo={accion === 'cambio' ? 'Unidades a entregar' : 'Unidades'} disponibles={libres} elegidas={entregar} setElegidas={setEntregar} error={errores.entregar}
-            tope={urgente ? Infinity : libresCupo}
+            tope={libresCupo + excesoPrevio}
             ayuda={conCupo
               ? `Servicio ${servicioSel?.codigo || ''}: solicita ${cupo.solicitada} · asignadas ${cupo.asignadas} · en otras entregas programadas ${Math.max(0, cupo.reservadas)} · disponibles para esta entrega ${libresCupo}.`
                 + (entregar.length > 0 ? (entregar.length < libresCupo
                   ? ` Con esta entrega: ${entregar.length} de ${libresCupo}. Entrega parcial: quedarán ${libresCupo - entregar.length} por entregar en otra operación.`
                   : ` Con esta entrega se completa lo solicitado.`) : '')
               : 'Solo baños disponibles y no reservados por otra operación.'} />}
-          {conCupo && (entregar.length >= libresCupo || urgente) && (
-            <div style={{ display: 'grid', gap: 10, padding: 16, border: `3px solid ${C.amarillo}`, background: 'rgba(235,170,66,.2)', borderRadius: 'var(--radio-md)' }}>
-              <strong style={{ font: '800 16px/1.3 var(--font)', color: '#FBBF24' }}>⚠ CUPO DEL SERVICIO COMPLETO</strong>
-              <span style={{ font: '400 14px/1.5 var(--font)', color: '#FBBF24' }}>
-                El servicio {servicioSel?.codigo} solicita <b>{cupo.solicitada}</b> unidad(es). Para entregar más, lo correcto es <b>editar la cantidad del servicio</b> en la ficha del cliente.
-                Si es una urgencia, puedes seguir: quedará registrada en la operación y se avisará en Notificaciones, porque el servicio y el cobro quedan descuadrados hasta que se actualicen.
-              </span>
-              <label style={{ display: 'flex', gap: 10, alignItems: 'center', font: '700 14px var(--font)', color: '#FBBF24', cursor: 'pointer' }}>
-                <input type="checkbox" checked={urgente} onChange={(e) => { setUrgente(e.target.checked); setErrores({}) }} style={{ width: 20, height: 20 }} />
-                Es urgente: entregar más unidades de las solicitadas
-              </label>
-              {urgente && (
-                <Campo etiqueta="Motivo de la urgencia" obligatorio error={errores.entregar && urgente && motivoUrg.trim().length < 5 ? 'Obligatorio' : undefined}>
-                  <textarea value={motivoUrg} onChange={(e) => setMotivoUrg(e.target.value)} maxLength={300} style={{ minHeight: 60 }} placeholder="Ej.: evento del cliente hoy, se regulariza el servicio mañana." />
-                </Campo>
-              )}
-              {exceso > 0 && <strong style={{ font: '700 14px var(--font)', color: C.rojo }}>Esta entrega supera lo solicitado en {exceso} unidad(es).</strong>}
-            </div>
-          )}
           {conRetiro && <Unidades titulo={accion === 'cambio' ? 'Unidades a retirar' : 'Unidades'} disponibles={retirables} elegidas={retirar} setElegidas={setRetirar} error={errores.retirar} listar
             ayuda={'Solo los asignados a este cliente en esta ubicación.' + (yaEnRetiro.length
               ? ` No aparecen porque ya tienen su retiro programado: ${yaEnRetiro.map((a) => `${a.codigo} (${enRetiro[a.id].folio})`).join(', ')}.` : '')} />}
           {tipoServ && !esArriendo && <Ayuda>{tipoServ === 'limpieza_fosas' ? 'Fosa: no se eligen baños.' : 'Limpieza de baños del cliente: se atienden sus equipos externos.'}</Ayuda>}
         </div>
         <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
-          <Campo etiqueta="Ruta (opcional)" ayuda="Si eliges ruta, hereda patente y responsable. Luego se ubica en el día desde la pestaña Rutas.">
+          <Campo etiqueta="Ruta (opcional)" error={errores.ruta} ayuda={v.ruta ? 'Al guardar, la operación queda en esta ruta el día programado, con su chofer, vehículo y baños (se ve en Operaciones → Rutas).' : 'Si eliges ruta, hereda patente y responsable y la operación queda puesta en esa ruta.'}>
             <select value={v.ruta} onChange={elegirRuta}>
               <option value="">Sin ruta</option>{rutas.map((r) => <option key={r.id} value={r.id}>{r.nombre}{r.activos?.codigo ? ` · ${r.activos.codigo}` : ''}</option>)}
             </select>
@@ -454,13 +439,13 @@ function Unidades({ titulo, disponibles, elegidas, setElegidas, error, ayuda, to
       <span>{titulo} <b className="obligatorio">*</b></span>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {elegidas.map((b) => (
-          <span key={b.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 'var(--radio-sm)', background: C.tinte, font: '600 13px var(--font)' }}>
-            {b.codigo}{sufijoMarcas(b)}<button type="button" aria-label={`Quitar ${b.codigo}`} onClick={() => setElegidas((p) => p.filter((x) => x.id !== b.id))} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: C.gris }}>✕</button>
+          <span key={b.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 'var(--radio-sm)', background: 'var(--tinte)', font: '600 13px var(--font)' }}>
+            {b.codigo}{sufijoMarcas(b)}<button type="button" aria-label={`Quitar ${b.codigo}`} onClick={() => setElegidas((p) => p.filter((x) => x.id !== b.id))} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--gris)' }}>✕</button>
           </span>
         ))}
       </div>
       {lleno
-        ? <small style={{ color: '#FBBF24', fontWeight: 600 }}>Cupo del servicio completo: no se pueden agregar más unidades.</small>
+        ? <small style={{ color: 'var(--amarillo)', fontWeight: 600 }}>Ya se eligió lo que solicita el servicio. Para entregar más, edita la cantidad del servicio en la ficha del cliente.</small>
         : <input value={texto} onChange={(e) => setTexto(e.target.value.replace(/\D/g, ''))} placeholder={`Buscar N.º de unidad (${disponibles.length - ids.size} disponibles)`} inputMode="numeric" />}
       {(texto || listar) && !lleno && (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', maxHeight: 140, overflowY: 'auto' }}>
@@ -468,7 +453,7 @@ function Unidades({ titulo, disponibles, elegidas, setElegidas, error, ayuda, to
           {res.map((b) => <Boton key={b.id} onClick={() => { setElegidas((p) => [...p, b]); setTexto('') }} style={{ minHeight: 30, padding: '4px 10px' }}>+ {b.codigo}{sufijoMarcas(b)}</Boton>)}
         </div>
       )}
-      {error ? <small style={{ color: C.rojo }}>{error}</small> : <small>{ayuda}</small>}
+      {error ? <small style={{ color: 'var(--rojo)' }}>{error}</small> : <small>{ayuda}</small>}
     </div>
   )
 }
@@ -477,7 +462,7 @@ function Unidades({ titulo, disponibles, elegidas, setElegidas, error, ayuda, to
 function Detalle({ o, editable, onCerrar, onEditar, onRuta, onConfirmar, onRespaldo }) {
   const fila = (l, v) => (
     <div style={{ display: 'grid', gridTemplateColumns: '120px minmax(0,1fr)', gap: 10, padding: '4px 0', font: '400 14px var(--font)' }}>
-      <span style={{ color: C.gris }}>{l}</span><span style={{ overflowWrap: 'anywhere' }}>{v || '—'}</span>
+      <span style={{ color: 'var(--gris)' }}>{l}</span><span style={{ overflowWrap: 'anywhere' }}>{v || '—'}</span>
     </div>
   )
   return (
@@ -510,7 +495,7 @@ function Detalle({ o, editable, onCerrar, onEditar, onRuta, onConfirmar, onRespa
         </div>
         {o.estado === 'hecho' && (o.recibido_por || o.resultado) && <Ayuda>Recibió: {o.recibido_por || '—'}{o.resultado ? ` · ${o.resultado}` : ''}</Ayuda>}
         {o.exceso_unidades > 0 && (
-          <div style={{ padding: 14, border: `3px solid ${C.amarillo}`, background: 'rgba(235,170,66,.2)', borderRadius: 'var(--radio-md)', font: '400 14px/1.5 var(--font)', color: '#FBBF24' }}>
+          <div style={{ padding: 14, border: `3px solid var(--amarillo)`, background: 'rgba(235,170,66,.2)', borderRadius: 'var(--radio-md)', font: '400 14px/1.5 var(--font)', color: '#FBBF24' }}>
             <b style={{ font: '800 15px var(--font)', color: '#FBBF24' }}>⚠ URGENCIA: entrega sobre lo solicitado (+{o.exceso_unidades})</b><br />
             Motivo: {o.exceso_motivo || '—'}. Actualiza la cantidad del servicio {o.servicio_codigo || ''} para que el cobro cuadre.
           </div>

@@ -2,14 +2,14 @@
 // 1.1 Vista principal · 1.3 Selector de fecha · 1.4 Actividad reciente · 1.5 Detalle del trabajo.
 // (1.2 Notificaciones y 1.6 Perfil están en la barra superior.)
 // Los indicadores abren listados filtrados. Las existencias muestran la situación actual.
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Modal from '../components/Modal'
 import { Boton, Campo, Tabla, Estado, Ayuda, Pestanas } from '../components/Base'
 import { TarjetaGrafico, Barras, BarrasH, Dona, SERIE, Sparkline, Lineas } from '../components/Graficos'
-import Mapa, { Leyenda as LeyendaMapa } from '../components/Mapa'
+import Mapa, { Leyenda as LeyendaMapa, indiceLimpiezas, hoyDow, colorConLimpieza } from '../components/Mapa'
 import { useSesion, puedeOperar, puedeVer, esDueno, verFinanzas } from '../lib/sesion'
-import { inicioDatos, actividadPeriodo, avisosCalculados, inicioGraficos, mapaPuntos } from '../lib/api'
+import { inicioDatos, actividadPeriodo, avisosCalculados, inicioGraficos, mapaPuntos, limpiezasCliente } from '../lib/api'
 import { hoyISO } from '../lib/costos'
 import { C, Icon, I, fecha, fechaHora, clp } from '../lib/ui'
 import { TablaCambios } from '../lib/auditoria'
@@ -53,7 +53,12 @@ export default function Inicio({ onCalendario }) {
   // Mapa de ubicaciones de los baños (ocupa 2 columnas en pantallas anchas)
   const [puntos, setPuntos] = useState(null)
   const [ancho, setAncho] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
-  useEffect(() => { mapaPuntos().then(setPuntos).catch(() => setPuntos([])) }, [])
+  const [limpMapa, setLimpMapa] = useState({})
+  useEffect(() => {
+    mapaPuntos().then(setPuntos).catch(() => setPuntos([]))
+    limpiezasCliente().then((l) => setLimpMapa(indiceLimpiezas(l))).catch(() => setLimpMapa({}))
+  }, [])
+  const colorMapa = useMemo(() => colorConLimpieza(limpMapa, hoyDow()), [limpMapa])
   useEffect(() => { const f = () => setAncho(window.innerWidth); window.addEventListener('resize', f); return () => window.removeEventListener('resize', f) }, [])
   useEffect(() => { inicioGraficos(finanzas).then(setG).catch(() => setG({ ops: [], equipos: [], mant: [], flota: [], fin: [], clientesActivos: null })) }, [])
 
@@ -210,7 +215,7 @@ export default function Inicio({ onCalendario }) {
             <TarjetaGrafico titulo="Ubicación de los baños" sub={puntos ? `${puntos.length} ubicación(es) con equipos` : 'Cargando…'}
               accion={<button type="button" onClick={() => navegar('/inventario?tab=mapa')} style={{ border: 0, background: 'transparent', color: C.azul, cursor: 'pointer', font: '600 12px var(--font)', whiteSpace: 'nowrap' }}>Ver mapa completo</button>}>
               <div style={{ borderRadius: 'var(--radio-md)', overflow: 'hidden', border: `1px solid ${C.borde}` }}>
-                <Mapa puntos={puntos || []} alto={300} />
+                <Mapa puntos={puntos || []} alto={300} color={colorMapa} />
               </div>
               <LeyendaMapa />
             </TarjetaGrafico>

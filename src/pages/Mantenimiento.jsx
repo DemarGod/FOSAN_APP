@@ -380,7 +380,7 @@ function RegistrarResultado({ m, finanzas, onCerrar, onListo }) {
             <select value={v.condicion} onChange={set('condicion')}>{Object.entries(L_COND).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
           </Campo>
           <Campo etiqueta="Observaciones"><textarea value={v.observaciones} onChange={set('observaciones')} maxLength={500} style={{ minHeight: 60 }} placeholder="Ej. Observaciones adicionales (opcional)" /></Campo>
-          {finanzas && <Campo etiqueta="Costo (CLP)"><input value={v.costo} onChange={set('costo')} inputMode="numeric" placeholder="38000" /></Campo>}
+          {finanzas && <Campo etiqueta="Costo (CLP)"><input value={v.costo} onChange={(e) => set('costo')({ target: { value: e.target.value.replace(/\D/g, '').slice(0, 10) } })} inputMode="numeric" pattern="[0-9]*" placeholder="38000" /></Campo>}
         </div>
         <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
           <Ayuda>Finalizado guarda Completado. Requiere seguimiento conserva En curso. La fecha real puede ser anterior a la prevista si se ejecutó antes; no se acepta fecha futura.</Ayuda>

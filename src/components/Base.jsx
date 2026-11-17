@@ -1,6 +1,6 @@
 // Piezas comunes del diseño FOSAN (láminas). Las pantallas nuevas las usan en vez de estilos inline.
 // Los estilos viven en src/index.css (.btn, .card, .campo, .tabs, .estado, .ayuda, .indicador).
-import { C, Icon, I } from '../lib/ui'
+import { Icon, I } from '../lib/ui'
 
 // ── Botón ─────────────────────────────────────────────────────────────────
 // tipo: 'principal' (azul) · 'secundario' (contorno) · 'peligro' (rojo, solo confirmaciones finales)
@@ -21,7 +21,7 @@ export function Campo({ etiqueta, obligatorio = false, ayuda, error, children, s
     <label className={`campo${error ? ' error' : ''}`} style={style}>
       <span>{etiqueta}{obligatorio && <b className="obligatorio"> *</b>}</span>
       {children}
-      {error ? <small style={{ color: C.rojo }}>{error}</small> : ayuda && <small>{ayuda}</small>}
+      {error ? <small style={{ color: 'var(--rojo)' }}>{error}</small> : ayuda && <small>{ayuda}</small>}
     </label>
   )
 }
@@ -39,7 +39,7 @@ export function Tabla({ columnas, filas, vacio = 'Sin resultados.', alClic, clav
         </thead>
         <tbody>
           {filas.length === 0 && (
-            <tr><td colSpan={columnas.length} style={{ color: C.gris, textAlign: 'center', padding: 24 }}>{vacio}</td></tr>
+            <tr><td colSpan={columnas.length} style={{ color: 'var(--gris)', textAlign: 'center', padding: 24 }}>{vacio}</td></tr>
           )}
           {filas.map((f, i) => (
             <tr key={f[clave] ?? i} onClick={alClic ? () => alClic(f) : undefined} style={{ cursor: alClic ? 'pointer' : undefined }}>
@@ -69,9 +69,9 @@ export function Pestanas({ opciones, valor, onChange }) {
 
 // ── Estado: punto de color + texto (nunca solo color) ─────────────────────
 // tono: 'ok' verde · 'atencion' amarillo · 'error' rojo · 'info' azul · 'neutro' gris
-const TONOS = { ok: C.verde, atencion: C.amarillo, error: C.rojo, info: C.azul, neutro: C.gris }
+const TONOS = { ok: 'var(--verde)', atencion: 'var(--amarillo)', error: 'var(--rojo)', info: 'var(--azul)', neutro: 'var(--gris)' }
 export function Estado({ tono = 'neutro', children }) {
-  return <span className="estado" style={{ '--c': TONOS[tono] || C.gris }}>{children}</span>
+  return <span className="estado" style={{ '--c': TONOS[tono] || 'var(--gris)' }}>{children}</span>
 }
 
 // ── Recuadro de ayuda (ícono i) ───────────────────────────────────────────
@@ -100,7 +100,7 @@ export function enEspanol(texto) {
 
 export function Ayuda({ children, tono = 'info', style }) {
   if (tono === 'error' && typeof children === 'string') children = enEspanol(children)
-  const color = tono === 'error' ? C.rojo : tono === 'atencion' ? C.amarillo : C.azulClaro
+  const color = tono === 'error' ? 'var(--rojo)' : tono === 'atencion' ? 'var(--amarillo)' : 'var(--azul-claro)'
   return (
     <div className={`ayuda ayuda-${tono}`} style={style}>
       <Icon d={tono === 'info' ? I.info : I.alert} size={18} color={color} />
@@ -110,7 +110,7 @@ export function Ayuda({ children, tono = 'info', style }) {
 }
 
 // ── Indicador (número grande + rótulo) ────────────────────────────────────
-export function Indicador({ valor, rotulo, icono, color = C.azul, alClic }) {
+export function Indicador({ valor, rotulo, icono, color = 'var(--azul)', alClic }) {
   return (
     <div className="indicador" onClick={alClic} style={{ cursor: alClic ? 'pointer' : undefined }}>
       {icono && <Icon d={icono} size={26} color={color} />}

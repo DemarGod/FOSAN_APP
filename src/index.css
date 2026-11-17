@@ -20,7 +20,13 @@
   --fosan-danger: #EF625D;
   --fosan-warning: #EBAA42;
   --fosan-purple: #B77AE5;
-  /* Nombres que usan las pantallas */
+  --fosan-input: #18324F;
+  --fosan-hover: #284A73;
+  --fosan-hover-borde: #4A6B91;
+  --fosan-linea: rgba(52, 84, 119, .7);
+}
+/* Nombres que usan las pantallas. Se recalculan dentro de .tema-claro / .tema-oscuro (Operaciones con fondo blanco). */
+:root, .tema-claro, .tema-oscuro {
   --fondo: var(--fosan-bg);
   --lateral: var(--fosan-sidebar);
   --panel: var(--fosan-card);
@@ -35,7 +41,7 @@
   --borde: var(--fosan-border);
   --tinte: rgba(57, 137, 232, .18);
   --suave: var(--fosan-card-secondary);
-  --fila: #284A73;
+  --fila: var(--fosan-hover);
   --thead: var(--fosan-card-secondary);
   --gris: var(--fosan-text-secondary);
   --tinta: var(--fosan-text);
@@ -120,7 +126,7 @@ button.card:hover, a.card:hover { border-color: #4A6B91; box-shadow: var(--brill
   font: 600 13px var(--font); padding: 10px 16px; min-height: 40px; cursor: pointer;
   transition: background .2s, border-color .2s, box-shadow .2s, filter .2s;
 }
-.btn:hover { background: #284A73; border-color: #4A6B91; }
+.btn:hover { background: var(--fosan-hover); border-color: var(--fosan-hover-borde); }
 .btn-azul, .btn-verde { border: 1px solid transparent; background: var(--azul); color: #fff; }
 .btn-azul:hover, .btn-verde:hover { background: #2F7AD6; border-color: transparent; }
 .btn-rojo { border: 1px solid var(--rojo); background: var(--rojo); color: #fff; }
@@ -132,7 +138,7 @@ button.card:hover, a.card:hover { border-color: #4A6B91; box-shadow: var(--brill
 .campo > span { font: 600 13px/18px var(--font); color: var(--tinta); }
 .campo > small { font: 400 12px/16px var(--font); color: var(--gris); }
 .campo input, .campo select, .campo textarea {
-  border: 1px solid var(--borde); border-radius: 10px; background: #18324F; font: 400 14px var(--font);
+  border: 1px solid var(--borde); border-radius: 10px; background: var(--fosan-input); font: 400 14px var(--font);
   padding: 9px 12px; min-height: 40px; outline: none; width: 100%; color: var(--tinta);
   transition: border-color .2s, box-shadow .2s;
 }
@@ -152,7 +158,7 @@ th {
   text-align: left; font: 600 12px var(--font); color: var(--gris); text-transform: uppercase; letter-spacing: .05em;
   padding: 11px 14px; border-bottom: 1px solid var(--borde); white-space: nowrap;
 }
-td { padding: 11px 14px; border-bottom: 1px solid rgba(52, 84, 119, .7); font: 400 14px var(--font); color: var(--tinta); }
+td { padding: 11px 14px; border-bottom: 1px solid var(--fosan-linea); font: 400 14px var(--font); color: var(--tinta); }
 tbody tr { transition: background .15s; }
 tbody tr:hover { background: rgba(57, 137, 232, .07); }
 
@@ -282,3 +288,50 @@ button.indicador:hover { border-color: #4A6B91; box-shadow: var(--brillo); }
 .estado { color: color-mix(in srgb, var(--c, var(--gris)) 45%, #ffffff); background: color-mix(in srgb, var(--c, var(--gris)) 22%, transparent); border-color: color-mix(in srgb, var(--c, var(--gris)) 55%, transparent); }
 .ayuda-atencion { background: rgba(235, 170, 66, .14); border-color: rgba(235, 170, 66, .55); }
 .ayuda-error { background: rgba(239, 98, 93, .14); border-color: rgba(239, 98, 93, .55); }
+
+/* ── Operaciones con fondo blanco (Paquete 31) ─────────────────────────────
+   .tema-claro: la hoja blanca (Programación completa; el fondo de Rutas y Respaldos).
+   .tema-oscuro: lo que dentro de la hoja blanca sigue azul (tarjetas de Rutas, tabla de Respaldos).
+   Las ventanas (Modal) se dibujan fuera y quedan siempre azules. */
+.tema-claro {
+  color-scheme: light;
+  --fosan-bg: #FFFFFF;
+  --fosan-header: #FFFFFF;
+  --fosan-card: #FFFFFF;
+  --fosan-card-secondary: #F2F6FB;
+  --fosan-border: #D3DDE9;
+  --fosan-primary: #2F7BD6;
+  --fosan-primary-light: #1F6FD0;
+  --fosan-text: #13294B;
+  --fosan-text-secondary: #4A5D75;
+  --fosan-text-muted: #6B7C93;
+  --fosan-input: #FFFFFF;
+  --fosan-hover: #E8EFF8;
+  --fosan-hover-borde: #A9BDD6;
+  --fosan-linea: #E3EAF2;
+  --tinte: rgba(47, 123, 214, .10);
+  --sombra: 0 1px 2px rgba(19, 41, 75, .08);
+  --brillo: 0 2px 6px rgba(19, 41, 75, .12);
+  background: #FFFFFF; color: var(--tinta);
+}
+.tema-oscuro {
+  color-scheme: dark;
+  --fosan-bg: #142B4D; --fosan-header: #162F52; --fosan-card: #1D385E; --fosan-card-secondary: #223F67; --fosan-border: #345477;
+  --fosan-primary: #3989E8; --fosan-primary-light: #58A9F5; --fosan-text: #F1F5FB; --fosan-text-secondary: #B8C9DE; --fosan-text-muted: #8FA6C1;
+  --fosan-input: #18324F; --fosan-hover: #284A73; --fosan-hover-borde: #4A6B91; --fosan-linea: rgba(52, 84, 119, .7);
+  --tinte: rgba(57, 137, 232, .18); --sombra: 0 1px 2px rgba(4, 12, 26, .25); --brillo: 0 2px 6px rgba(4, 12, 26, .25);
+  color: var(--tinta);
+}
+.hoja-op { min-height: calc(100vh - 140px); align-content: start; border-radius: var(--radio-md); border: 1px solid #D3DDE9; padding: 20px; box-shadow: 0 1px 3px rgba(4, 12, 26, .25); }
+.tema-claro .estado { color: color-mix(in srgb, var(--c, var(--gris)) 70%, #0B1A2E); background: color-mix(in srgb, var(--c, var(--gris)) 14%, #FFFFFF); }
+.tema-claro select option { background: #FFFFFF; color: #13294B; }
+.tema-claro tbody tr:hover { background: rgba(47, 123, 214, .05); }
+.tema-claro .indicador { background: #FFFFFF; }
+.tema-claro .indicador[style*="84, 201, 154"] b, .tema-claro .indicador[style*="84,201,154"] b { color: #1E8A5E; }
+.tema-claro .indicador[style*="235, 170, 66"] b, .tema-claro .indicador[style*="235,170,66"] b { color: #B7741A; }
+.tema-claro .indicador[style*="239, 98, 93"] b, .tema-claro .indicador[style*="239,98,93"] b { color: #C8403B; }
+.tema-claro .indicador[style*="84,201,154"] span, .tema-claro .indicador[style*="235,170,66"] span, .tema-claro .indicador[style*="239,98,93"] span,
+.tema-claro .indicador[style*="84, 201, 154"] span, .tema-claro .indicador[style*="235, 170, 66"] span, .tema-claro .indicador[style*="239, 98, 93"] span { color: #4A5D75; }
+.tema-claro .ayuda-atencion { background: #FFF7E8; border-color: #F0C77A; }
+.tema-claro .ayuda-error { background: #FDEDEC; border-color: #F3A9A6; }
+.tema-claro ::-webkit-scrollbar-thumb { background: #C3D0E0; border-color: #FFFFFF; }

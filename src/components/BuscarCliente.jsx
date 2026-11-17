@@ -2,7 +2,7 @@
 // Muestra cuántas ubicaciones y servicios tiene cada uno. Se usa en Nueva operación y donde haga falta elegir cliente.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { clientesListado, normalizarRut } from '../lib/api'
-import { C, Icon, I } from '../lib/ui'
+import { Icon, I } from '../lib/ui'
 
 export default function BuscarCliente({ valor, onElegir, disabled = false, autoFocus = false }) {
   const [lista, setLista] = useState([])
@@ -26,7 +26,7 @@ export default function BuscarCliente({ valor, onElegir, disabled = false, autoF
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <div style={{ position: 'relative' }}>
-        <Icon d={I.busca} size={16} color={C.gris} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+        <Icon d={I.busca} size={16} color={'var(--gris)'} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
         <input value={abierto ? texto : elegido ? `${elegido.rut || ''} · ${elegido.nombre}` : texto} disabled={disabled} autoFocus={autoFocus}
           onFocus={() => { setAbierto(true); setTexto('') }} onChange={(e) => { setTexto(e.target.value); setAbierto(true) }}
           placeholder="Buscar por RUT o nombre del cliente" style={{ paddingLeft: 36 }} />
@@ -34,17 +34,17 @@ export default function BuscarCliente({ valor, onElegir, disabled = false, autoF
       {abierto && (
         <div role="listbox" style={{
           position: 'absolute', left: 0, right: 0, top: 'calc(100% + 4px)', zIndex: 30, maxHeight: 300, overflowY: 'auto',
-          background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(0,0,0,.45)',
+          background: 'var(--blanco)', border: `1px solid var(--borde)`, borderRadius: 'var(--radio-md)', boxShadow: '0 8px 24px rgba(0,0,0,.45)',
         }}>
-          {res.length === 0 && <div style={{ padding: 12, color: C.gris }}>Sin clientes activos con ese RUT o nombre.</div>}
+          {res.length === 0 && <div style={{ padding: 12, color: 'var(--gris)' }}>Sin clientes activos con ese RUT o nombre.</div>}
           {res.map((c) => (
             <button key={c.id} type="button" role="option" aria-selected={c.id === valor}
               onClick={() => { onElegir(c); setAbierto(false); setTexto('') }}
               style={{
-                display: 'flex', gap: 12, width: '100%', border: 0, borderBottom: `1px solid ${C.fila}`, padding: '10px 12px',
-                background: c.id === valor ? C.tinte : 'transparent', cursor: 'pointer', textAlign: 'left', font: '400 14px var(--font)',
+                display: 'flex', gap: 12, width: '100%', border: 0, borderBottom: `1px solid var(--fila)`, padding: '10px 12px',
+                background: c.id === valor ? 'var(--tinte)' : 'transparent', cursor: 'pointer', textAlign: 'left', font: '400 14px var(--font)',
               }}>
-              <span style={{ width: 110, color: C.gris, flex: 'none' }}>{c.rut || '—'}</span>
+              <span style={{ width: 110, color: 'var(--gris)', flex: 'none' }}>{c.rut || '—'}</span>
               <span style={{ flex: 1, fontWeight: 600 }}>{c.nombre}</span>
               <span className="text-muted" style={{ fontSize: 12 }}>{c.ubicaciones} ubicación(es) · {c.servicios_vigentes} servicio(s)</span>
             </button>

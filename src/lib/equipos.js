@@ -8,3 +8,6 @@ export const CARACTERISTICAS = [
 export const marcasDe = (e) => CARACTERISTICAS.filter((c) => e?.[c.k]).map((c) => c.corto)
 // Texto para pegar al número de unidad: ' · Arnés · VIP' (vacío si no tiene)
 export const sufijoMarcas = (e) => marcasDe(e).map((m) => ` · ${m}`).join('')
+
+// Casillas (Con arnés, VIP…) del mismo tamaño: los estilos de .campo input las agrandaban de forma dispareja
+export const CASILLA = { width: 18, height: 18, minHeight: 0, minWidth: 18, padding: 0, margin: 0, flex: 'none' }

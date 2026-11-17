@@ -97,6 +97,23 @@ export const guardarRutaSemana = async (id, datos, lineas) => {
   await rpc('generar_ruta_semana', { p_ruta: rid })
   return rid
 }
+// Operación creada desde "Nueva operación" (o "Nueva orden" del cliente) con una ruta elegida:
+// queda como una línea más de la planilla de esa ruta, en el día de la fecha programada, y se rearman los viajes.
+// Así en Operaciones → Rutas ya aparece con el chofer, el vehículo y los baños de la operación.
+export const agregarOperacionARuta = async (rutaId, { cliente_id, tarea, fecha, despacho_id }) => {
+  const dia = new Date(`${fecha}T12:00:00Z`).getUTCDay()          // 1 = lunes … 5 = viernes
+  if (dia < 1 || dia > 5) throw new Error('Las rutas son de lunes a viernes: elige un día hábil o deja la operación sin ruta.')
+  const { data: ya, error: e0 } = await supabase.from('rutas_semana_lineas').select('id, ruta_id').eq('despacho_id', despacho_id)
+  if (e0) throw e0
+  if (ya?.length) return                                            // ya está en una ruta
+  const { data: ult, error: e1 } = await supabase.from('rutas_semana_lineas').select('orden').eq('ruta_id', rutaId).order('orden', { ascending: false }).limit(1)
+  if (e1) throw e1
+  const { error } = await supabase.from('rutas_semana_lineas').insert({
+    ruta_id: rutaId, cliente_id, tarea, dias: [dia], orden: (ult?.[0]?.orden || 0) + 1, banos: [], despacho_id,
+  })
+  if (error) throw error
+  await rpc('generar_ruta_semana', { p_ruta: rutaId })
+}
 export const borrarRutaSemana = (id) => rpc('borrar_ruta_semana', { p_ruta: id })
 
 // Copia la ruta a la semana siguiente (solo limpiezas: entregas y retiros son de una vez)

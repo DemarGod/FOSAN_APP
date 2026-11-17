@@ -9,7 +9,7 @@ import { operaciones, paradasRealizadas, respaldosDe, subirRespaldo, guardarCons
 import { htmlConstancia, aDataUrl } from '../lib/respaldosDrive'
 import { useSesion } from '../lib/sesion'
 import { hoyISO, sumarDias, ahoraLocal } from '../lib/costos'
-import { C, I, fecha, fechaHora } from '../lib/ui'
+import { I, fecha, fechaHora } from '../lib/ui'
 
 export const L_SERV = { arriendo_limpieza: 'Arriendo de baños químicos', limpieza_cliente: 'Limpieza de baños', limpieza_fosas: 'Limpieza de fosa' }
 export const L_ACCION = { entrega: 'Entrega', retiro: 'Retiro', cambio: 'Cambio', limpieza: 'Limpieza' }
@@ -41,8 +41,8 @@ export default function OpRespaldos() {
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
-      <section className="card">
-        <form onSubmit={(e) => { e.preventDefault(); setAplicado(f) }} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10, padding: 16, borderBottom: `1px solid ${C.borde}`, alignItems: 'end' }}>
+      <section className="card tema-oscuro">
+        <form onSubmit={(e) => { e.preventDefault(); setAplicado(f) }} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10, padding: 16, borderBottom: `1px solid var(--borde)`, alignItems: 'end' }}>
           <Campo etiqueta="Realizadas desde"><input type="date" value={f.desde} onChange={set('desde')} /></Campo>
           <Campo etiqueta="Hasta"><input type="date" value={f.hasta} onChange={set('hasta')} /></Campo>
           <Campo etiqueta="Cliente o folio"><input value={f.texto} onChange={set('texto')} placeholder="Buscar…" /></Campo>
@@ -52,7 +52,7 @@ export default function OpRespaldos() {
           </div>
         </form>
         {error && <div style={{ padding: 16 }}><Ayuda tono="error">{String(error.message || error)}</Ayuda></div>}
-        {datos === null && !error ? <div style={{ padding: 24, color: C.gris }}>Cargando…</div> : (
+        {datos === null && !error ? <div style={{ padding: 24, color: 'var(--gris)' }}>Cargando…</div> : (
           <Tabla filas={filas} vacio="Sin operaciones realizadas en este período." columnas={[
             { k: 'f', label: 'Realizada', render: (o) => (o.fecha_realizada ? fechaHora(o.fecha_realizada) : fecha(o.fecha_programada)) },
             { k: 'folio', label: 'Folio', render: (o) => <b>{o.folio}</b> },
@@ -139,10 +139,10 @@ export function RespaldoModal({ o, onCerrar }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
               {archivos.map((r) => (
                 <a key={r.id} href={r.url || '#'} target="_blank" rel="noreferrer"
-                  onClick={(e) => { if (!r.url && r.ruta.startsWith('drive:')) { e.preventDefault(); abrirRespaldo(r).catch(setError) } }} style={{ display: 'grid', gap: 4, padding: 8, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-md)', textDecoration: 'none', color: C.tinta }}>
+                  onClick={(e) => { if (!r.url && r.ruta.startsWith('drive:')) { e.preventDefault(); abrirRespaldo(r).catch(setError) } }} style={{ display: 'grid', gap: 4, padding: 8, border: `1px solid var(--borde)`, borderRadius: 'var(--radio-md)', textDecoration: 'none', color: 'var(--tinta)' }}>
                   {esImagenRespaldo(r) && r.url
                     ? <img src={r.url} alt={r.nombre} style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 'var(--radio-sm)' }} />
-                    : <div style={{ height: 90, display: 'grid', placeItems: 'center', background: C.suave, borderRadius: 'var(--radio-sm)', font: '600 13px var(--font)' }}>{esImagenRespaldo(r) ? 'Imagen' : 'PDF'}</div>}
+                    : <div style={{ height: 90, display: 'grid', placeItems: 'center', background: 'var(--suave)', borderRadius: 'var(--radio-sm)', font: '600 13px var(--font)' }}>{esImagenRespaldo(r) ? 'Imagen' : 'PDF'}</div>}
                   <small style={{ overflowWrap: 'anywhere' }}>{r.nombre}</small>
                   <small className="text-muted">{fechaHora(r.creado_en)} · {r.perfiles?.nombre || '—'}</small>
                 </a>
@@ -160,7 +160,7 @@ export function RespaldoModal({ o, onCerrar }) {
             {lista !== null && l.length === 0 && <span className="text-muted">Sin firma.</span>}
             {l.map((r) => (
               <div key={r.id} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                {r.url && <img src={r.url} alt="Firma" style={{ height: 80, background: '#fff', border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-sm)' }} />}
+                {r.url && <img src={r.url} alt="Firma" style={{ height: 80, background: '#fff', border: `1px solid var(--borde)`, borderRadius: 'var(--radio-sm)' }} />}
                 <span style={{ font: '400 13px/1.5 var(--font)' }}><b>{r.firmante || '—'}</b><br />{fechaHora(r.creado_en)}</span>
               </div>
             ))}
@@ -202,7 +202,7 @@ export function Lienzo({ onCambio }) {
   return (
     <div style={{ display: 'grid', gap: 6 }}>
       <canvas ref={ref} onPointerDown={abajo} onPointerMove={mover} onPointerUp={arriba} onPointerLeave={arriba}
-        style={{ width: '100%', height: 180, background: '#fff', border: `1px dashed ${C.gris}`, borderRadius: 'var(--radio-md)', touchAction: 'none', cursor: 'crosshair' }} />
+        style={{ width: '100%', height: 180, background: '#fff', border: `1px dashed var(--gris)`, borderRadius: 'var(--radio-md)', touchAction: 'none', cursor: 'crosshair' }} />
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <small className="text-muted">Firme dentro del recuadro.</small>
         <Boton onClick={limpiar} style={{ minHeight: 30, padding: '4px 10px' }}>Limpiar</Boton>

@@ -209,6 +209,21 @@ export const serviciosDe = (clienteId) => rows(
     .order('estado', { ascending: false }).order('fecha_inicio', { ascending: false })
 )
 
+// Baños reservados para cada servicio: están en una entrega programada que aún no se realiza.
+// { servicio_id: [{ codigo, qr_token, folio, fecha_programada }] } (al realizar la entrega pasan a "asignados")
+export const reservadosPorServicio = async (clienteId) => {
+  const r = await rows(supabase.from('despacho_banos')
+    .select('activo_id, activos(codigo, qr_token), despachos!inner(folio, estado, cliente_id, servicio_id, fecha_programada)')
+    .eq('accion', 'entrega').eq('despachos.estado', 'programado').eq('despachos.cliente_id', clienteId))
+  const m = {}
+  for (const x of r) {
+    const sid = x.despachos?.servicio_id
+    if (!sid || !x.activos) continue
+    ;(m[sid] = m[sid] || []).push({ ...x.activos, folio: x.despachos.folio, fecha_programada: x.despachos.fecha_programada })
+  }
+  return m
+}
+
 // ── Servicios del cliente (A, B, C) y equipos externos ───────────────────
 export const categoriasEquipo = () => rows(
   supabase.from('categorias').select('id, nombre').eq('clase', 'equipo').eq('activo', true).order('nombre')

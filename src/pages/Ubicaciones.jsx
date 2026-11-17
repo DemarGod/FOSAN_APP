@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import Mapa, { Leyenda, COLORES, colorPunto } from '../components/Mapa'
+import Mapa, { Leyenda, indiceLimpiezas, hoyDow, limpiezaDelDia, colorConLimpieza } from '../components/Mapa'
 import { Kpis, Aviso } from '../components/Listado'
 import { Campo } from '../components/Base'
 import {
@@ -11,7 +11,6 @@ import { C, Icon, I, L_TIPO_UBIC } from '../lib/ui'
 import { leerCoordenadas, formatoCoordenadas, enlaceGoogleMaps, enChile, ubicacionDesdeTexto } from '../lib/coordenadas'
 
 const FILTROS = ['Todos', 'Arriendo', 'Limpieza', 'Mantención', 'Bodega']
-const hoyDow = () => { const d = new Date().getDay(); return d === 0 ? 7 : d }
 const coord = (n) => Number(n).toFixed(6)
 
 export default function Ubicaciones() {
@@ -29,21 +28,12 @@ export default function Ubicaciones() {
   const cargar = () => Promise.all([mapaPuntos(), clientesResumen(), limpiezasCliente().catch(() => [])])
     .then(([p, c, l]) => {
       setPuntos(p); setClientes(c)
-      setLimp(Object.fromEntries(l.map((x) => [x.cliente_id, { veces: Number(x.veces_semana), dias: x.dias || [] }])))
+      setLimp(indiceLimpiezas(l))
     }).catch(setError)
   useEffect(() => { cargar() }, [])
 
-  const limpiaHoy = useCallback((p) => {
-    const l = p.cliente_id && limp[p.cliente_id]
-    return l && l.dias.includes(dia) ? l : null
-  }, [limp, dia])
-
-  const color = useCallback((p) => {
-    if (Number(p.en_mantencion) > 0 || p.tipo === 'taller') return COLORES.mantencion
-    const l = limpiaHoy(p)
-    if (l) return l.veces >= 2 ? COLORES.limpieza2 : COLORES.limpieza1
-    return colorPunto(p)
-  }, [limpiaHoy])
+  const limpiaHoy = useCallback((p) => limpiezaDelDia(p, limp, dia), [limp, dia])
+  const color = useMemo(() => colorConLimpieza(limp, dia), [limp, dia])
 
   const detalle = useCallback((p) => {
     const l = p.cliente_id && limp[p.cliente_id]

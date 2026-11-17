@@ -360,9 +360,6 @@ function Km({ d }) {
         { v: kmL(k.fijos + k.depreciacion + k.conductor) + '/km', l: 'Fijo (documentos, depreciación, conductor)' },
         { v: '× ' + num(t.factor, 2), l: 'Factor de recorrido real' },
       ]} />
-      <Caja titulo="Por qué km y no costo por ruta">
-        Las rutas no siempre siguen el camino más corto, así que el km de cada ruta se toma del odómetro cuando existe. Si no hay odómetro, se mide la distancia en línea recta bodega → paradas en orden → bodega y se multiplica por el factor de recorrido ({num(t.factor, 2)}), que representa los desvíos reales. El costo de cada ruta se reparte entre sus clientes según lo lejos que está cada uno de la bodega.
-      </Caja>
       <Sub>Costo por km del camión</Sub>
       <Tabla min={480} filas={[
         { c: 'Diésel', v: k.combustible, t: 'Variable' }, { c: 'Neumáticos, aceite, frenos, suspensión, preventiva', v: k.mantencion, t: 'Variable' },
