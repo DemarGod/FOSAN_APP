@@ -85,10 +85,10 @@ export default function OpProgramacion({ irARutas }) {
       </div>
 
       <div className="kpis">
-        {[['programada', 'Programadas', 'var(--blanco)'], ['realizada', 'Realizadas', 'rgba(84,201,154,.2)'], ['pendiente', 'Atrasadas', 'rgba(235,170,66,.2)']].map(([k, l, bg]) => (
+        {KPI_OP.map(([k, l, bg, borde, num]) => (
           <button key={k} type="button" className="indicador" onClick={() => filtrar({ estado: k })}
-            style={{ display: 'block', textAlign: 'left', cursor: 'pointer', background: bg, ...(aplicado.estado === k ? { outline: `2px solid var(--azul)`, outlineOffset: -2 } : {}) }}>
-            <span>{l}</span><b>{datos ? cuenta(k) : '…'}</b>
+            style={{ display: 'block', textAlign: 'left', cursor: 'pointer', background: bg, borderColor: borde, ...(aplicado.estado === k ? { outline: `2px solid ${borde}`, outlineOffset: -2 } : {}) }}>
+            <span style={{ color: '#2A3B52' }}>{l}</span><b style={{ color: num }}>{datos ? cuenta(k) : '…'}</b>
           </button>
         ))}
         <div style={{ font: '400 12px/1.5 var(--font)', color: 'var(--gris)', alignSelf: 'center' }}>
@@ -155,6 +155,13 @@ export default function OpProgramacion({ irARutas }) {
   )
 }
 
+
+// Recuadros de Programación (fondo blanco): azul, verde y naranjo bien marcados
+const KPI_OP = [
+  ['programada', 'Programadas', '#DCEBFF', '#3B82F6', '#1D5FC4'],
+  ['realizada', 'Realizadas', '#C9F4DE', '#22B573', '#0E7A4A'],
+  ['pendiente', 'Atrasadas', '#FFE2B0', '#F59E0B', '#A35A00'],
+]
 
 // ── 4.2 Nueva operación / Editar programación ─────────────────────────────
 function FormOperacion({ op, onCerrar, onGuardado }) {

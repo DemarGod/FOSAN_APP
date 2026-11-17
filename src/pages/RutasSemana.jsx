@@ -93,7 +93,7 @@ export default function RutasSemana() {
       <Aviso error={error} />
 
       {pendientes.length > 0 && (
-        <div style={{ border: '1px solid #F0C77A', background: '#FFF8EA', color: '#3D2E12', padding: '12px 14px', marginBottom: 16, display: 'grid', gap: 6, borderRadius: 'var(--radio-md)' }}>
+        <div style={{ border: '2px solid #F5B53F', background: '#FFEDC2', color: '#3D2E12', padding: '12px 14px', marginBottom: 16, display: 'grid', gap: 6, borderRadius: 'var(--radio-md)' }}>
           <strong style={{ font: '700 13px var(--font)', color: 'var(--navy)' }}>{pendientes.length} entrega(s) o retiro(s) sin ruta</strong>
           {pendientes.slice(0, 6).map((d) => (
             <span key={d.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', font: '400 12px var(--font)' }}>

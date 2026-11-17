@@ -10,6 +10,7 @@ import {
   DIAS_RUTA, lunesDe, etiquetaSemana, L_TAREA,
 } from '../lib/rutasSemana'
 import { C } from '../lib/ui'
+import { sumarDias } from '../lib/costos'
 
 let clave = 0
 const nueva = (x) => ({ k: ++clave, tarea: 'limpieza', dias: [], banos: [], despacho_id: null, nota: '', ...x })
@@ -136,8 +137,13 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
         <>
           <div style={{ padding: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
             <Campo etiqueta="Nombre"><input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={60} placeholder="RUTA NORTE" style={{ textTransform: 'uppercase' }} /></Campo>
-            <Campo etiqueta={`Semana · ${etiquetaSemana(semana)}`}>
-              <input type="date" value={semana} disabled={bloq.size > 0} onChange={(e) => e.target.value && setSemana(lunesDe(e.target.value))} />
+            <Campo etiqueta="Semana (lunes a viernes)">
+              {/* Semana con flechas: elegir un día en un calendario siempre volvía al lunes y parecía que no dejaba elegir */}
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <button type="button" className="btn" disabled={bloq.size > 0} onClick={() => setSemana(sumarDias(semana, -7))} aria-label="Semana anterior" style={{ minHeight: 40, padding: '0 12px' }}>‹</button>
+                <span style={{ flex: 1, textAlign: 'center', font: '700 13px var(--font)', color: C.navy, whiteSpace: 'nowrap' }}>{etiquetaSemana(semana)}</span>
+                <button type="button" className="btn" disabled={bloq.size > 0} onClick={() => setSemana(sumarDias(semana, 7))} aria-label="Semana siguiente" style={{ minHeight: 40, padding: '0 12px' }}>›</button>
+              </div>
             </Campo>
             <Campo etiqueta="Operador">
               <select value={operador} onChange={(e) => setOperador(e.target.value)}>
@@ -221,11 +227,12 @@ export default function FormRutaSemana({ ruta, lunes, enOtras = new Set(), onCer
                         const b = bloq.has(d.v)
                         return (
                           <td key={d.v} style={{ ...td, textAlign: 'center', padding: 2 }}>
-                            <button type="button" onClick={() => alternarDia(l, d.v)} disabled={b} aria-label={`${d.largo} ${on ? 'marcado' : ''}`} style={{
-                              width: 30, height: 30, cursor: b ? 'not-allowed' : 'pointer', font: '700 12px var(--font)',
-                              border: `1px solid ${on ? C.azul : C.borde}`, background: on ? C.azul : 'var(--panel)', color: on ? '#fff' : C.borde,
-                              borderRadius: l.tarea === 'limpieza' ? 0 : '50%', opacity: b ? 0.5 : 1,
-                            }}>{on ? '✓' : ''}</button>
+                            <button type="button" onClick={() => alternarDia(l, d.v)} disabled={b} aria-label={`${d.largo} ${on ? 'marcado' : ''}`}
+                              title={b ? `${d.largo}: día ya iniciado` : `${on ? 'Quitar' : 'Marcar'} ${d.largo.toLowerCase()}`} style={{
+                              width: 32, height: 32, cursor: b ? 'not-allowed' : 'pointer', font: '700 12px var(--font)',
+                              border: `2px solid ${on ? C.azul : '#6F92BC'}`, background: on ? C.azul : '#16304F', color: on ? '#fff' : '#A9BFDA',
+                              borderRadius: l.tarea === 'limpieza' ? 6 : '50%', opacity: b ? 0.4 : 1,
+                            }}>{on ? '✓' : d.l}</button>
                           </td>
                         )
                       })}

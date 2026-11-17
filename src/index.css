@@ -335,3 +335,15 @@ button.indicador:hover { border-color: #4A6B91; box-shadow: var(--brillo); }
 .tema-claro .ayuda-atencion { background: #FFF7E8; border-color: #F0C77A; }
 .tema-claro .ayuda-error { background: #FDEDEC; border-color: #F3A9A6; }
 .tema-claro ::-webkit-scrollbar-thumb { background: #C3D0E0; border-color: #FFFFFF; }
+/* Dentro de la hoja blanca, lo que sigue azul (tabla de Respaldos, tarjetas de Rutas) vuelve a los estilos oscuros */
+.tema-claro .tema-oscuro .estado {
+  color: #062B1B;
+  background: color-mix(in srgb, var(--c, var(--gris)) 88%, #ffffff);
+  border-color: color-mix(in srgb, var(--c, var(--gris)) 60%, #ffffff);
+}
+.tema-claro .tema-oscuro .estado::before {
+  width: 9px; height: 9px; background: #ffffff;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c, var(--gris)) 70%, #000000 30%);
+}
+.tema-claro .tema-oscuro select option { background: #1D385E; color: #F1F5FB; }
+.tema-claro .tema-oscuro tbody tr:hover { background: rgba(57, 137, 232, .07); }

@@ -342,9 +342,11 @@ export const Punto = ({ color, grande }) => (
   <span style={{ display: 'inline-block', width: grande ? 14 : 10, height: grande ? 14 : 10, borderRadius: '50%', background: color, flex: 'none' }} />
 )
 
+// Etiqueta de la tarea con color propio (se lee igual sobre fondo blanco o azul)
+const COLOR_TAREA = { limpieza: '#12A36B', entrega: '#2F7BD6', retiro: '#E07812', cambio: '#8B5CF6' }
 export const Chip = ({ tarea }) => (
   <span style={{
-    font: '600 10px var(--font)', textTransform: 'uppercase', letterSpacing: '.05em', padding: '3px 7px',
-    background: tarea === 'limpieza' ? C.tinte : C.azul, color: tarea === 'limpieza' ? C.navy : '#fff',
+    font: '700 10px var(--font)', textTransform: 'uppercase', letterSpacing: '.05em', padding: '3px 8px', borderRadius: 4,
+    background: COLOR_TAREA[tarea] || '#2F7BD6', color: '#fff',
   }}>{L_TAREA[tarea] || tarea}</span>
 )

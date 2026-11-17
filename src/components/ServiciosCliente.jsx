@@ -105,8 +105,27 @@ function BanosAsignados({ s, reservados = [], onVer }) {
     ...[...reservados].filter((b) => !ya.has(b.codigo)).sort(porNumero).map((b) => ({ ...b, asignado: false })),
   ]
   if (!filas.length) return <span className="text-muted">Ninguno</span>
+  return <ListaDesplegable filas={filas} onVer={onVer} />
+}
+
+// Casilla desplegable: muestra el resumen y al abrirla la lista de baños (no alarga la fila de la tabla)
+function ListaDesplegable({ filas, onVer }) {
+  const [abierta, setAbierta] = useState(false)
+  const asig = filas.filter((b) => b.asignado).length, res = filas.length - asig
   return (
-    <div style={{ display: 'grid', gap: 4, justifyItems: 'start' }}>
+    <div style={{ display: 'inline-block' }}>
+      <button type="button" onClick={() => setAbierta((x) => !x)} aria-expanded={abierta}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 34, padding: '4px 10px', borderRadius: 'var(--radio-sm)', cursor: 'pointer',
+          border: `1px solid ${C.borde}`, background: C.suave, color: C.tinta, font: '600 13px var(--font)', whiteSpace: 'nowrap' }}>
+        {filas.length} baño(s)
+        <span style={{ font: '500 12px var(--font)', color: C.gris }}>
+          {[asig && `${asig} asignado(s)`, res && `${res} reservado(s)`].filter(Boolean).join(' · ')}
+        </span>
+        <span style={{ transform: abierta ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>▾</span>
+      </button>
+      {abierta && (
+        <div style={{ marginTop: 4, minWidth: '100%', maxHeight: 220, overflowY: 'auto', padding: 6,
+          display: 'grid', gap: 4, background: C.blanco, border: `1px solid ${C.borde}`, borderRadius: 'var(--radio-sm)' }}>
       {filas.map((b) => (
         <button key={b.codigo} type="button" onClick={() => onVer(b)}
           title={b.asignado ? `Asignado: ver ficha del baño ${b.codigo}` : `Reservado en la entrega ${b.folio || ''}${b.fecha_programada ? ` del ${fecha(b.fecha_programada)}` : ''}`}
@@ -119,6 +138,8 @@ function BanosAsignados({ s, reservados = [], onVer }) {
           <b>{b.codigo}</b><span style={{ fontWeight: 500 }}>{b.asignado ? 'Asignado' : 'Reservado'}</span>
         </button>
       ))}
+        </div>
+      )}
     </div>
   )
 }
